@@ -1515,6 +1515,140 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         runOnUiThread { updateOfflineVoiceControls() }
     }
+    /**
+     * Starting a review never silently overwrites the ongoing lesson.
+     * Reviews use manual assessment because speech recognizer failures are ambiguous.
+     */
+    private fun startDueReview(confirmReplace: Boolean = true) {
+        if (!prefs.getBoolean("learning_history_enabled", true)) {
+            Toast.makeText(this,
+                if (uiEnglish) "Enable learning history in Settings first."
+                else "Сначала включи историю ответов в настройках.",
+                Toast.LENGTH_LONG).show()
+            return
+        }
+        if (running && confirmReplace) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Replace current lesson?" else "Заменить текущий урок?")
+                .setMessage(if (uiEnglish)
+                    "The current lesson will be replaced by a due-word review."
+                    else "Текущий урок будет заменён повторением слов. Его прогресс уже записан.")
+                .setPositiveButton(if (uiEnglish) "Review" else "Повторить") { _, _ ->
+                    startDueReview(false)
+                }
+                .setNegativeButton(if (uiEnglish) "Cancel" else "Отмена", null)
+                .show()
+            return
+        }
+        val due = try {
+            historyStore.dueReviews().filter { candidate ->
+                words.any { it.id == candidate.wordId }
+            }
+        } catch (_: Exception) {
+            Toast.makeText(this,
+                if (uiEnglish) "Review history is unavailable."
+                else "Не удалось прочитать историю повторений.",
+                Toast.LENGTH_LONG).show()
+            return
+        }
+        // Each word appears once per mini-block; choose its highest-priority direction.
+        val unique = linkedMapOf<Int, LearningReviewPlanner.DueWord>()
+        due.forEach { unique.putIfAbsent(it.wordId, it) }
+        val count = listOf(10, 20, 30, 50).getOrElse(blockSpinner.selectedItemPosition) { 50 }
+        val selected = unique.values.take(count)
+        if (selected.isEmpty()) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "No words due" else "Повторять пока нечего")
+                .setMessage(if (uiEnglish)
+                    "The stored unassisted manual checks do not have words due yet."
+                    else "По самостоятельным ответам пока нет слов, срок повторения которых наступил.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        handler.removeCallbacksAndMessages(null)
+        pauseLearningAudio()
+        examplesDialog?.dismiss()
+        familyDialog?.dismiss()
+        tts.stop()
+        recognizer?.cancel()
+        examplesExpanded = false
+        familyExpanded = false
+        learningMode = false
+        learningPaused = false
+        lessonModeSpinner.setSelection(1)
+        direction = 2
+        dirSpinner.setSelection(2)
+        method = 1
+        methodSpinner.setSelection(1)
+        selectionMode = 0
+        selectionSpinner.setSelection(0)
+        activeSceneId = ""
+        sceneSpinner.setSelection(0)
+        sessionId = UUID.randomUUID().toString()
+        reviewIds = selected.map { it.wordId }
+        forcedReviewDirections = selected.associate { it.wordId to it.direction }
+        index = 0
+        running = true
+        answering = false
+        assistedThisWord = false
+        lastGradeDetail = ""
+        settingsDialog?.dismiss()
+        menu.visibility = View.GONE
+        next()
+    }
+
+    private fun showReviewRecommendations() {
+        if (!prefs.getBoolean("learning_history_enabled", true)) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Review suggestions" else "Что повторить")
+                .setMessage(if (uiEnglish) "Enable learning history in Settings to use suggestions."
+                    else "Включи сохранение истории в настройках, чтобы получать рекомендации.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        val due = try {
+            historyStore.dueReviews().filter { c -> words.any { it.id == c.wordId } }
+        } catch (_: Exception) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Review suggestions" else "Что повторить")
+                .setMessage(if (uiEnglish) "Cannot read local learning history."
+                    else "Ошибка чтения локальной истории обучения.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        val unique = due.distinctBy { it.wordId }
+        val lines = mutableListOf<String>()
+        if (unique.isEmpty()) {
+            lines.add(if (uiEnglish)
+                "No reviews are due now. After a self-rated success the first suggested review is tomorrow."
+                else "Сейчас нет слов к повторению. После отметки «Знаю» первая повторная проверка назначается на следующий день.")
+        } else {
+            lines.add(if (uiEnglish) "${unique.size} words due. These are scheduling hints, not verified knowledge."
+                else "К повторению: ${unique.size} слов. Это ориентир, а не подтверждение знания.")
+            lines.add("")
+            unique.take(15).forEach { item ->
+                val word = words.firstOrNull { it.id == item.wordId }?.en ?: "#${item.wordId}"
+                val dir = if (item.direction == 0) "EN→RU" else "RU→EN"
+                val reason = if (item.unresolvedMistake) {
+                    if (uiEnglish) "unresolved error" else "ошибка или пропуск"
+                } else if (uiEnglish) "interval reached" else "наступил срок"
+                lines.add("• $word · $dir — $reason")
+            }
+            if (unique.size > 15) lines.add(if (uiEnglish) "And ${unique.size - 15} more..."
+                else "И ещё ${unique.size - 15} слов...")
+        }
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle(if (uiEnglish) "Review suggestions · offline" else "Что повторить · офлайн")
+            .setMessage(lines.joinToString("\n"))
+            .setNegativeButton(if (uiEnglish) "Close" else "Закрыть", null)
+        if (unique.isNotEmpty()) {
+            dialog.setPositiveButton(if (uiEnglish) "Review now" else "Повторить сейчас") { _, _ ->
+                startDueReview()
+            }
+        }
+        dialog.show()
+    }
+
     /** Show observed results only; no causal conclusions with sparse evidence. */
     private fun showLearningHistory() {
         val totals: LearningHistoryStore.Totals
