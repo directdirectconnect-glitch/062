@@ -72,6 +72,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var running = false
     private var answering = false
     private val prefs by lazy { getSharedPreferences("progress_v1", MODE_PRIVATE) }
+    // Separate snapshot storage: existing per-word progress is never reset by session recovery.
+    private val sessionPrefs by lazy { getSharedPreferences("active_session_v1", MODE_PRIVATE) }
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
@@ -316,7 +318,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         weightChoice = prefs.getInt("font_weight", 1)
         writingChoice = prefs.getInt("writing_style", 0)
         buildUi()
-        restoreSession(savedInstanceState)
+        // Android's saved state has precedence on configuration changes; the disk snapshot
+        // handles a completely new Activity after the app process has been terminated.
+        restoreSession(savedInstanceState ?: readPersistedSession())
         refresh()
     }
 
@@ -684,7 +688,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         } }
         reviewIds = candidates.shuffled().take(sessionSize).map { it.id }
         if (reviewIds.isEmpty()) {
-            running = false; status.text = "Для этого режима пока нет слов"; updateButtons(); return
+            running = false; current = null
+            persistActiveSession()
+            status.text = "Для этого режима пока нет слов"; updateButtons(); return
         }
         index = 0; running = true; answering = false
         settingsDialog?.dismiss()
@@ -713,7 +719,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = if (uiEnglish) "Open ⋮ to begin another block" else
                 "Открой ⋮, чтобы начать следующий блок"
             progress.progress = 100
-            updateButtons(); refresh(); return
+            updateButtons(); refresh(); persistActiveSession(); return
         }
         val w = words.first { it.id == reviewIds[index] }
         current = w
@@ -736,10 +742,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 "\n$lastGradeDetail\nПравильно: ${answer(w)}"
             nextWordButton.visibility = View.VISIBLE
             updateButtons(); refresh()
+            persistActiveSession()
             scheduleAdvance()
             return
         }
         updateButtons(); refresh()
+        persistActiveSession()
         say(question(w), questionLocale()) {
             if (running && current?.id == w.id && !answering) {
                 if (method == 0) handler.postDelayed({ listenNow() }, 350)
@@ -1098,6 +1106,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         nextWordButton.visibility = View.VISIBLE
         updateFamilyControl(w)
         updateButtons(); refresh()
+        persistActiveSession()
         say((if (ok) "Окей. " else "Не окей. ") + answer(w), answerLocale()) {
             if (running && current?.id == w.id && answering) scheduleAdvance()
         }
@@ -1115,6 +1124,75 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         runOnUiThread { updateOfflineVoiceControls() }
     }
+    /** Persist only the active learning position; no microphone recordings or speech content. */
+    private fun persistActiveSession(commitNow: Boolean = false) {
+        val word = current
+        val editor = sessionPrefs.edit()
+        if (!running || word == null || index !in reviewIds.indices ||
+            reviewIds[index] != word.id) {
+            editor.remove("snapshot")
+        } else {
+            val snapshot = JSONObject().apply {
+                put("schema", 1)
+                put("ids", JSONArray(reviewIds))
+                put("index", index)
+                put("direction", direction)
+                put("method", method)
+                put("selection", selectionMode)
+                put("questionDirection", questionDirection)
+                put("answered", answering)
+                put("lastGradeOk", lastGradeOk)
+                put("lastGradeDetail", lastGradeDetail)
+            }
+            editor.putString("snapshot", snapshot.toString())
+        }
+        if (commitNow) editor.commit() else editor.apply()
+    }
+
+    /** A malformed or outdated snapshot must never prevent a new lesson from opening. */
+    private fun readPersistedSession(): Bundle? {
+        val raw = sessionPrefs.getString("snapshot", null) ?: return null
+        return try {
+            val snapshot = JSONObject(raw)
+            require(snapshot.getInt("schema") == 1)
+            val savedIds = snapshot.getJSONArray("ids")
+            require(savedIds.length() in 1..50)
+            val ids = IntArray(savedIds.length()) { savedIds.getInt(it) }
+            require(ids.toSet().size == ids.size)
+            require(ids.all { id -> words.any { it.id == id } })
+            val savedIndex = snapshot.getInt("index")
+            val savedDirection = snapshot.getInt("direction")
+            val savedMethod = snapshot.getInt("method")
+            val savedSelection = snapshot.getInt("selection")
+            val savedQuestionDirection = snapshot.getInt("questionDirection")
+            require(savedIndex in ids.indices)
+            require(savedDirection in 0..2)
+            require(savedMethod in 0..1)
+            require(savedSelection in 0..4)
+            require(savedQuestionDirection in 0..1)
+            Bundle().apply {
+                putIntArray("lesson_ids", ids)
+                putInt("lesson_index", savedIndex)
+                putInt("lesson_direction", savedDirection)
+                putInt("lesson_method", savedMethod)
+                putInt("lesson_selection", savedSelection)
+                putInt("lesson_question_direction", savedQuestionDirection)
+                putBoolean("lesson_answered", snapshot.optBoolean("answered", false))
+                putBoolean("lesson_last_grade_ok", snapshot.optBoolean("lastGradeOk", false))
+                putString("lesson_last_grade_detail", snapshot.optString("lastGradeDetail", ""))
+            }
+        } catch (_: Exception) {
+            sessionPrefs.edit().remove("snapshot").apply()
+            null
+        }
+    }
+
+    override fun onPause() {
+        // A synchronous checkpoint guards against process death after backgrounding.
+        persistActiveSession(commitNow = true)
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         if (running && current != null) {
