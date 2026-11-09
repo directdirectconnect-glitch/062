@@ -106,6 +106,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var assistedThisWord = false
     // A targeted review asks in the direction that actually needs practice.
     private var forcedReviewDirections: Map<Int, Int> = emptyMap()
+    // Preserve the original block while repeatedly revisiting its unresolved words.
+    private var originalBlockIds: List<Int> = emptyList()
+    private var pendingBlockErrors: Map<Int, Int> = emptyMap()
+    private var remediationRound = 0
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
@@ -918,7 +922,27 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             View.VISIBLE else View.GONE
     }
 
-    private fun startSession(modeOverride: String? = null, fromReminder: Boolean = false) {
+    private fun startSession(
+        modeOverride: String? = null,
+        fromReminder: Boolean = false,
+        abandonConfirmed: Boolean = false
+    ) {
+        // Never silently discard the unfinished correction loop.
+        if (running && pendingBlockErrors.isNotEmpty() && !abandonConfirmed) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Unresolved words" else "Есть невыученные слова")
+                .setMessage(if (uiEnglish)
+                    "${pendingBlockErrors.size} words still require an independent answer. " +
+                        "Starting another lesson will abandon this correction loop."
+                    else "Осталось исправить ${pendingBlockErrors.size} слов. " +
+                        "Новый урок прервёт текущий блок, не засчитывая эти слова как изученные.")
+                .setPositiveButton(if (uiEnglish) "Abandon block" else "Прервать блок") { _, _ ->
+                    startSession(modeOverride, fromReminder, abandonConfirmed = true)
+                }
+                .setNegativeButton(if (uiEnglish) "Continue review" else "Продолжить повторение", null)
+                .show()
+            return
+        }
         handler.removeCallbacksAndMessages(null)
         pauseLearningAudio()
         examplesDialog?.dismiss()
@@ -936,6 +960,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         assistedThisWord = false
         sessionId = UUID.randomUUID().toString()
         forcedReviewDirections = emptyMap()
+        pendingBlockErrors = emptyMap()
+        originalBlockIds = emptyList()
+        remediationRound = 0
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
         if (!learningMode && method == 0 && !onDeviceRecognitionSupported) {
@@ -968,6 +995,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         } else candidateWords.shuffled()
         reviewIds = ordered.take(sessionSize).map { it.id }
+        originalBlockIds = reviewIds
         if (reviewIds.isEmpty()) {
             running = false
             current = null
@@ -998,8 +1026,26 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyButton.visibility = View.GONE
         nextWordButton.visibility = View.GONE
         if (index >= reviewIds.size) {
+            if (!learningMode && pendingBlockErrors.isNotEmpty()) {
+                val retryIds = BlockRemediationPlanner.nextRound(
+                    originalBlockIds.ifEmpty { reviewIds }, pendingBlockErrors
+                )
+                if (retryIds.isNotEmpty()) {
+                    reviewIds = retryIds
+                    forcedReviewDirections = pendingBlockErrors.toMap()
+                    remediationRound++
+                    index = 0
+                    next()
+                    return
+                }
+            }
             running = false; current = null; answering = false
-            prompt.text = if (learningMode) "Прослушивание завершено!" else "Блок завершён!"
+            pendingBlockErrors = emptyMap()
+            prompt.text = if (learningMode) {
+                if (uiEnglish) "Listening finished!" else "Прослушивание завершено!"
+            } else if (remediationRound > 0) {
+                if (uiEnglish) "All mistakes corrected!" else "Все ошибки исправлены!"
+            } else if (uiEnglish) "Block completed!" else "Блок завершён!"
             translationText.visibility = View.GONE
             pronunciation.text = ""
             counter.text = "Все ${reviewIds.size} слов проверены"
@@ -1017,7 +1063,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             (savedDirection ?: forcedReviewDirections[w.id] ?:
                 if (direction == 2) (0..1).random() else direction)
         answering = false
-        counter.text = "Слово ${index + 1} из ${reviewIds.size}"
+        counter.text = if (!learningMode && remediationRound > 0) {
+            if (uiEnglish) "Correction round $remediationRound · ${index + 1}/${reviewIds.size}"
+            else "Повторение ошибок · круг $remediationRound · ${index + 1} из ${reviewIds.size}"
+        } else "Слово ${index + 1} из ${reviewIds.size}"
         progress.progress = (index * 100 / reviewIds.size)
         cardHeading.text = if (learningMode) {
             if (uiEnglish) "LEARN — LISTEN" else "ИЗУЧЕНИЕ — СЛУШАТЬ"
@@ -1475,7 +1524,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running || answering) return
         answering = true
         recognizer?.cancel()
-        prefs.edit().putInt(key(w), if (ok) 1 else 0).apply()
+        // A hinted "know" is practice, not an independently verified recall.
+        if (!ok || !assistedThisWord) {
+            prefs.edit().putInt(key(w), if (ok) 1 else 0).apply()
+        }
+        if (!learningMode) {
+            pendingBlockErrors = BlockRemediationPlanner.afterAnswer(
+                pendingBlockErrors,
+                BlockRemediationPlanner.Answer(w.id, questionDirection, ok, assistedThisWord)
+            )
+        }
         if (prefs.getBoolean("learning_history_enabled", true) && !learningMode) {
             try {
                 historyStore.record(
@@ -1491,7 +1549,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val forms = if (formsCheck.isChecked) irregularForms[w.en.lowercase(Locale.ROOT)]?.let { "\nФормы: $it" } ?: "" else ""
         pronunciation.text = "${w.en}  •  ${w.pron}"
-        status.text = (if (ok) "Окей!" else "Не окей.") + "\n$detail\nПравильно: ${answer(w)}$forms"
+        status.text = (if (ok) "Окей!" else "Не окей.") +
+            "\n$detail\nПравильно: ${answer(w)}$forms" +
+            if (assistedThisWord) {
+                if (uiEnglish) "\nAssisted answer: a clean retry is required."
+                else "\nОтвет с подсказкой: повторим без неё."
+            } else if (pendingBlockErrors.isNotEmpty()) {
+                if (uiEnglish) "\nUnresolved in this block: ${pendingBlockErrors.size}"
+                else "\nОсталось исправить в блоке: ${pendingBlockErrors.size}"
+            } else ""
         lastGradeOk = ok
         lastGradeDetail = detail
         nextWordButton.visibility = View.VISIBLE
@@ -1505,7 +1571,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun refresh() {
         val known = words.count { w -> (0..1).any { d -> prefs.getInt("${d}_${w.id}", -1) == 1 } }
         val wrong = words.count { w -> (0..1).any { d -> prefs.getInt("${d}_${w.id}", -1) == 0 } }
-        stats.text = "В словаре: ${words.size}  •  Знаю: $known  •  Ошибки: $wrong"
+        stats.text = "В словаре: ${words.size}  •  Знаю: $known  •  Ошибки: $wrong" +
+            if (running && !learningMode && pendingBlockErrors.isNotEmpty()) {
+                if (uiEnglish) "\nCurrent block · unresolved: ${pendingBlockErrors.size}"
+                else "\nТекущий блок · ошибки: ${pendingBlockErrors.size}"
+            } else ""
     }
     override fun onInit(statusCode: Int) {
         ttsReady = statusCode == TextToSpeech.SUCCESS
