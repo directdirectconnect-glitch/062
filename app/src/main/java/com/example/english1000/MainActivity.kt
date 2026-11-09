@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Build
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -329,11 +330,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = "Разреши доступ к микрофону и нажми кнопку ещё раз"
             return
         }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            status.text = "На телефоне не найдена служба распознавания речи"; return
+        // Never fall back to the default recognizer: it may transmit audio to a server.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+            status.text = "Офлайн-распознавание недоступно на этом устройстве. Выбери в меню «Кнопки: знаю / не знаю». Локальная модель Vosk будет добавлена отдельно."
+            return
         }
         recognizer?.destroy()
-        recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
         recognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) { status.text = "🎤 Слушаю твой ответ..." }
             override fun onBeginningOfSpeech() {}
@@ -354,6 +357,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (questionDirection == 0) "ru-RU" else "en-US")
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
         try { recognizer?.startListening(intent) }
         catch (e: Exception) { status.text = "Ошибка микрофона: ${e.message}" }
