@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 object ReminderScheduler {
     const val PREF_INTERVAL_HOURS = "reminder_interval_hours"
     const val EXTRA_START_REVIEW = "start_reminder_review"
+    const val EXTRA_REVIEW_MODE = "reminder_review_mode"
     private const val ACTION_REMIND = "com.example.english1000.ACTION_REMIND"
     private const val CHANNEL_ID = "english_words_practice_v1"
 
@@ -65,24 +66,32 @@ object ReminderScheduler {
         }
         manager.createNotificationChannel(channel)
 
-        val openReview = PendingIntent.getActivity(
-            context, 102,
-            Intent(context, MainActivity::class.java).apply {
-                putExtra(EXTRA_START_REVIEW, true)
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        fun launchAction(requestCode: Int, mode: String): PendingIntent =
+            PendingIntent.getActivity(
+                context, requestCode,
+                Intent(context, MainActivity::class.java).apply {
+                    action = "com.example.english1000.OPEN_" + mode.uppercase()
+                    putExtra(EXTRA_START_REVIEW, true)
+                    putExtra(EXTRA_REVIEW_MODE, mode)
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        val openLearn = launchAction(102, "learn")
+        val openCheck = launchAction(103, "check")
+        val openChoose = launchAction(104, "choose")
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(if (english) "Let's review some words!" else "Давай проверим слова!")
-            .setContentText(if (english) "A short English word practice is ready."
-                else "Пора проверить несколько английских слов.")
-            .setContentIntent(openReview)
+            .setContentTitle(if (english) "Time for English words!" else "Пора повторить английские слова!")
+            .setContentText(if (english) "Learn new words or check what you remember."
+                else "Можно изучать новые слова или проверить знакомые.")
+            .setContentIntent(openChoose)
             .addAction(Notification.Action.Builder(
                 android.R.drawable.ic_media_play,
-                if (english) "Practice now" else "Проверить слова",
-                openReview
+                if (english) "Learn words" else "Изучать слова", openLearn
+            ).build())
+            .addAction(Notification.Action.Builder(
+                android.R.drawable.ic_menu_search,
+                if (english) "Check words" else "Проверить слова", openCheck
             ).build())
             .setAutoCancel(true)
             .setCategory(Notification.CATEGORY_REMINDER)
