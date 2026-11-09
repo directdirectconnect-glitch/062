@@ -1,0 +1,679 @@
+{
+  "schemaVersion": 1,
+  "notes": "Verified and curated word families; never infer roots by shared prefixes. Concise part-of-speech labels are secondary.",
+  "families": [
+    {
+      "base": "agree",
+      "baseRu": "соглашаться",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "agreement",
+          "ru": "согласие; соглашение",
+          "pos": "сущ.",
+          "build": "agree + -ment"
+        },
+        {
+          "word": "disagree",
+          "ru": "не соглашаться",
+          "pos": "гл.",
+          "build": "dis- + agree"
+        },
+        {
+          "word": "disagreement",
+          "ru": "разногласие",
+          "pos": "сущ.",
+          "build": "dis- + agree + -ment"
+        },
+        {
+          "word": "agreeable",
+          "ru": "приятный; приемлемый",
+          "pos": "прил.",
+          "build": "agree + -able"
+        },
+        {
+          "word": "agreeably",
+          "ru": "приятно; любезно",
+          "pos": "нареч.",
+          "build": "agreeable + -ly"
+        }
+      ],
+      "forms": [
+        {
+          "word": "agrees",
+          "ru": "соглашается",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "agreed",
+          "ru": "согласился; согласились",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "agreeing",
+          "ru": "соглашаясь; соглашающийся",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "use",
+      "baseRu": "использовать",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "useful",
+          "ru": "полезный",
+          "pos": "прил.",
+          "build": "use + -ful"
+        },
+        {
+          "word": "useless",
+          "ru": "бесполезный",
+          "pos": "прил.",
+          "build": "use + -less"
+        },
+        {
+          "word": "user",
+          "ru": "пользователь",
+          "pos": "сущ.",
+          "build": "use + -er"
+        },
+        {
+          "word": "reuse",
+          "ru": "использовать повторно",
+          "pos": "гл.",
+          "build": "re- + use"
+        },
+        {
+          "word": "reusable",
+          "ru": "многоразовый",
+          "pos": "прил.",
+          "build": "reuse + -able"
+        },
+        {
+          "word": "misuse",
+          "ru": "неправильно использовать",
+          "pos": "гл.",
+          "build": "mis- + use"
+        }
+      ],
+      "forms": [
+        {
+          "word": "uses",
+          "ru": "использует",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "used",
+          "ru": "использовал",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "using",
+          "ru": "используя",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "help",
+      "baseRu": "помогать; помощь",
+      "basePos": "гл./сущ.",
+      "members": [
+        {
+          "word": "helper",
+          "ru": "помощник",
+          "pos": "сущ.",
+          "build": "help + -er"
+        },
+        {
+          "word": "helpful",
+          "ru": "полезный; готовый помочь",
+          "pos": "прил.",
+          "build": "help + -ful"
+        },
+        {
+          "word": "helpless",
+          "ru": "беспомощный",
+          "pos": "прил.",
+          "build": "help + -less"
+        },
+        {
+          "word": "helplessness",
+          "ru": "беспомощность",
+          "pos": "сущ.",
+          "build": "helpless + -ness"
+        },
+        {
+          "word": "unhelpful",
+          "ru": "непригодный; не оказывающий помощи",
+          "pos": "прил.",
+          "build": "un- + helpful"
+        }
+      ],
+      "forms": [
+        {
+          "word": "helps",
+          "ru": "помогает",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "helped",
+          "ru": "помогал; помог",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "helping",
+          "ru": "помогая",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "work",
+      "baseRu": "работать; работа",
+      "basePos": "гл./сущ.",
+      "members": [
+        {
+          "word": "worker",
+          "ru": "работник",
+          "pos": "сущ.",
+          "build": "work + -er"
+        },
+        {
+          "word": "workable",
+          "ru": "осуществимый; пригодный",
+          "pos": "прил.",
+          "build": "work + -able"
+        },
+        {
+          "word": "overwork",
+          "ru": "переутомляться от работы",
+          "pos": "гл.",
+          "build": "over- + work"
+        },
+        {
+          "word": "homework",
+          "ru": "домашняя работа",
+          "pos": "сущ.",
+          "build": "home + work"
+        },
+        {
+          "word": "workplace",
+          "ru": "рабочее место",
+          "pos": "сущ.",
+          "build": "work + place"
+        }
+      ],
+      "forms": [
+        {
+          "word": "works",
+          "ru": "работает",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "worked",
+          "ru": "работал",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "working",
+          "ru": "работая",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "move",
+      "baseRu": "двигаться; перемещать",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "movement",
+          "ru": "движение",
+          "pos": "сущ.",
+          "build": "move + -ment"
+        },
+        {
+          "word": "movable",
+          "ru": "подвижный; передвижной",
+          "pos": "прил.",
+          "build": "move + -able (без e)"
+        },
+        {
+          "word": "mover",
+          "ru": "тот, кто перемещает; грузчик",
+          "pos": "сущ.",
+          "build": "move + -er"
+        },
+        {
+          "word": "unmoved",
+          "ru": "невозмутимый; не сдвинутый",
+          "pos": "прил.",
+          "build": "un- + moved"
+        }
+      ],
+      "forms": [
+        {
+          "word": "moves",
+          "ru": "двигается",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "moved",
+          "ru": "двигался; переместил",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "moving",
+          "ru": "двигаясь",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "develop",
+      "baseRu": "развивать; разрабатывать",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "development",
+          "ru": "развитие; разработка",
+          "pos": "сущ.",
+          "build": "develop + -ment"
+        },
+        {
+          "word": "developer",
+          "ru": "разработчик",
+          "pos": "сущ.",
+          "build": "develop + -er"
+        },
+        {
+          "word": "developmental",
+          "ru": "связанный с развитием",
+          "pos": "прил.",
+          "build": "development + -al"
+        },
+        {
+          "word": "redevelop",
+          "ru": "перестраивать; обновлять",
+          "pos": "гл.",
+          "build": "re- + develop"
+        },
+        {
+          "word": "redevelopment",
+          "ru": "реконструкция; обновление",
+          "pos": "сущ.",
+          "build": "re- + develop + -ment"
+        }
+      ],
+      "forms": [
+        {
+          "word": "develops",
+          "ru": "развивает",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "developed",
+          "ru": "развивал; разработал",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "developing",
+          "ru": "развивая",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "play",
+      "baseRu": "играть; игра",
+      "basePos": "гл./сущ.",
+      "members": [
+        {
+          "word": "player",
+          "ru": "игрок",
+          "pos": "сущ.",
+          "build": "play + -er"
+        },
+        {
+          "word": "playful",
+          "ru": "игривый",
+          "pos": "прил.",
+          "build": "play + -ful"
+        },
+        {
+          "word": "playfully",
+          "ru": "игриво",
+          "pos": "нареч.",
+          "build": "playful + -ly"
+        },
+        {
+          "word": "replay",
+          "ru": "переиграть; повторно воспроизвести",
+          "pos": "гл.",
+          "build": "re- + play"
+        },
+        {
+          "word": "playground",
+          "ru": "детская площадка",
+          "pos": "сущ.",
+          "build": "play + ground"
+        }
+      ],
+      "forms": [
+        {
+          "word": "plays",
+          "ru": "играет",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "played",
+          "ru": "играл",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "playing",
+          "ru": "играя",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "care",
+      "baseRu": "заботиться; забота",
+      "basePos": "гл./сущ.",
+      "members": [
+        {
+          "word": "careful",
+          "ru": "осторожный; внимательный",
+          "pos": "прил.",
+          "build": "care + -ful"
+        },
+        {
+          "word": "carefully",
+          "ru": "осторожно; внимательно",
+          "pos": "нареч.",
+          "build": "careful + -ly"
+        },
+        {
+          "word": "careless",
+          "ru": "небрежный; невнимательный",
+          "pos": "прил.",
+          "build": "care + -less"
+        },
+        {
+          "word": "carelessness",
+          "ru": "небрежность",
+          "pos": "сущ.",
+          "build": "careless + -ness"
+        },
+        {
+          "word": "caregiver",
+          "ru": "человек, обеспечивающий уход",
+          "pos": "сущ.",
+          "build": "care + giver"
+        }
+      ],
+      "forms": [
+        {
+          "word": "cares",
+          "ru": "заботится",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "cared",
+          "ru": "заботился",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "caring",
+          "ru": "заботясь",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "happy",
+      "baseRu": "счастливый",
+      "basePos": "прил.",
+      "members": [
+        {
+          "word": "unhappy",
+          "ru": "несчастный; недовольный",
+          "pos": "прил.",
+          "build": "un- + happy"
+        },
+        {
+          "word": "happiness",
+          "ru": "счастье",
+          "pos": "сущ.",
+          "build": "happy + -ness (y → i)"
+        },
+        {
+          "word": "happily",
+          "ru": "счастливо; радостно",
+          "pos": "нареч.",
+          "build": "happy + -ly (y → i)"
+        },
+        {
+          "word": "unhappiness",
+          "ru": "несчастье; неудовлетворённость",
+          "pos": "сущ.",
+          "build": "un- + happy + -ness"
+        }
+      ],
+      "forms": []
+    },
+    {
+      "base": "safe",
+      "baseRu": "безопасный",
+      "basePos": "прил.",
+      "members": [
+        {
+          "word": "safely",
+          "ru": "безопасно",
+          "pos": "нареч.",
+          "build": "safe + -ly"
+        },
+        {
+          "word": "safety",
+          "ru": "безопасность",
+          "pos": "сущ.",
+          "build": "safe + -ty (без e)"
+        },
+        {
+          "word": "unsafe",
+          "ru": "небезопасный",
+          "pos": "прил.",
+          "build": "un- + safe"
+        }
+      ],
+      "forms": []
+    },
+    {
+      "base": "pay",
+      "baseRu": "платить",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "payment",
+          "ru": "платёж; оплата",
+          "pos": "сущ.",
+          "build": "pay + -ment"
+        },
+        {
+          "word": "payer",
+          "ru": "плательщик",
+          "pos": "сущ.",
+          "build": "pay + -er"
+        },
+        {
+          "word": "repay",
+          "ru": "возвращать долг",
+          "pos": "гл.",
+          "build": "re- + pay"
+        },
+        {
+          "word": "repayment",
+          "ru": "возврат долга; погашение",
+          "pos": "сущ.",
+          "build": "repay + -ment"
+        },
+        {
+          "word": "unpaid",
+          "ru": "неоплаченный",
+          "pos": "прил.",
+          "build": "un- + paid"
+        }
+      ],
+      "forms": [
+        {
+          "word": "pays",
+          "ru": "платит",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "paid",
+          "ru": "платил; оплатил",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "paying",
+          "ru": "платя",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "read",
+      "baseRu": "читать",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "reader",
+          "ru": "читатель",
+          "pos": "сущ.",
+          "build": "read + -er"
+        },
+        {
+          "word": "readable",
+          "ru": "читабельный; легко читаемый",
+          "pos": "прил.",
+          "build": "read + -able"
+        },
+        {
+          "word": "reread",
+          "ru": "перечитывать",
+          "pos": "гл.",
+          "build": "re- + read"
+        },
+        {
+          "word": "unread",
+          "ru": "непрочитанный",
+          "pos": "прил.",
+          "build": "un- + read"
+        }
+      ],
+      "forms": [
+        {
+          "word": "reads",
+          "ru": "читает",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "read",
+          "ru": "читал; прочитал",
+          "pos": "гл.",
+          "build": "прош. вр., другое произношение"
+        },
+        {
+          "word": "reading",
+          "ru": "читая",
+          "pos": "гл.",
+          "build": "-ing форма"
+        }
+      ]
+    },
+    {
+      "base": "write",
+      "baseRu": "писать",
+      "basePos": "гл.",
+      "members": [
+        {
+          "word": "writer",
+          "ru": "писатель; автор",
+          "pos": "сущ.",
+          "build": "write + -er (без e)"
+        },
+        {
+          "word": "rewrite",
+          "ru": "переписывать",
+          "pos": "гл.",
+          "build": "re- + write"
+        },
+        {
+          "word": "writable",
+          "ru": "доступный для записи",
+          "pos": "прил.",
+          "build": "write + -able (без e)"
+        },
+        {
+          "word": "unwritten",
+          "ru": "неписаный; незаписанный",
+          "pos": "прил.",
+          "build": "un- + written"
+        }
+      ],
+      "forms": [
+        {
+          "word": "writes",
+          "ru": "пишет",
+          "pos": "гл.",
+          "build": "3-е л., ед. ч."
+        },
+        {
+          "word": "wrote",
+          "ru": "написал; писал",
+          "pos": "гл.",
+          "build": "прош. вр."
+        },
+        {
+          "word": "written",
+          "ru": "написанный",
+          "pos": "гл.",
+          "build": "причастие прош. вр."
+        }
+      ]
+    }
+  ]
+}
