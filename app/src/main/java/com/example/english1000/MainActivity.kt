@@ -25,6 +25,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
+import java.util.UUID
 
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
     data class Word(val id: Int, val en: String, val ru: String, val pron: String)
@@ -99,6 +100,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var running = false
     private var answering = false
     private val prefs by lazy { getSharedPreferences("progress_v1", MODE_PRIVATE) }
+    private val sessionPrefs by lazy { getSharedPreferences("active_session_v1", MODE_PRIVATE) }
+    private val historyStore by lazy { LearningHistoryStore(applicationContext) }
+    private var sessionId: String = UUID.randomUUID().toString()
+    private var assistedThisWord = false
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
@@ -368,7 +373,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         weightChoice = prefs.getInt("font_weight", 1)
         writingChoice = prefs.getInt("writing_style", 0)
         buildUi()
-        restoreSession(savedInstanceState)
+        // Prefer Android's saved state on rotation; use durable snapshot after process death.
+        restoreSession(savedInstanceState ?: readPersistedSession())
         refresh()
         handleReminderEntry(intent)
     }
@@ -591,6 +597,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             "Local notifications. Android may delay them to save battery."
             else "Локальные уведомления. Android может немного задерживать их ради экономии батареи.",
             12f, muted), top = 6)
+        val historyCheck = CheckBox(this).apply {
+            text = if (uiEnglish) "Save practice history on this device" else
+                "Сохранять историю ответов на устройстве"
+            isChecked = prefs.getBoolean("learning_history_enabled", true)
+            setOnCheckedChangeListener { _, enabled ->
+                prefs.edit().putBoolean("learning_history_enabled", enabled).apply()
+            }
+        }
+        add(menu, historyCheck, top = 12)
+        add(menu, button(if (uiEnglish) "Learning history" else "История ответов",
+            white, blue) { showLearningHistory() }, 50, 8)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
         add(menu, formsCheck, top = 10)
 
@@ -724,7 +741,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         rating.addView(correct, LinearLayout.LayoutParams(0, dp(58), 1f).apply { rightMargin = dp(6) })
         rating.addView(incorrect, LinearLayout.LayoutParams(0, dp(58), 1f).apply { leftMargin = dp(6) })
         add(root, rating, top = 12)
-        skip = button("Пропустить", white, muted) { grade(false, "Пропущено") }
+        skip = button("Пропустить", white, muted) {
+            grade(false, "Пропущено", skipped = true)
+        }
         add(root, skip, 50, 12)
         nextWordButton = button(if (uiEnglish) "Next word →" else "Следующее слово →") {
             if (running && learningMode) {
@@ -782,6 +801,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         popup.menu.add(0, 1, 0, if (uiEnglish) "Appearance and settings" else "Оформление и настройки")
         popup.menu.add(0, 2, 1, if (uiEnglish) "Start new block" else "Начать новый блок")
         popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
+        popup.menu.add(0, 4, 3, if (uiEnglish) "Learning history" else "История ответов")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> { openSettingsDialog(); true }
@@ -790,11 +810,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     android.app.AlertDialog.Builder(this)
                         .setTitle("English Words")
                         .setMessage(if (uiEnglish)
-                            "Offline vocabulary practice • version 0.8.7"
-                            else "Тренировка слов без интернета • версия 0.8.7")
+                            "Offline vocabulary practice • version 0.9.0 preview"
+                            else "Тренировка слов без интернета • версия 0.9.0 (тестовая)")
                         .setPositiveButton("OK", null).show()
                     true
                 }
+                4 -> { showLearningHistory(); true }
                 else -> false
             }
         }
@@ -853,6 +874,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
         learningPaused = false
+        assistedThisWord = false
+        sessionId = UUID.randomUUID().toString()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
         if (!learningMode && method == 0 && !onDeviceRecognitionSupported) {
@@ -887,6 +910,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         reviewIds = ordered.take(sessionSize).map { it.id }
         if (reviewIds.isEmpty()) {
             running = false
+            current = null
+            persistActiveSession()
             status.text = if (uiEnglish) "No words in this selection" else
                 "Для выбранной подборки пока нет слов"
             updateButtons()
@@ -921,10 +946,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = if (uiEnglish) "Open ⋮ to begin another block" else
                 "Открой ⋮, чтобы начать следующий блок"
             progress.progress = 100
-            updateButtons(); refresh(); return
+            updateButtons(); refresh()
+            persistActiveSession()
+            return
         }
         val w = words.first { it.id == reviewIds[index] }
         current = w
+        assistedThisWord = false
         questionDirection = if (learningMode) 0 else
             (savedDirection ?: if (direction == 2) (0..1).random() else direction)
         answering = false
@@ -949,6 +977,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             updateExamplesControls(w)
             updateFamilyControl(w)
             updateButtons(); refresh()
+            persistActiveSession()
             if (!learningPaused) narrateLearningWord()
             return
         }
@@ -968,10 +997,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 "\n$lastGradeDetail\nПравильно: ${answer(w)}"
             nextWordButton.visibility = View.VISIBLE
             updateButtons(); refresh()
+            persistActiveSession()
             scheduleAdvance()
             return
         }
         updateButtons(); refresh()
+        persistActiveSession()
         say(question(w), questionLocale()) {
             if (running && current?.id == w.id && !answering) {
                 if (method == 0) handler.postDelayed({ listenNow() }, 350)
@@ -996,6 +1027,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val family = familyIndex[target.en.lowercase(Locale.ROOT)] ?: return
         if (familyDialog?.isShowing == true) return
         familyExpanded = true
+        if (running && !answering && !learningMode) assistedThisWord = true
         handler.removeCallbacks(advanceRunnable)
         if (learningMode) pauseLearningAudio()
         val root = LinearLayout(this).apply {
@@ -1089,6 +1121,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (phrases.isEmpty()) return
         if (examplesDialog?.isShowing == true) return
         examplesExpanded = true
+        if (running && !answering && !learningMode) assistedThisWord = true
         handler.removeCallbacks(advanceRunnable)
         if (learningMode) pauseLearningAudio()
         showExamples(word, phrases)
@@ -1301,7 +1334,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 if (answering) return
                 val guesses = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
                 val w = current ?: return
-                grade(guesses.any { isCorrect(it, w) }, "Распознано: ${guesses.firstOrNull() ?: "—"}")
+                if (guesses.isEmpty() || guesses.all { it.isBlank() }) {
+                    status.text = if (uiEnglish) "Speech not recognized; retry or use buttons" else
+                        "Речь не распознана — повтори или ответь кнопками"
+                    return
+                }
+                grade(guesses.any { isCorrect(it, w) },
+                    "Распознано: ${guesses.firstOrNull() ?: "—"}", methodSource = "asr")
             }
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -1324,12 +1363,28 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val answers = answer(w).split(',', ';', '/').map { normalize(it) }.filter { it.isNotBlank() }
         return answers.any { a -> h == a || h == "to $a" || (questionDirection == 0 && h == a.removePrefix("быть ")) }
     }
-    private fun grade(ok: Boolean, detail: String) {
+    private fun grade(
+        ok: Boolean, detail: String, methodSource: String = "manual",
+        skipped: Boolean = false
+    ) {
         val w = current ?: return
         if (!running || answering) return
         answering = true
         recognizer?.cancel()
         prefs.edit().putInt(key(w), if (ok) 1 else 0).apply()
+        if (prefs.getBoolean("learning_history_enabled", true) && !learningMode) {
+            try {
+                historyStore.record(
+                    sessionId, w.id, questionDirection, methodSource,
+                    if (skipped) "skipped" else if (ok) "correct" else "incorrect",
+                    assistedThisWord, activeSceneId
+                )
+            } catch (_: Exception) {
+                // History is supplementary: a storage problem must not invalidate a lesson.
+                status.text = if (uiEnglish) "Could not save learning history" else
+                    "Не удалось сохранить историю ответов"
+            }
+        }
         val forms = if (formsCheck.isChecked) irregularForms[w.en.lowercase(Locale.ROOT)]?.let { "\nФормы: $it" } ?: "" else ""
         pronunciation.text = "${w.en}  •  ${w.pron}"
         status.text = (if (ok) "Окей!" else "Не окей.") + "\n$detail\nПравильно: ${answer(w)}$forms"
@@ -1338,6 +1393,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         nextWordButton.visibility = View.VISIBLE
         updateFamilyControl(w)
         updateButtons(); refresh()
+        persistActiveSession()
         say((if (ok) "Окей. " else "Не окей. ") + answer(w), answerLocale()) {
             if (running && current?.id == w.id && answering) scheduleAdvance()
         }
@@ -1355,6 +1411,138 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         runOnUiThread { updateOfflineVoiceControls() }
     }
+    /** Show observed results only; no causal conclusions with sparse evidence. */
+    private fun showLearningHistory() {
+        val totals: LearningHistoryStore.Totals
+        val difficult: List<LearningHistoryStore.RepeatedDifficulty>
+        try {
+            totals = historyStore.totals()
+            difficult = historyStore.repeatedDifficulties()
+        } catch (_: Exception) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Learning history" else "История ответов")
+                .setMessage(if (uiEnglish) "The local history could not be read" else
+                    "Не удалось прочитать локальную историю ответов")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        val lines = mutableListOf<String>()
+        if (uiEnglish) {
+            lines.add("Recorded checks: ${totals.attempts}")
+            lines.add("Self-rated/recognized correct: ${totals.correct}")
+            lines.add("Incorrect: ${totals.incorrect}  ·  Skipped: ${totals.skipped}")
+            lines.add("Assisted (examples shown first): ${totals.assisted}")
+        } else {
+            lines.add("Записано проверок: ${totals.attempts}")
+            lines.add("Отмечено «знаю» / распознано верно: ${totals.correct}")
+            lines.add("Не знаю: ${totals.incorrect}  ·  Пропущено: ${totals.skipped}")
+            lines.add("С подсказками до ответа: ${totals.assisted}")
+        }
+        lines.add("")
+        if (difficult.isEmpty()) {
+            lines.add(if (uiEnglish) "Not enough independent answers to identify repeated difficulties yet."
+                else "Пока недостаточно самостоятельных ответов для выявления повторных затруднений.")
+        } else {
+            lines.add(if (uiEnglish) "Repeated difficulties (observations, not diagnoses):"
+                else "Повторные затруднения (наблюдения, не диагноз):")
+            difficult.forEach { item ->
+                val word = words.firstOrNull { it.id == item.wordId }?.en ?: "#${item.wordId}"
+                val dir = if (item.direction == 0) "EN→RU" else "RU→EN"
+                lines.add("• $word ($dir): ${item.mistakes}/${item.attempts}")
+            }
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle(if (uiEnglish) "Learning history · offline" else "История ответов · офлайн")
+            .setMessage(lines.joinToString("\n"))
+            .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
+            .setNeutralButton(if (uiEnglish) "Delete history" else "Удалить историю") { _, _ ->
+                android.app.AlertDialog.Builder(this)
+                    .setTitle(if (uiEnglish) "Delete recorded checks?" else "Удалить историю проверок?")
+                    .setMessage(if (uiEnglish) "Vocabulary progress will remain unchanged."
+                        else "Результаты изученных слов останутся без изменений.")
+                    .setPositiveButton(if (uiEnglish) "Delete" else "Удалить") { _, _ ->
+                        historyStore.clear()
+                    }
+                    .setNegativeButton(if (uiEnglish) "Cancel" else "Отмена", null)
+                    .show()
+            }
+            .show()
+    }
+
+    /** Keep the active lesson independent of Activity recreation and process lifetime. */
+    private fun persistActiveSession(commitNow: Boolean = false) {
+        val word = current
+        val editor = sessionPrefs.edit()
+        if (!running || word == null || index !in reviewIds.indices ||
+            reviewIds[index] != word.id) {
+            editor.remove("snapshot")
+        } else {
+            val snapshot = JSONObject().apply {
+                put("schema", 1)
+                put("ids", JSONArray(reviewIds))
+                put("index", index)
+                put("direction", direction)
+                put("method", method)
+                put("selection", selectionMode)
+                put("questionDirection", questionDirection)
+                put("answered", answering)
+                put("lastGradeOk", lastGradeOk)
+                put("lastGradeDetail", lastGradeDetail)
+                put("learningMode", learningMode)
+                put("learningPaused", learningPaused)
+                put("sceneId", activeSceneId)
+                put("sessionId", sessionId)
+                put("assisted", assistedThisWord)
+            }
+            editor.putString("snapshot", snapshot.toString())
+        }
+        if (commitNow) editor.commit() else editor.apply()
+    }
+
+    private fun readPersistedSession(): Bundle? {
+        val raw = sessionPrefs.getString("snapshot", null) ?: return null
+        return try {
+            val snapshot = JSONObject(raw)
+            require(snapshot.getInt("schema") == 1)
+            val arr = snapshot.getJSONArray("ids")
+            require(arr.length() in 1..50)
+            val ids = IntArray(arr.length()) { arr.getInt(it) }
+            require(ids.toSet().size == ids.size)
+            require(ids.all { id -> words.any { it.id == id } })
+            val idx = snapshot.getInt("index")
+            val dir = snapshot.getInt("direction")
+            val mode = snapshot.getInt("method")
+            val selection = snapshot.getInt("selection")
+            val questionDir = snapshot.getInt("questionDirection")
+            require(idx in ids.indices && dir in 0..2 && mode in 0..1)
+            require(selection in 0..4 && questionDir in 0..1)
+            Bundle().apply {
+                putIntArray("lesson_ids", ids)
+                putInt("lesson_index", idx)
+                putInt("lesson_direction", dir)
+                putInt("lesson_method", mode)
+                putInt("lesson_selection", selection)
+                putInt("lesson_question_direction", questionDir)
+                putBoolean("lesson_answered", snapshot.optBoolean("answered"))
+                putBoolean("lesson_last_grade_ok", snapshot.optBoolean("lastGradeOk"))
+                putString("lesson_last_grade_detail", snapshot.optString("lastGradeDetail", ""))
+                putBoolean("lesson_learning_mode", snapshot.optBoolean("learningMode"))
+                putBoolean("lesson_learning_paused", snapshot.optBoolean("learningPaused"))
+                putString("lesson_scene_id", snapshot.optString("sceneId", ""))
+                putString("lesson_session_id", snapshot.optString("sessionId", ""))
+                putBoolean("lesson_assisted", snapshot.optBoolean("assisted"))
+            }
+        } catch (_: Exception) {
+            sessionPrefs.edit().remove("snapshot").apply()
+            null
+        }
+    }
+
+    override fun onPause() {
+        persistActiveSession(commitNow = true)
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         if (running && current != null) {
@@ -1369,6 +1557,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putBoolean("lesson_family_expanded", familyExpanded)
             outState.putBoolean("lesson_last_grade_ok", lastGradeOk)
             outState.putString("lesson_last_grade_detail", lastGradeDetail)
+            outState.putBoolean("lesson_learning_mode", learningMode)
+            outState.putBoolean("lesson_learning_paused", learningPaused)
+            outState.putString("lesson_scene_id", activeSceneId)
+            outState.putString("lesson_session_id", sessionId)
+            outState.putBoolean("lesson_assisted", assistedThisWord)
         }
     }
     private fun restoreSession(state: Bundle?) {
@@ -1381,6 +1574,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         method = state.getInt("lesson_method", 0)
         if (method == 0 && !onDeviceRecognitionSupported) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
+        learningMode = state.getBoolean("lesson_learning_mode", false)
+        learningPaused = state.getBoolean("lesson_learning_paused", false)
+        activeSceneId = state.getString("lesson_scene_id", "") ?: ""
+        sessionId = state.getString("lesson_session_id", "")
+            ?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+        lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
+        sceneSpinner.setSelection((scenes.indexOfFirst { it.id == activeSceneId } + 1).coerceAtLeast(0))
         dirSpinner.setSelection(direction.coerceIn(0, 2))
         methodSpinner.setSelection(method.coerceIn(0, 1))
         selectionSpinner.setSelection(selectionMode.coerceIn(0, 4))
@@ -1393,6 +1593,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             restoringAnswer = state.getBoolean("lesson_answered", false),
             savedDirection = state.getInt("lesson_question_direction", direction)
         )
+        assistedThisWord = state.getBoolean("lesson_assisted", false)
+        persistActiveSession()
         if (state.getBoolean("lesson_examples_expanded", false)) toggleExamples()
         if (state.getBoolean("lesson_family_expanded", false)) openFamily()
     }
