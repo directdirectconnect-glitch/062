@@ -104,6 +104,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private val historyStore by lazy { LearningHistoryStore(applicationContext) }
     private var sessionId: String = UUID.randomUUID().toString()
     private var assistedThisWord = false
+    // A targeted review asks in the direction that actually needs practice.
+    private var forcedReviewDirections: Map<Int, Int> = emptyMap()
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
@@ -661,6 +663,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(menu, historyCheck, top = 12)
         add(menu, button(if (uiEnglish) "Learning history" else "История ответов",
             white, blue) { showLearningHistory() }, 50, 8)
+        add(menu, button(if (uiEnglish) "Review due words" else "Что повторить",
+            neutralSurface, neutralInk) { showReviewRecommendations() }, 50, 8)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
         add(menu, formsCheck, top = 10)
 
@@ -855,6 +859,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         popup.menu.add(0, 2, 1, if (uiEnglish) "Start new block" else "Начать новый блок")
         popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
         popup.menu.add(0, 4, 3, if (uiEnglish) "Learning history" else "История ответов")
+        popup.menu.add(0, 5, 4, if (uiEnglish) "Review due words" else "Что повторить")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> { openSettingsDialog(); true }
@@ -863,12 +868,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     android.app.AlertDialog.Builder(this)
                         .setTitle("English Words")
                         .setMessage(if (uiEnglish)
-                            "Offline vocabulary practice • version 0.9.0 preview"
-                            else "Тренировка слов без интернета • версия 0.9.0 (тестовая)")
+                            "Offline vocabulary practice • version 0.9.1 preview"
+                            else "Тренировка слов без интернета • версия 0.9.1 (тестовая)")
                         .setPositiveButton("OK", null).show()
                     true
                 }
                 4 -> { showLearningHistory(); true }
+                5 -> { showReviewRecommendations(); true }
                 else -> false
             }
         }
@@ -929,6 +935,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         learningPaused = false
         assistedThisWord = false
         sessionId = UUID.randomUUID().toString()
+        forcedReviewDirections = emptyMap()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
         if (!learningMode && method == 0 && !onDeviceRecognitionSupported) {
@@ -1007,7 +1014,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         current = w
         assistedThisWord = false
         questionDirection = if (learningMode) 0 else
-            (savedDirection ?: if (direction == 2) (0..1).random() else direction)
+            (savedDirection ?: forcedReviewDirections[w.id] ?:
+                if (direction == 2) (0..1).random() else direction)
         answering = false
         counter.text = "Слово ${index + 1} из ${reviewIds.size}"
         progress.progress = (index * 100 / reviewIds.size)
@@ -1589,6 +1597,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 put("sceneId", activeSceneId)
                 put("sessionId", sessionId)
                 put("assisted", assistedThisWord)
+                put("forcedDirections", JSONArray(reviewIds.map {
+                    forcedReviewDirections[it] ?: -1
+                }))
             }
             editor.putString("snapshot", snapshot.toString())
         }
@@ -1627,6 +1638,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 putString("lesson_scene_id", snapshot.optString("sceneId", ""))
                 putString("lesson_session_id", snapshot.optString("sessionId", ""))
                 putBoolean("lesson_assisted", snapshot.optBoolean("assisted"))
+                val forced = snapshot.optJSONArray("forcedDirections")
+                val forcedArray = IntArray(ids.size) { i -> forced?.optInt(i, -1) ?: -1 }
+                require(forcedArray.all { it in -1..1 })
+                putIntArray("lesson_forced_directions", forcedArray)
             }
         } catch (_: Exception) {
             sessionPrefs.edit().remove("snapshot").apply()
@@ -1658,6 +1673,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putString("lesson_scene_id", activeSceneId)
             outState.putString("lesson_session_id", sessionId)
             outState.putBoolean("lesson_assisted", assistedThisWord)
+            outState.putIntArray("lesson_forced_directions",
+                reviewIds.map { forcedReviewDirections[it] ?: -1 }.toIntArray())
         }
     }
     private fun restoreSession(state: Bundle?) {
@@ -1670,6 +1687,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         method = state.getInt("lesson_method", 0)
         if (method == 0 && !onDeviceRecognitionSupported) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
+        val restoredDirections = state.getIntArray("lesson_forced_directions")
+        forcedReviewDirections = if (restoredDirections?.size == ids.size) {
+            ids.zip(restoredDirections.toList())
+                .filter { (_, dir) -> dir in 0..1 }
+                .toMap()
+        } else emptyMap()
         learningMode = state.getBoolean("lesson_learning_mode", false)
         learningPaused = state.getBoolean("lesson_learning_paused", false)
         activeSceneId = state.getString("lesson_scene_id", "") ?: ""
