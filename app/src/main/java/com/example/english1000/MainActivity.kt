@@ -631,7 +631,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             .create().apply {
                 setOnDismissListener {
                     menu.visibility = View.GONE
-                    if (running && answering) scheduleAdvance()
+                    if (running && learningMode && !learningPaused) resumeLearningWord()
+                    else if (running && answering) scheduleAdvance()
                 }
             }
 
@@ -802,6 +803,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun openSettingsDialog() {
         handler.removeCallbacks(advanceRunnable)
+        if (learningMode) pauseLearningAudio()
         menu.visibility = View.VISIBLE
         settingsDialog?.show()
         settingsDialog?.window?.setLayout(
@@ -903,6 +905,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun next(restoringAnswer: Boolean = false, savedDirection: Int? = null) {
         if (!running) return
         handler.removeCallbacks(advanceRunnable)
+        pauseLearningAudio()
         examplesExpanded = false
         familyExpanded = false
         examplesBody.visibility = View.GONE
@@ -911,7 +914,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         nextWordButton.visibility = View.GONE
         if (index >= reviewIds.size) {
             running = false; current = null; answering = false
-            prompt.text = "Блок завершён!"
+            prompt.text = if (learningMode) "Прослушивание завершено!" else "Блок завершён!"
+            translationText.visibility = View.GONE
             pronunciation.text = ""
             counter.text = "Все ${reviewIds.size} слов проверены"
             status.text = if (uiEnglish) "Open ⋮ to begin another block" else
@@ -921,10 +925,34 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val w = words.first { it.id == reviewIds[index] }
         current = w
-        questionDirection = savedDirection ?: if (direction == 2) (0..1).random() else direction
+        questionDirection = if (learningMode) 0 else
+            (savedDirection ?: if (direction == 2) (0..1).random() else direction)
         answering = false
         counter.text = "Слово ${index + 1} из ${reviewIds.size}"
         progress.progress = (index * 100 / reviewIds.size)
+        cardHeading.text = if (learningMode) {
+            if (uiEnglish) "LEARN — LISTEN" else "ИЗУЧЕНИЕ — СЛУШАТЬ"
+        } else if (uiEnglish) "TRANSLATE" else "ПЕРЕВОД"
+        translationText.visibility = if (learningMode) View.VISIBLE else View.GONE
+        if (learningMode) {
+            prompt.text = w.en
+            prompt.textSize = when {
+                w.en.length > 20 -> 34f
+                w.en.length > 13 -> 42f
+                else -> 52f
+            }
+            translationText.text = w.ru
+            pronunciation.text = w.pron
+            pronunciation.textSize = 19f
+            status.text = if (uiEnglish) "Listen to English, then Russian." else
+                "Слушай английское слово и русский перевод."
+            updateExamplesControls(w)
+            updateFamilyControl(w)
+            updateButtons(); refresh()
+            if (!learningPaused) narrateLearningWord()
+            return
+        }
+        pronunciation.textSize = 29f
         prompt.text = question(w)
         prompt.textSize = when { question(w).length > 20 -> 30f; question(w).length > 13 -> 38f; else -> 52f }
         // The English spelling/pronunciation must not reveal the answer in RU → EN mode.
@@ -969,6 +997,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (familyDialog?.isShowing == true) return
         familyExpanded = true
         handler.removeCallbacks(advanceRunnable)
+        if (learningMode) pauseLearningAudio()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(16))
@@ -1003,7 +1032,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 setOnDismissListener {
                     familyExpanded = false
                     familyDialog = null
-                    if (running && answering) scheduleAdvance()
+                    if (running && learningMode && !learningPaused) resumeLearningWord()
+                    else if (running && answering) scheduleAdvance()
                 }
             }
         familyDialog?.show()
@@ -1041,8 +1071,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(parent, row, top = 8)
     }
 
+    private fun scenePhrases(word: Word): List<PhraseExample> {
+        val contextual = scenes.firstOrNull { it.id == activeSceneId }?.examples?.get(word.id)
+        return contextual ?: examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
+    }
     private fun updateExamplesControls(word: Word) {
-        val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
+        val phrases = scenePhrases(word)
         examplesToggle.visibility = if (phrases.isEmpty()) View.GONE else View.VISIBLE
         examplesToggle.text = if (uiEnglish) "Everyday phrases (${phrases.size})  ▾"
             else "Примеры из жизни (${phrases.size})  ▾"
@@ -1051,11 +1085,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun toggleExamples() {
         val word = current ?: return
-        val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
+        val phrases = scenePhrases(word)
         if (phrases.isEmpty()) return
         if (examplesDialog?.isShowing == true) return
         examplesExpanded = true
         handler.removeCallbacks(advanceRunnable)
+        if (learningMode) pauseLearningAudio()
         showExamples(word, phrases)
         (examplesBody.parent as? android.view.ViewGroup)?.removeView(examplesBody)
         val phraseScroll = ScrollView(this).apply {
@@ -1071,7 +1106,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     examplesExpanded = false
                     examplesBody.visibility = View.GONE
                     examplesDialog = null
-                    if (running && answering) scheduleAdvance()
+                    if (running && learningMode && !learningPaused) resumeLearningWord()
+                    else if (running && answering) scheduleAdvance()
                 }
             }
         examplesDialog?.show()
@@ -1366,6 +1402,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         examplesDialog?.dismiss()
         familyDialog?.dismiss()
         settingsDialog?.dismiss()
+        pauseLearningAudio()
         recognizer?.destroy(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
