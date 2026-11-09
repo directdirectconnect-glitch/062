@@ -520,6 +520,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun toggleMenu() {
         menu.visibility = if (menu.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         menuButton.text = if (menu.visibility == View.VISIBLE) "✕  Закрыть" else "☰  Меню"
+        // Reading or adjusting settings must not trigger a surprise word change.
+        if (menu.visibility == View.VISIBLE) {
+            handler.removeCallbacks(advanceRunnable)
+        } else if (answering) {
+            scheduleAdvance()
+        }
     }
     private fun updateButtons() {
         listen.visibility = if (method == 0 && onDeviceRecognitionSupported) View.VISIBLE else View.GONE
@@ -672,7 +678,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun scheduleAdvance() {
         handler.removeCallbacks(advanceRunnable)
-        if (!running || !answering || examplesExpanded || nextDelaySeconds == 0) return
+        if (!running || !answering || examplesExpanded || menu.visibility == View.VISIBLE ||
+            nextDelaySeconds == 0) return
         handler.postDelayed(advanceRunnable, nextDelaySeconds * 1000L)
     }
 
