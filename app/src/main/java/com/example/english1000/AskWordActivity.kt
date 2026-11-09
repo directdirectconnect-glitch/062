@@ -68,7 +68,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
     private var dark = false
     private val ink get() = if (dark) Color.rgb(239, 240, 241) else Color.rgb(27, 30, 34)
     private val muted get() = if (dark) Color.rgb(175, 180, 186) else Color.rgb(105, 111, 117)
-    private val background get() = if (dark) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
+    private val canvasColor get() = if (dark) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
     private val surface get() = if (dark) Color.rgb(33, 36, 39) else Color.WHITE
     private val secondary get() = if (dark) Color.rgb(49, 53, 57) else Color.rgb(234, 236, 238)
     private val opposite get() = if (dark) Color.rgb(22, 25, 28) else Color.WHITE
@@ -161,7 +161,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun createUi() {
         val scroll = ScrollView(this).apply {
-            setBackgroundColor(background)
+            setBackgroundColor(canvasColor)
             isFillViewport = true
         }
         val root = LinearLayout(this).apply {
@@ -318,7 +318,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
                 val labels = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     setPadding(px(10), px(9), px(10), px(9))
-                    background = shape(background)
+                    background = shape(canvasColor)
                 }
                 add(labels, text(phrase.en, 17f, ink, true).apply {
                     gravity = Gravity.START
