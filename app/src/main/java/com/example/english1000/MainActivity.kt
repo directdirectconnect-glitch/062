@@ -53,9 +53,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var current: Word? = null
 
     private var uiEnglish = false
-    private var fontChoice = 0
+    private var fontChoice = 1
     private var weightChoice = 1
     private var writingChoice = 0
+    private var appearanceRoot: View? = null
     private lateinit var languageSpinner: Spinner
     private lateinit var fontSpinner: Spinner
     private lateinit var weightSpinner: Spinner
@@ -108,26 +109,49 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         "Моноширинный" to "Monospace"
     )
     private fun tr(value: String) = if (uiEnglish) englishLabels[value] ?: value else value
-    private fun selectedTypeface(): Typeface {
-        val family = when (fontChoice) {
-            1 -> "sans-serif"
-            2 -> "serif"
-            3 -> "monospace"
-            else -> "sans-serif"
-        }
-        val style = (if (weightChoice == 2) Typeface.BOLD else Typeface.NORMAL) or
-            (if (writingChoice == 1) Typeface.ITALIC else Typeface.NORMAL)
-        return Typeface.create(family, style)
-    }
     private fun applyTypography(view: View) {
         if (view is TextView) {
-            val base = selectedTypeface()
-            view.typeface = if (weightChoice == 1) {
-                Typeface.create(base, if (writingChoice == 1) Typeface.BOLD_ITALIC else Typeface.NORMAL)
-            } else base
+            val family = when (fontChoice) {
+                2 -> "serif"
+                3 -> "monospace"
+                1 -> "sans-serif"
+                else -> "sans-serif"
+            }
+            val originallyBold = view.tag == "typography_bold" ||
+                (view.tag == null && view.typeface?.isBold == true)
+            if (view.tag == null) view.tag = if (originallyBold) "typography_bold" else "typography_normal"
+            val weight = when (weightChoice) {
+                0 -> if (originallyBold) 500 else 400
+                2 -> 700
+                else -> if (originallyBold) 700 else 500
+            }
+            val italic = writingChoice == 1
+            view.typeface = if (Build.VERSION.SDK_INT >= 28) {
+                Typeface.create(Typeface.create(family, Typeface.NORMAL), weight, italic)
+            } else {
+                Typeface.create(family, (if (weight >= 700) Typeface.BOLD else Typeface.NORMAL) or
+                    (if (italic) Typeface.ITALIC else Typeface.NORMAL))
+            }
         }
         if (view is android.view.ViewGroup) {
             for (i in 0 until view.childCount) applyTypography(view.getChildAt(i))
+        }
+    }
+    private fun saveAppearance() {
+        fontChoice = fontSpinner.selectedItemPosition
+        weightChoice = weightSpinner.selectedItemPosition
+        writingChoice = writingSpinner.selectedItemPosition
+        prefs.edit().putInt("font_family", fontChoice)
+            .putInt("font_weight", weightChoice)
+            .putInt("writing_style", writingChoice).apply()
+        appearanceRoot?.let(::applyTypography)
+    }
+    private fun enableLiveAppearance(spinner: Spinner) {
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (appearanceRoot != null) saveAppearance()
+            }
         }
     }
     private val navy = Color.rgb(29, 35, 43)
@@ -213,7 +237,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         tts = TextToSpeech(this, this)
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
-        fontChoice = prefs.getInt("font_family", 0)
+        fontChoice = prefs.getInt("font_family", 1)
         weightChoice = prefs.getInt("font_weight", 1)
         writingChoice = prefs.getInt("writing_style", 0)
         buildUi()
@@ -260,6 +284,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         scroll.addView(root)
         setContentView(scroll)
+        appearanceRoot = root
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -299,18 +324,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         setting(menu, "Шрифт", fontSpinner)
         setting(menu, "Толщина шрифта", weightSpinner)
         setting(menu, "Стиль написания", writingSpinner)
-        val saveAppearance = button(if (uiEnglish) "Apply appearance" else "Применить оформление", white, blue) {
+        enableLiveAppearance(fontSpinner)
+        enableLiveAppearance(weightSpinner)
+        enableLiveAppearance(writingSpinner)
+        add(menu, text(if (uiEnglish) "Font changes apply instantly, including during a lesson." else
+            "Шрифт меняется сразу, даже во время урока.", 12f, muted), top = 8)
+        add(menu, button(if (uiEnglish) "Apply interface language" else "Применить язык интерфейса", white, blue) {
             val newEnglish = languageSpinner.selectedItemPosition == 1
-            fontChoice = fontSpinner.selectedItemPosition
-            weightChoice = weightSpinner.selectedItemPosition
-            writingChoice = writingSpinner.selectedItemPosition
-            prefs.edit().putString("ui_language", if (newEnglish) "en" else "ru")
-                .putInt("font_family", fontChoice)
-                .putInt("font_weight", weightChoice)
-                .putInt("writing_style", writingChoice).apply()
-            recreate()
-        }
-        add(menu, saveAppearance, 52, 10)
+            if (newEnglish != uiEnglish) {
+                prefs.edit().putString("ui_language", if (newEnglish) "en" else "ru").apply()
+                recreate()
+            }
+        }, 52, 10)
 
         deviceInfo = text("", 13f, muted).apply { gravity = Gravity.START }
         add(menu, deviceInfo, top = 10)
