@@ -1664,6 +1664,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         sceneSpinner.setSelection(0)
         sessionId = UUID.randomUUID().toString()
         reviewIds = selected.map { it.wordId }
+        originalBlockIds = reviewIds
+        pendingBlockErrors = emptyMap()
+        remediationRound = 0
         forcedReviewDirections = selected.associate { it.wordId to it.direction }
         index = 0
         running = true
