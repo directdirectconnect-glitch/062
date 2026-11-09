@@ -87,6 +87,28 @@ class LearningHistoryStore(context: Context) :
         }
     }
 
+    /**
+     * History is queried by direction and chronological order; algorithmic scoring is pure
+     * Kotlin so its review behavior can be tested without Android or a network service.
+     */
+    fun dueReviews(nowMs: Long = System.currentTimeMillis()): List<LearningReviewPlanner.DueWord> {
+        val attempts = mutableListOf<LearningReviewPlanner.Attempt>()
+        readableDatabase.rawQuery(
+            """SELECT word_id, direction, occurred_at_ms, response_method, outcome, assisted
+               FROM learning_events
+               WHERE response_method = 'manual' AND assisted = 0
+               ORDER BY word_id, direction, occurred_at_ms, id""".trimIndent(), null
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                attempts.add(LearningReviewPlanner.Attempt(
+                    cursor.getInt(0), cursor.getInt(1), cursor.getLong(2),
+                    cursor.getString(3), cursor.getString(4), cursor.getInt(5) != 0
+                ))
+            }
+        }
+        return LearningReviewPlanner.dueWords(attempts, nowMs)
+    }
+
     /** Require at least three independent attempts; assisted responses are excluded. */
     fun repeatedDifficulties(limit: Int = 10): List<RepeatedDifficulty> {
         val result = mutableListOf<RepeatedDifficulty>()
