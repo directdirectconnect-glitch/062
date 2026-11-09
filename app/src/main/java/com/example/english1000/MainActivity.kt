@@ -264,7 +264,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         isDarkTheme = when (themeChoice) {
             0 -> false
             1 -> true
-            else -> resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            else -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         }
         // Choose a matching native theme for dialogs, menus and spinner controls too.
@@ -439,7 +439,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         dirSpinner = spinner(listOf("English → Русский", "Русский → English", "Смешанный"))
         methodSpinner = spinner(listOf("Голосовая проверка", "Кнопки: знаю / не знаю"))
         blockSpinner = spinner(listOf("10 слов", "20 слов", "30 слов", "50 слов")).apply { setSelection(3) }
-        selectionSpinner = spinner(listOf("Из всего словаря", "Только ошибки", "Ещё не проверенные", "С примерами из жизни"))
+        selectionSpinner = spinner(listOf("Из всего словаря", "Только ошибки", "Ещё не проверенные", "С примерами из жизни", "С семьями слов"))
         setting(menu, "Направление перевода", dirSpinner)
         setting(menu, "Способ ответа", methodSpinner)
         setting(menu, "Размер блока", blockSpinner)
@@ -679,6 +679,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             1 -> (0..1).any { prefs.getInt("${it}_${w.id}", -1) == 0 }
             2 -> (0..1).all { prefs.getInt("${it}_${w.id}", -1) == -1 }
             3 -> examplesByWord.containsKey(w.en.lowercase(Locale.ROOT))
+            4 -> familyIndex.containsKey(w.en.lowercase(Locale.ROOT))
             else -> true
         } }
         reviewIds = candidates.shuffled().take(sessionSize).map { it.id }
@@ -1142,7 +1143,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         selectionMode = state.getInt("lesson_selection", 0)
         dirSpinner.setSelection(direction.coerceIn(0, 2))
         methodSpinner.setSelection(method.coerceIn(0, 1))
-        selectionSpinner.setSelection(selectionMode.coerceIn(0, 3))
+        selectionSpinner.setSelection(selectionMode.coerceIn(0, 4))
         blockSpinner.setSelection(listOf(10, 20, 30, 50).indexOf(ids.size).coerceAtLeast(0))
         running = true
         answering = false
