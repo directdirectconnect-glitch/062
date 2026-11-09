@@ -191,6 +191,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         settingsRow.addView(action(if (uiEnglish) "Change" else "Изменить") {
             ExampleModeSetup.show(this, if (uiEnglish) "Ask a word" else "Спроси слово") {
                 includeExamples = it
+                intent.putExtra(EXTRA_INCLUDE_EXAMPLES, it)
                 recreate()
             }
         }, LinearLayout.LayoutParams(px(120), px(46)))
@@ -229,7 +230,15 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             val query = wordInput.text.toString().trim()
             if (query.isNotBlank()) lookup(query)
         }, LinearLayout.LayoutParams(0, px(52), 1f).apply { rightMargin = px(5) })
-        micButton = action(if (uiEnglish) "🎤 Speak" else "🎤 Сказать") { beginListening() }
+        micButton = action(if (uiEnglish) "🎤 Speak" else "🎤 Сказать") {
+            if (listeningEnabled) {
+                listeningEnabled = false
+                stopListening()
+                status.text = if (uiEnglish) "Microphone off. Type a word or tap to listen."
+                    else "Микрофон выключен. Введи слово или включи прослушивание."
+                micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
+            } else beginListening()
+        }
         controls.addView(micButton, LinearLayout.LayoutParams(0, px(52), 1f).apply {
             leftMargin = px(5)
         })
@@ -412,6 +421,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             return
         }
         listeningEnabled = true
+        micButton.text = if (uiEnglish) "Stop mic" else "Выключить микрофон"
         startListening()
     }
 
@@ -428,6 +438,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
         } catch (_: Exception) {
             listeningEnabled = false
+            micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
             status.text = if (uiEnglish) "Microphone could not be started"
                 else "Не удалось включить микрофон"
             return
@@ -448,15 +459,12 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
                 recognizer = null
                 if (error == SpeechRecognizer.ERROR_NO_MATCH ||
                     error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                    retryCount++
-                    if (retryCount <= 3) resumeRecognitionSoon()
-                    else {
-                        listeningEnabled = false
-                        status.text = if (uiEnglish) "Tap the microphone to listen again"
-                            else "Нажми микрофон, чтобы продолжить"
-                    }
+                    // Listening remains active during silence; there is no
+                    // word timer and no automatic substitution of a new word.
+                    resumeRecognitionSoon()
                 } else {
                     listeningEnabled = false
+                    micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
                     status.text = if (uiEnglish) "Offline recognition error: $error"
                         else "Ошибка автономного распознавания: $error"
                 }
@@ -494,6 +502,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             recognizer?.destroy()
             recognizer = null
             listeningEnabled = false
+            micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
             status.text = if (uiEnglish) "Could not start offline recognition"
                 else "Не удалось запустить автономное распознавание"
         }
