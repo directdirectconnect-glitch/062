@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Build
+import android.content.res.Configuration
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -66,6 +67,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var current: Word? = null
 
     private var uiEnglish = false
+    // The default follows Android's current light/dark setting.
+    // 0 = light, 1 = dark, 2 = system.
+    private var themeChoice = 2
+    private var isDarkTheme = false
+    private lateinit var themeSpinner: Spinner
     private var fontChoice = 1
     private var weightChoice = 1
     private var writingChoice = 0
@@ -168,12 +174,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
     }
-    private val navy = Color.rgb(29, 35, 43)
-    private val muted = Color.rgb(105, 115, 126)
-    private val blue = Color.rgb(42, 81, 110)
-    private val bg = Color.rgb(246, 247, 249)
-    private val white = Color.WHITE
-    private val red = Color.rgb(170, 63, 70)
+    // Monochrome palettes only: no purple, green, red, or colorful accents.
+    private val navy: Int get() = if (isDarkTheme) Color.rgb(238, 240, 243) else Color.rgb(26, 31, 37)
+    private val muted: Int get() = if (isDarkTheme) Color.rgb(177, 182, 187) else Color.rgb(102, 110, 119)
+    private val blue: Int get() = if (isDarkTheme) Color.rgb(225, 228, 232) else Color.rgb(34, 43, 54)
+    private val bg: Int get() = if (isDarkTheme) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
+    private val white: Int get() = if (isDarkTheme) Color.rgb(31, 34, 38) else Color.WHITE
+    private val neutralSurface: Int get() = if (isDarkTheme) Color.rgb(48, 52, 57) else Color.rgb(233, 236, 239)
+    private val neutralInk: Int get() = if (isDarkTheme) Color.rgb(235, 238, 242) else Color.rgb(38, 45, 52)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
     private var settingsDialog: android.app.AlertDialog? = null
@@ -243,6 +251,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        themeChoice = prefs.getInt("ui_theme", 2).coerceIn(0, 2)
+        isDarkTheme = when (themeChoice) {
+            0 -> false
+            1 -> true
+            else -> resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+        }
+        // Choose a matching native theme for dialogs, menus and spinner controls too.
+        setTheme(if (isDarkTheme) android.R.style.Theme_Material_NoActionBar
+            else android.R.style.Theme_Material_Light_NoActionBar)
         val json = JSONArray(assets.open("words.json").bufferedReader().use { it.readText() })
         for (i in 0 until json.length()) {
             val w = json.getJSONObject(i)
@@ -323,9 +341,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         add(brand, text("ENGLISH WORDS", 21f, white, true).apply { gravity = Gravity.START })
-        add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, Color.rgb(190, 200, 211)).apply { gravity = Gravity.START }, top = 3)
+        add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, white).apply { gravity = Gravity.START; alpha = .78f }, top = 3)
         header.addView(brand, LinearLayout.LayoutParams(0, dp(60), 1f))
-        menuButton = button("⋮", Color.rgb(235, 238, 242), navy) { showOverflowMenu() }.apply {
+        menuButton = button("⋮", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
             textSize = 26f
             contentDescription = if (uiEnglish) "More options" else "Дополнительные действия"
         }
@@ -343,6 +361,23 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         languageSpinner = spinner(listOf("Русский", "Английский")).apply {
             setSelection(if (uiEnglish) 1 else 0)
         }
+        themeSpinner = spinner(
+            if (uiEnglish) listOf("Light (white)", "Dark (black)", "As on Android")
+            else listOf("Светлая (белая)", "Тёмная (чёрная)", "Как в Android")
+        ).apply {
+            setSelection(themeChoice)
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    if (position != themeChoice) {
+                        themeChoice = position
+                        prefs.edit().putInt("ui_theme", position).apply()
+                        // Activity state restores the current word and answer on recreation.
+                        recreate()
+                    }
+                }
+            }
+        }
         fontSpinner = spinner(listOf("Системный", "Без засечек", "С засечками", "Моноширинный")).apply {
             setSelection(fontChoice.coerceIn(0, 3))
         }
@@ -353,6 +388,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setSelection(writingChoice.coerceIn(0, 1))
         }
         setting(menu, "Язык интерфейса", languageSpinner)
+        setting(menu, if (uiEnglish) "Display theme" else "Тема оформления", themeSpinner)
         setting(menu, "Шрифт", fontSpinner)
         setting(menu, "Толщина шрифта", weightSpinner)
         setting(menu, "Стиль написания", writingSpinner)
@@ -492,8 +528,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         add(root, repeat, 56, 12)
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        correct = button("Знаю", Color.rgb(42, 105, 88)) { grade(true, "Отмечено: знаю") }
-        incorrect = button("Не знаю", Color.rgb(165, 76, 82)) { grade(false, "Отмечено: не знаю") }
+        correct = button("Знаю", blue) { grade(true, "Отмечено: знаю") }
+        incorrect = button("Не знаю", neutralSurface, neutralInk) { grade(false, "Отмечено: не знаю") }
         rating.addView(correct, LinearLayout.LayoutParams(0, dp(58), 1f).apply { rightMargin = dp(6) })
         rating.addView(incorrect, LinearLayout.LayoutParams(0, dp(58), 1f).apply { leftMargin = dp(6) })
         add(root, rating, top = 12)
