@@ -15,6 +15,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.View
@@ -29,6 +30,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var tts: TextToSpeech
     private var ttsReady = false
+    private var englishOfflineVoices: List<Voice> = emptyList()
+    private var russianOfflineVoices: List<Voice> = emptyList()
+    private val voiceRates = floatArrayOf(0.80f, 0.90f, 1.00f, 1.10f, 1.20f)
+    private lateinit var englishVoiceSpinner: Spinner
+    private lateinit var russianVoiceSpinner: Spinner
+    private lateinit var speedSpinner: Spinner
+    private lateinit var voiceInfo: TextView
+    private lateinit var deviceInfo: TextView
+    private var onDeviceRecognitionSupported = false
     private var recognizer: SpeechRecognizer? = null
     private var direction = 0
     private var method = 0
@@ -120,6 +130,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val w = json.getJSONObject(i)
             words.add(Word(w.getInt("id"), w.getString("en"), w.getString("ru"), w.optString("pron")))
         }
+        onDeviceRecognitionSupported =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         tts = TextToSpeech(this, this)
         buildUi()
         restoreSession(savedInstanceState)
@@ -186,6 +199,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             visibility = View.GONE
         }
         add(menu, text("НАСТРОЙКИ ОБУЧЕНИЯ", 18f, navy, true))
+        deviceInfo = text("", 13f, muted).apply { gravity = Gravity.START }
+        add(menu, deviceInfo, top = 10)
+        updateDeviceCapabilities()
         dirSpinner = spinner(listOf("English → Русский", "Русский → English", "Смешанный"))
         methodSpinner = spinner(listOf("Голосовая проверка", "Кнопки: знаю / не знаю"))
         blockSpinner = spinner(listOf("10 слов", "20 слов", "30 слов", "50 слов")).apply { setSelection(3) }
@@ -196,6 +212,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         setting(menu, "Какие слова повторять", selectionSpinner)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
         add(menu, formsCheck, top = 10)
+
+        add(menu, text("ОЗВУЧИВАНИЕ БЕЗ ИНТЕРНЕТА", 16f, navy, true), top = 16)
+        englishVoiceSpinner = spinner(listOf("Загрузка голосов..."))
+        russianVoiceSpinner = spinner(listOf("Загрузка голосов..."))
+        speedSpinner = spinner(listOf("0.80×", "0.90×", "1.00×", "1.10×", "1.20×"))
+        speedSpinner.setSelection(prefs.getInt("speech_speed", 2).coerceIn(0, voiceRates.lastIndex))
+        speedSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                prefs.edit().putInt("speech_speed", position).apply()
+            }
+        }
+        setting(menu, "Английский голос", englishVoiceSpinner)
+        setting(menu, "Русский голос", russianVoiceSpinner)
+        setting(menu, "Скорость произношения", speedSpinner)
+        voiceInfo = text("Загрузка списка установленных голосов...", 13f, muted)
+        add(menu, voiceInfo, top = 7)
+        add(menu, button("▶ Прослушать английский голос", white, navy) {
+            say("Hello! Welcome to English Words.", Locale.US)
+        }, 50, 8)
+        add(menu, button("▶ Прослушать русский голос", white, navy) {
+            say("Привет! Проверяем произношение.", Locale("ru", "RU"))
+        }, 50, 6)
+        if (ttsReady) updateOfflineVoiceControls()
         add(menu, button("Начать новый блок") { startSession() }, 54, 12)
         add(root, menu, top = 10)
 
@@ -267,6 +307,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
 
+    private fun updateDeviceCapabilities() {
+        if (!::deviceInfo.isInitialized) return
+        val recognition = if (onDeviceRecognitionSupported) {
+            "Автономное распознавание Android: доступно (языковые пакеты проверяются при запуске)"
+        } else {
+            "Автономное распознавание Android: недоступно. Используй кнопки «Знаю / Не знаю»"
+        }
+        deviceInfo.text = "Android ${Build.VERSION.RELEASE} · API ${Build.VERSION.SDK_INT}\n" +
+            recognition + "\nИнтерфейс и словарь доступны без распознавания речи."
+    }
+
     private fun toggleMenu() {
         menu.visibility = if (menu.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         menuButton.text = if (menu.visibility == View.VISIBLE) "✕  Закрыть" else "☰  Меню"
@@ -286,6 +337,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         tts.stop(); recognizer?.cancel()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
+        if (method == 0 && !onDeviceRecognitionSupported) {
+            method = 1
+            methodSpinner.setSelection(1)
+        }
         sessionSize = listOf(10, 20, 30, 50)[blockSpinner.selectedItemPosition]
         selectionMode = selectionSpinner.selectedItemPosition
         val candidates = words.filter { w -> when (selectionMode) {
@@ -327,7 +382,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         prompt.textSize = when { question(w).length > 20 -> 30f; question(w).length > 13 -> 38f; else -> 52f }
         // The English spelling/pronunciation must not reveal the answer in RU → EN mode.
         pronunciation.text = if (questionDirection == 0) w.pron else "Произношение появится после ответа"
-        status.text = "Слушай слово..."
+        status.text = if (ttsReady) "Слушай слово..." else "Озвучивание недоступно; можно отвечать кнопками"
         updateButtons(); refresh()
         say(question(w), questionLocale()) {
             if (running && current?.id == w.id && !answering) {
@@ -336,16 +391,95 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
     }
+    private fun offlineVoicesFor(locale: Locale): List<Voice> = runCatching {
+        tts.voices.orEmpty()
+            .filter { it.locale.language == locale.language && !it.isNetworkConnectionRequired }
+            .sortedWith(
+                compareByDescending<Voice> { it.locale.country == locale.country }
+                    .thenByDescending { it.quality }
+                    .thenBy { it.name }
+            )
+    }.getOrDefault(emptyList())
+
+    private fun attachVoiceChoices(spinner: Spinner, voices: List<Voice>, preferenceKey: String) {
+        val choices = if (voices.isEmpty()) {
+            listOf("Офлайн-голоса не установлены")
+        } else {
+            listOf("Лучший доступный офлайн-голос") +
+                voices.map { "${it.locale.toLanguageTag()} · ${it.name}" }
+        }
+        spinner.onItemSelectedListener = null
+        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, choices)
+        spinner.isEnabled = voices.isNotEmpty()
+        val savedName = prefs.getString(preferenceKey, null)
+        val index = voices.indexOfFirst { it.name == savedName }
+        spinner.setSelection(if (index >= 0) index + 1 else 0)
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val editor = prefs.edit()
+                if (position == 0 || voices.isEmpty()) editor.remove(preferenceKey)
+                else editor.putString(preferenceKey, voices[position - 1].name)
+                editor.apply()
+            }
+        }
+    }
+
+    private fun updateOfflineVoiceControls() {
+        if (!::englishVoiceSpinner.isInitialized || !::voiceInfo.isInitialized) return
+        attachVoiceChoices(englishVoiceSpinner, englishOfflineVoices, "voice_en")
+        attachVoiceChoices(russianVoiceSpinner, russianOfflineVoices, "voice_ru")
+        voiceInfo.text = if (englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
+            "Для отсутствующего языка установи офлайн-голос через настройки " +
+                "синтеза речи Android. Приложение не переключается на сетевые голоса."
+        } else {
+            "Выбираются только установленные голоса, не требующие интернета. " +
+                "Пол и естественность голоса зависят от установленного речевого движка."
+        }
+    }
+
     private fun say(value: String, locale: Locale, done: (() -> Unit)? = null) {
-        if (!ttsReady) { status.text = "Ожидание голосового движка"; done?.invoke(); return }
-        tts.stop(); tts.language = locale
+        if (!ttsReady) {
+            status.text = "Голосовой движок ещё не готов"
+            done?.invoke()
+            return
+        }
+        val available = if (locale.language == "ru") russianOfflineVoices else englishOfflineVoices
+        val preferenceKey = if (locale.language == "ru") "voice_ru" else "voice_en"
+        val savedName = prefs.getString(preferenceKey, null)
+        val voice = available.firstOrNull { it.name == savedName } ?: available.firstOrNull()
+        if (voice == null) {
+            status.text = "Нет установленного офлайн-голоса для языка ${locale.language}. " +
+                "Добавь голос в настройках синтеза речи Android."
+            done?.invoke()
+            return
+        }
+
+        tts.stop()
+        if (tts.setVoice(voice) != TextToSpeech.SUCCESS) {
+            status.text = "Не удалось включить офлайн-голос ${voice.name}"
+            done?.invoke()
+            return
+        }
+        val speedIndex = if (::speedSpinner.isInitialized) speedSpinner.selectedItemPosition else 2
+        tts.setSpeechRate(voiceRates[speedIndex.coerceIn(0, voiceRates.lastIndex)])
         val utterance = "utt_${System.nanoTime()}"
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String) {}
-            override fun onDone(id: String) { if (id == utterance && done != null) handler.post { done() } }
-            override fun onError(id: String) { if (id == utterance && done != null) handler.post { done() } }
+            override fun onDone(id: String) {
+                if (id == utterance && done != null) handler.post { done() }
+            }
+            override fun onError(id: String) {
+                if (id == utterance) handler.post {
+                    status.text = "Ошибка воспроизведения офлайн-голоса"
+                    done?.invoke()
+                }
+            }
         })
-        tts.speak(value, TextToSpeech.QUEUE_FLUSH, null, utterance)
+        if (tts.speak(value, TextToSpeech.QUEUE_FLUSH, null, utterance) == TextToSpeech.ERROR) {
+            status.text = "Голос недоступен. Проверь офлайн-пакет языка."
+            done?.invoke()
+        }
     }
     private fun listenNow() {
         if (!running || method != 0 || answering) return
@@ -354,20 +488,40 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = "Разреши доступ к микрофону и нажми кнопку ещё раз"
             return
         }
-        // Never fall back to the default recognizer: it may transmit audio to a server.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
-            status.text = "Офлайн-распознавание недоступно на этом устройстве. Выбери в меню «Кнопки: знаю / не знаю». Локальная модель Vosk будет добавлена отдельно."
+        // Never fall back to a cloud recognizer: this training mode is offline-only.
+        if (!onDeviceRecognitionSupported) {
+            status.text = "Автономное распознавание недоступно. " +
+                "Установи офлайн-пакеты английского и русского в настройках распознавания речи Android."
             return
         }
         recognizer?.destroy()
-        recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+        recognizer = try {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+        } catch (e: Exception) {
+            status.text = "Не удалось запустить автономное распознавание: ${e.message}"
+            return
+        }
         recognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) { status.text = "🎤 Слушаю твой ответ..." }
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { status.text = "Проверяю ответ..." }
-            override fun onError(error: Int) { if (!answering) status.text = "Не расслышала (код $error). Нажми микрофон и повтори ответ" }
+            override fun onError(error: Int) {
+                if (!answering) {
+                    status.text = when (error) {
+                        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ->
+                            "Этот язык не поддерживается автономным распознаванием Android"
+                        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
+                            "Офлайн-пакет языка не установлен. Загрузи его в настройках Android"
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
+                            "Нет разрешения на использование микрофона"
+                        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
+                            "Не расслышала ответ. Нажми микрофон и повтори"
+                        else -> "Ошибка автономного распознавания (код $error). Попробуй ещё раз"
+                    }
+                }
+            }
             override fun onResults(results: Bundle?) {
                 if (answering) return
                 val guesses = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
@@ -416,7 +570,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
     override fun onInit(statusCode: Int) {
         ttsReady = statusCode == TextToSpeech.SUCCESS
-        if (ttsReady) tts.language = Locale.US
+        if (ttsReady) {
+            englishOfflineVoices = offlineVoicesFor(Locale.US)
+            russianOfflineVoices = offlineVoicesFor(Locale("ru", "RU"))
+        }
+        runOnUiThread { updateOfflineVoiceControls() }
     }
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -437,6 +595,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (index !in reviewIds.indices) return
         direction = state.getInt("lesson_direction", 0)
         method = state.getInt("lesson_method", 0)
+        if (method == 0 && !onDeviceRecognitionSupported) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
         dirSpinner.setSelection(direction.coerceIn(0, 2))
         methodSpinner.setSelection(method.coerceIn(0, 1))
