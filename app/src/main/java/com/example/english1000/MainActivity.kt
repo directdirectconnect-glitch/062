@@ -500,6 +500,40 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         methodSpinner = spinner(listOf("Голосовая проверка", "Кнопки: знаю / не знаю"))
         blockSpinner = spinner(listOf("10 слов", "20 слов", "30 слов", "50 слов")).apply { setSelection(3) }
         selectionSpinner = spinner(listOf("Из всего словаря", "Только ошибки", "Ещё не проверенные", "С примерами из жизни", "С семьями слов"))
+        lessonModeSpinner = spinner(if (uiEnglish)
+            listOf("Learn — listen and read", "Check — recall words")
+            else listOf("Изучение — слушать и читать", "Проверка — вспомнить слово")
+        ).apply { setSelection(1) }
+        sceneSpinner = spinner(
+            listOf(if (uiEnglish) "All topics" else "Все темы") +
+                scenes.map { if (uiEnglish) it.titleEn else it.titleRu }
+        ).apply {
+            val oldId = prefs.getString("selected_scene", "") ?: ""
+            setSelection((scenes.indexOfFirst { it.id == oldId } + 1).coerceAtLeast(0))
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val choice = scenes.getOrNull(position - 1)?.id ?: ""
+                    prefs.edit().putString("selected_scene", choice).apply()
+                }
+            }
+        }
+        learningPauseSpinner = spinner(learningPauseOptions.map {
+            if (uiEnglish) "$it seconds" else "$it секунд"
+        }).apply {
+            setSelection(learningPauseOptions.indexOf(learningPauseSeconds).coerceAtLeast(0))
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    learningPauseSeconds = learningPauseOptions[position.coerceIn(learningPauseOptions.indices)]
+                    prefs.edit().putInt("learning_pause_seconds", learningPauseSeconds).apply()
+                }
+            }
+        }
+        setting(menu, if (uiEnglish) "Learning mode" else "Режим занятия", lessonModeSpinner)
+        setting(menu, if (uiEnglish) "Location / scene" else "Где я нахожусь", sceneSpinner)
+        setting(menu, if (uiEnglish) "Pause after translation" else
+            "Пауза после перевода (изучение)", learningPauseSpinner)
         setting(menu, "Направление перевода", dirSpinner)
         setting(menu, "Способ ответа", methodSpinner)
         setting(menu, "Размер блока", blockSpinner)
@@ -521,6 +555,41 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         setting(menu, if (uiEnglish) "Next word" else "Переход к следующему слову", transitionSpinner)
         setting(menu, "Какие слова повторять", selectionSpinner)
+        add(menu, text(if (uiEnglish) "PRACTICE REMINDERS" else "НАПОМИНАНИЯ О ЗАНЯТИЯХ",
+            16f, navy, true), top = 16)
+        reminderSpinner = spinner(reminderHourOptions.map {
+            if (it == 0) {
+                if (uiEnglish) "Off" else "Выключены"
+            } else if (uiEnglish) {
+                "Every $it hours"
+            } else {
+                "Каждые $it ч"
+            }
+        }).apply {
+            setSelection(reminderHourOptions.indexOf(ReminderScheduler.hours(this@MainActivity))
+                .coerceAtLeast(0))
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val hours = reminderHourOptions[position.coerceIn(reminderHourOptions.indices)]
+                    if (ReminderScheduler.hours(this@MainActivity) != hours) {
+                        prefs.edit().putInt(ReminderScheduler.PREF_INTERVAL_HOURS, hours).apply()
+                        ReminderScheduler.schedule(this@MainActivity, hours)
+                        if (hours > 0 && Build.VERSION.SDK_INT >= 33 &&
+                            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                                PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                reminderPermissionRequestCode)
+                        }
+                    }
+                }
+            }
+        }
+        setting(menu, if (uiEnglish) "Reminder frequency" else "Периодичность", reminderSpinner)
+        add(menu, text(if (uiEnglish)
+            "Local notifications. Android may delay them to save battery."
+            else "Локальные уведомления. Android может немного задерживать их ради экономии батареи.",
+            12f, muted), top = 6)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
         add(menu, formsCheck, top = 10)
 
@@ -578,12 +647,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             background = rounded(white, 12)
             minimumHeight = dp(290)
         }
-        add(card, text("ПЕРЕВОД", 12f, muted, true))
+        cardHeading = text("ПЕРЕВОД", 12f, muted, true)
+        add(card, cardHeading)
         prompt = text(if (uiEnglish) "Open ⋮ and start a lesson" else
             "Открой ⋮ и начни урок", 37f, navy, true).apply {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
         add(card, prompt)
+        translationText = text("", 28f, navy, true).apply {
+            gravity = Gravity.CENTER; visibility = View.GONE
+            setPadding(dp(8), dp(3), dp(8), dp(6))
+        }
+        add(card, translationText)
         pronunciation = text("", 29f, blue, true).apply { setPadding(dp(2), dp(4), dp(2), dp(10)) }
         add(card, pronunciation)
         add(root, card, top = 18)
@@ -620,6 +695,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
         add(root, repeat, 56, 12)
+        learningPauseButton = button(if (uiEnglish) "Pause listening" else "Пауза",
+            neutralSurface, neutralInk) {
+            if (running && learningMode) {
+                learningPaused = !learningPaused
+                if (learningPaused) {
+                    pauseLearningAudio()
+                    status.text = if (uiEnglish) "Listening paused" else "Прослушивание на паузе"
+                } else {
+                    narrateLearningWord()
+                }
+                updateButtons()
+            }
+        }.apply { visibility = View.GONE }
+        add(root, learningPauseButton, 52, 8)
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         correct = button("Знаю", blue) { grade(true, "Отмечено: знаю") }
         incorrect = button("Не знаю", neutralSurface, neutralInk) { grade(false, "Отмечено: не знаю") }
@@ -636,7 +725,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, stats, top = 20)
         updateButtons()
         if (resources.configuration.screenWidthDp >= 600) {
-            val lessonViews = listOf(card, examplesToggle, familyButton, status, listen, repeat, rating, skip, nextWordButton)
+            val lessonViews = listOf(card, examplesToggle, familyButton, status, listen, repeat,
+                learningPauseButton, rating, skip, nextWordButton)
             val sidebarViews = listOf(counter, progress, stats)
             lessonViews.forEach { root.removeView(it) }
             sidebarViews.forEach { root.removeView(it) }
