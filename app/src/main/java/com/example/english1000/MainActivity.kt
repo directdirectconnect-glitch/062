@@ -52,6 +52,84 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
+    private var uiEnglish = false
+    private var fontChoice = 0
+    private var weightChoice = 1
+    private var writingChoice = 0
+    private lateinit var languageSpinner: Spinner
+    private lateinit var fontSpinner: Spinner
+    private lateinit var weightSpinner: Spinner
+    private lateinit var writingSpinner: Spinner
+
+    private val englishLabels = mapOf(
+        "Меню" to "Menu", "НАСТРОЙКИ" to "SETTINGS",
+        "Направление перевода" to "Translation direction",
+        "Способ ответа" to "Answer method",
+        "Размер блока" to "Block size",
+        "Какие слова повторять" to "Words to practice",
+        "English → Русский" to "English → Russian",
+        "Русский → English" to "Russian → English",
+        "Смешанный" to "Mixed",
+        "Голосовая проверка" to "Voice recognition",
+        "Кнопки: знаю / не знаю" to "Buttons: know / don't know",
+        "10 слов" to "10 words", "20 слов" to "20 words",
+        "30 слов" to "30 words", "50 слов" to "50 words",
+        "Из всего словаря" to "All words",
+        "Только ошибки" to "Mistakes only",
+        "Ещё не проверенные" to "Not yet tested",
+        "Показывать формы глагола после ответа" to "Show verb forms after answering",
+        "ОЗВУЧИВАНИЕ БЕЗ ИНТЕРНЕТА" to "OFFLINE SPEECH",
+        "Английский голос" to "English voice",
+        "Русский голос" to "Russian voice",
+        "Скорость произношения" to "Speech speed",
+        "Загрузка голосов..." to "Loading voices...",
+        "Загрузка списка установленных голосов..." to "Loading installed voices...",
+        "▶ Прослушать английский голос" to "▶ Preview English voice",
+        "▶ Прослушать русский голос" to "▶ Preview Russian voice",
+        "Начать новый блок" to "Start new block",
+        "Выбери блок в меню" to "Choose a block from the menu",
+        "ПЕРЕВОД" to "TRANSLATION",
+        "Нажми «Меню»\\nи начни урок" to "Open Menu\\nand start a lesson",
+        "Настройки открываются по кнопке «Меню»" to "Open settings from Menu",
+        "Говори перевод" to "Speak the translation",
+        "Слушать слово" to "Listen to word",
+        "Знаю" to "Know", "Не знаю" to "Don't know",
+        "Пропустить" to "Skip",
+        "Язык интерфейса" to "Interface language",
+        "Шрифт" to "Font family",
+        "Толщина шрифта" to "Font weight",
+        "Стиль написания" to "Letter style",
+        "ВНЕШНИЙ ВИД" to "APPEARANCE",
+        "Русский" to "Russian", "Английский" to "English",
+        "Обычный" to "Regular", "Полужирный" to "Semibold",
+        "Жирный" to "Bold", "Прямой" to "Upright",
+        "Курсив" to "Italic", "Системный" to "System",
+        "Без засечек" to "Sans serif", "С засечками" to "Serif",
+        "Моноширинный" to "Monospace"
+    )
+    private fun tr(value: String) = if (uiEnglish) englishLabels[value] ?: value else value
+    private fun selectedTypeface(): Typeface {
+        val family = when (fontChoice) {
+            1 -> "sans-serif"
+            2 -> "serif"
+            3 -> "monospace"
+            else -> "sans-serif"
+        }
+        val style = (if (weightChoice == 2) Typeface.BOLD else Typeface.NORMAL) or
+            (if (writingChoice == 1) Typeface.ITALIC else Typeface.NORMAL)
+        return Typeface.create(family, style)
+    }
+    private fun applyTypography(view: View) {
+        if (view is TextView) {
+            val base = selectedTypeface()
+            view.typeface = if (weightChoice == 1) {
+                Typeface.create(base, if (writingChoice == 1) Typeface.BOLD_ITALIC else Typeface.NORMAL)
+            } else base
+        }
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) applyTypography(view.getChildAt(i))
+        }
+    }
     private val navy = Color.rgb(29, 35, 43)
     private val muted = Color.rgb(105, 115, 126)
     private val blue = Color.rgb(42, 81, 110)
@@ -134,6 +212,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         tts = TextToSpeech(this, this)
+        uiEnglish = prefs.getString("ui_language", "ru") == "en"
+        fontChoice = prefs.getInt("font_family", 0)
+        weightChoice = prefs.getInt("font_weight", 1)
+        writingChoice = prefs.getInt("writing_style", 0)
         buildUi()
         restoreSession(savedInstanceState)
         refresh()
@@ -145,13 +227,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
     private fun text(value: String, size: Float, color: Int = navy, bold: Boolean = false): TextView =
         TextView(this).apply {
-            text = value; textSize = size; setTextColor(color)
+            text = tr(value); textSize = size; setTextColor(color)
             gravity = Gravity.CENTER
             if (bold) setTypeface(null, Typeface.BOLD)
         }
     private fun button(value: String, color: Int = blue, ink: Int = white, action: () -> Unit): Button =
         Button(this).apply {
-            text = value; textSize = 15f; isAllCaps = false
+            text = tr(value); textSize = 15f; isAllCaps = false
             setTextColor(ink); background = rounded(color, 10)
             setOnClickListener { action() }
         }
@@ -161,7 +243,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         })
     }
     private fun spinner(options: List<String>): Spinner = Spinner(this).apply {
-        adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, options)
+        adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, options.map(::tr))
         minimumHeight = dp(44)
     }
     private fun setting(parent: LinearLayout, title: String, spinner: Spinner) {
@@ -200,6 +282,36 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             visibility = View.GONE
         }
         add(menu, text("НАСТРОЙКИ", 16f, navy, true))
+        add(menu, text("ВНЕШНИЙ ВИД", 16f, navy, true), top = 10)
+        languageSpinner = spinner(listOf("Русский", "Английский")).apply {
+            setSelection(if (uiEnglish) 1 else 0)
+        }
+        fontSpinner = spinner(listOf("Системный", "Без засечек", "С засечками", "Моноширинный")).apply {
+            setSelection(fontChoice.coerceIn(0, 3))
+        }
+        weightSpinner = spinner(listOf("Обычный", "Полужирный", "Жирный")).apply {
+            setSelection(weightChoice.coerceIn(0, 2))
+        }
+        writingSpinner = spinner(listOf("Прямой", "Курсив")).apply {
+            setSelection(writingChoice.coerceIn(0, 1))
+        }
+        setting(menu, "Язык интерфейса", languageSpinner)
+        setting(menu, "Шрифт", fontSpinner)
+        setting(menu, "Толщина шрифта", weightSpinner)
+        setting(menu, "Стиль написания", writingSpinner)
+        val saveAppearance = button(if (uiEnglish) "Apply appearance" else "Применить оформление", white, blue) {
+            val newEnglish = languageSpinner.selectedItemPosition == 1
+            fontChoice = fontSpinner.selectedItemPosition
+            weightChoice = weightSpinner.selectedItemPosition
+            writingChoice = writingSpinner.selectedItemPosition
+            prefs.edit().putString("ui_language", if (newEnglish) "en" else "ru")
+                .putInt("font_family", fontChoice)
+                .putInt("font_weight", weightChoice)
+                .putInt("writing_style", writingChoice).apply()
+            recreate()
+        }
+        add(menu, saveAppearance, 52, 10)
+
         deviceInfo = text("", 13f, muted).apply { gravity = Gravity.START }
         add(menu, deviceInfo, top = 10)
         updateDeviceCapabilities()
@@ -308,6 +420,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 3f))
             add(root, columns, top = 16)
         }
+        applyTypography(root)
     }
 
     private fun updateDeviceCapabilities() {
