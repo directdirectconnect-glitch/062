@@ -21,11 +21,24 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import org.json.JSONArray
+import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
 
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
     data class Word(val id: Int, val en: String, val ru: String, val pron: String)
+    data class PhraseExample(val en: String, val ru: String)
+    private val examplesByWord = mutableMapOf<String, List<PhraseExample>>()
+    private lateinit var examplesToggle: Button
+    private lateinit var examplesBody: LinearLayout
+    private lateinit var nextWordButton: Button
+    private lateinit var transitionSpinner: Spinner
+    private var examplesExpanded = false
+    private var lastGradeOk = false
+    private var lastGradeDetail = ""
+    private var nextDelaySeconds = 4
+    private val nextDelays = listOf(0, 3, 4, 5, 7)
+    private val advanceRunnable = Runnable { if (running && answering) advanceToNext() }
     private val words = mutableListOf<Word>()
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var tts: TextToSpeech
@@ -232,6 +245,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val w = json.getJSONObject(i)
             words.add(Word(w.getInt("id"), w.getString("en"), w.getString("ru"), w.optString("pron")))
         }
+        // A curated offline phrase bank, independent of Android language services.
+        val phraseBank = JSONObject(assets.open("examples.json").bufferedReader().use { it.readText() })
+            .getJSONObject("examples")
+        val phraseKeys = phraseBank.keys()
+        while (phraseKeys.hasNext()) {
+            val word = phraseKeys.next()
+            val phrases = phraseBank.getJSONArray(word)
+            examplesByWord[word.lowercase(Locale.ROOT)] = (0 until phrases.length()).map { i ->
+                val phrase = phrases.getJSONObject(i)
+                PhraseExample(phrase.getString("en"), phrase.getString("ru"))
+            }
+        }
+        nextDelaySeconds = prefs.getInt("next_delay_seconds", 4)
         onDeviceRecognitionSupported =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
@@ -343,10 +369,27 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         dirSpinner = spinner(listOf("English → Русский", "Русский → English", "Смешанный"))
         methodSpinner = spinner(listOf("Голосовая проверка", "Кнопки: знаю / не знаю"))
         blockSpinner = spinner(listOf("10 слов", "20 слов", "30 слов", "50 слов")).apply { setSelection(3) }
-        selectionSpinner = spinner(listOf("Из всего словаря", "Только ошибки", "Ещё не проверенные"))
+        selectionSpinner = spinner(listOf("Из всего словаря", "Только ошибки", "Ещё не проверенные", "С примерами из жизни"))
         setting(menu, "Направление перевода", dirSpinner)
         setting(menu, "Способ ответа", methodSpinner)
         setting(menu, "Размер блока", blockSpinner)
+        transitionSpinner = spinner(
+            if (uiEnglish) listOf("Manual — Next word", "After 3 seconds", "After 4 seconds",
+                "After 5 seconds", "After 7 seconds")
+            else listOf("Вручную — Следующее слово", "Через 3 секунды", "Через 4 секунды",
+                "Через 5 секунд", "Через 7 секунд")
+        ).apply {
+            setSelection(nextDelays.indexOf(nextDelaySeconds).coerceAtLeast(0))
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    nextDelaySeconds = nextDelays[position.coerceIn(nextDelays.indices)]
+                    prefs.edit().putInt("next_delay_seconds", nextDelaySeconds).apply()
+                    if (::nextWordButton.isInitialized && running && answering) scheduleAdvance()
+                }
+            }
+        }
+        setting(menu, if (uiEnglish) "Next word" else "Переход к следующему слову", transitionSpinner)
         setting(menu, "Какие слова повторять", selectionSpinner)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
         add(menu, formsCheck, top = 10)
@@ -398,6 +441,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         pronunciation = text("", 29f, blue, true).apply { setPadding(dp(2), dp(4), dp(2), dp(10)) }
         add(card, pronunciation)
         add(root, card, top = 18)
+        examplesToggle = button(if (uiEnglish) "Everyday phrases  ▾" else "Примеры из жизни  ▾", white, blue) {
+            toggleExamples()
+        }.apply { visibility = View.GONE }
+        add(root, examplesToggle, 52, 12)
+        examplesBody = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = rounded(white, 12)
+            visibility = View.GONE
+        }
+        add(root, examplesBody, top = 8)
 
         status = text("Настройки открываются по кнопке «Меню»", 17f, muted)
         status.setPadding(dp(6), dp(18), dp(6), dp(16))
@@ -417,11 +471,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, rating, top = 12)
         skip = button("Пропустить", white, muted) { grade(false, "Пропущено") }
         add(root, skip, 50, 12)
+        nextWordButton = button(if (uiEnglish) "Next word →" else "Следующее слово →") {
+            if (running && answering) advanceToNext()
+        }.apply { visibility = View.GONE }
+        add(root, nextWordButton, 54, 12)
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
         if (resources.configuration.screenWidthDp >= 600) {
-            val lessonViews = listOf(card, status, listen, repeat, rating, skip)
+            val lessonViews = listOf(card, examplesToggle, examplesBody, status, listen, repeat, rating, skip, nextWordButton)
             val sidebarViews = listOf(counter, progress, stats)
             lessonViews.forEach { root.removeView(it) }
             sidebarViews.forEach { root.removeView(it) }
@@ -475,6 +533,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
     private fun startSession() {
         handler.removeCallbacksAndMessages(null)
+        examplesExpanded = false
         tts.stop(); recognizer?.cancel()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
@@ -488,6 +547,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val candidates = words.filter { w -> when (selectionMode) {
             1 -> (0..1).any { prefs.getInt("${it}_${w.id}", -1) == 0 }
             2 -> (0..1).all { prefs.getInt("${it}_${w.id}", -1) == -1 }
+            3 -> examplesByWord.containsKey(w.en.lowercase(Locale.ROOT))
             else -> true
         } }
         reviewIds = candidates.shuffled().take(sessionSize).map { it.id }
@@ -503,8 +563,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun answer(w: Word) = if (questionDirection == 0) w.ru else w.en
     private fun questionLocale() = if (questionDirection == 0) Locale.US else Locale("ru", "RU")
     private fun answerLocale() = if (questionDirection == 0) Locale("ru", "RU") else Locale.US
-    private fun next() {
+    private fun next(restoringAnswer: Boolean = false, savedDirection: Int? = null) {
         if (!running) return
+        handler.removeCallbacks(advanceRunnable)
+        examplesExpanded = false
+        examplesBody.visibility = View.GONE
+        examplesToggle.visibility = View.GONE
+        nextWordButton.visibility = View.GONE
         if (index >= reviewIds.size) {
             running = false; current = null; answering = false
             prompt.text = "Блок завершён!"
@@ -516,7 +581,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val w = words.first { it.id == reviewIds[index] }
         current = w
-        questionDirection = if (direction == 2) (0..1).random() else direction
+        questionDirection = savedDirection ?: if (direction == 2) (0..1).random() else direction
         answering = false
         counter.text = "Слово ${index + 1} из ${reviewIds.size}"
         progress.progress = (index * 100 / reviewIds.size)
@@ -525,6 +590,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         // The English spelling/pronunciation must not reveal the answer in RU → EN mode.
         pronunciation.text = if (questionDirection == 0) w.pron else "Произношение появится после ответа"
         status.text = if (ttsReady) "Слушай слово..." else "Озвучивание недоступно; можно отвечать кнопками"
+        updateExamplesControls(w)
+        if (restoringAnswer) {
+            answering = true
+            pronunciation.text = "${w.en}  •  ${w.pron}"
+            status.text = (if (lastGradeOk) "Окей!" else "Не окей.") +
+                "\n$lastGradeDetail\nПравильно: ${answer(w)}"
+            nextWordButton.visibility = View.VISIBLE
+            updateButtons(); refresh()
+            scheduleAdvance()
+            return
+        }
         updateButtons(); refresh()
         say(question(w), questionLocale()) {
             if (running && current?.id == w.id && !answering) {
@@ -533,6 +609,81 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
     }
+    private fun updateExamplesControls(word: Word) {
+        val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
+        examplesToggle.visibility = if (phrases.isEmpty()) View.GONE else View.VISIBLE
+        examplesToggle.text = if (uiEnglish) "Everyday phrases (${phrases.size})  ▾"
+            else "Примеры из жизни (${phrases.size})  ▾"
+        examplesBody.visibility = View.GONE
+    }
+
+    private fun toggleExamples() {
+        val word = current ?: return
+        val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
+        if (phrases.isEmpty()) return
+        examplesExpanded = !examplesExpanded
+        examplesToggle.text = if (uiEnglish) {
+            "Everyday phrases (${phrases.size})  " + if (examplesExpanded) "▴" else "▾"
+        } else {
+            "Примеры из жизни (${phrases.size})  " + if (examplesExpanded) "▴" else "▾"
+        }
+        if (examplesExpanded) {
+            handler.removeCallbacks(advanceRunnable)
+            showExamples(word, phrases)
+        } else {
+            examplesBody.visibility = View.GONE
+            if (answering) scheduleAdvance()
+        }
+    }
+
+    private fun showExamples(word: Word, phrases: List<PhraseExample>) {
+        examplesBody.removeAllViews()
+        examplesBody.visibility = View.VISIBLE
+        add(examplesBody,
+            text(if (uiEnglish) "COMMON PHRASES WITH: ${word.en.uppercase(Locale.ROOT)}"
+            else "ПОЛЕЗНЫЕ ФРАЗЫ: ${word.en.uppercase(Locale.ROOT)}", 13f, muted, true).apply {
+                gravity = Gravity.START
+            }, top = 6)
+        phrases.forEachIndexed { i, phrase ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = rounded(bg, 10)
+                setPadding(dp(10), dp(10), dp(8), dp(10))
+            }
+            val labels = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            add(labels, text("${i + 1}. ${phrase.en}", 16f, navy, true).apply {
+                gravity = Gravity.START
+            })
+            add(labels, text(phrase.ru, 14f, muted).apply { gravity = Gravity.START }, top = 4)
+            row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(button("▶", white, blue) {
+                handler.removeCallbacks(advanceRunnable)
+                say(phrase.en, Locale.US) {
+                    if (running && answering && !examplesExpanded) scheduleAdvance()
+                }
+            }, LinearLayout.LayoutParams(dp(52), dp(48)).apply {
+                leftMargin = dp(8)
+            })
+            add(examplesBody, row, top = 8)
+        }
+        applyTypography(examplesBody)
+    }
+
+    private fun scheduleAdvance() {
+        handler.removeCallbacks(advanceRunnable)
+        if (!running || !answering || examplesExpanded || nextDelaySeconds == 0) return
+        handler.postDelayed(advanceRunnable, nextDelaySeconds * 1000L)
+    }
+
+    private fun advanceToNext() {
+        if (!running || !answering) return
+        handler.removeCallbacks(advanceRunnable)
+        tts.stop()
+        index++
+        next()
+    }
+
     private fun offlineVoicesFor(locale: Locale): List<Voice> = runCatching {
         tts.voices.orEmpty()
             .filter { it.locale.language == locale.language && !it.isNetworkConnectionRequired }
@@ -700,9 +851,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val forms = if (formsCheck.isChecked) irregularForms[w.en.lowercase(Locale.ROOT)]?.let { "\nФормы: $it" } ?: "" else ""
         pronunciation.text = "${w.en}  •  ${w.pron}"
         status.text = (if (ok) "Окей!" else "Не окей.") + "\n$detail\nПравильно: ${answer(w)}$forms"
-        updateButtons(); refresh(); index++
+        lastGradeOk = ok
+        lastGradeDetail = detail
+        nextWordButton.visibility = View.VISIBLE
+        updateButtons(); refresh()
         say((if (ok) "Окей. " else "Не окей. ") + answer(w), answerLocale()) {
-            handler.postDelayed({ next() }, 900)
+            if (running && current?.id == w.id && answering) scheduleAdvance()
         }
     }
     private fun refresh() {
@@ -727,6 +881,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putInt("lesson_method", method)
             outState.putInt("lesson_selection", selectionMode)
             outState.putInt("lesson_question_direction", questionDirection)
+            outState.putBoolean("lesson_answered", answering)
+            outState.putBoolean("lesson_examples_expanded", examplesExpanded)
+            outState.putBoolean("lesson_last_grade_ok", lastGradeOk)
+            outState.putString("lesson_last_grade_detail", lastGradeDetail)
         }
     }
     private fun restoreSession(state: Bundle?) {
@@ -741,11 +899,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         selectionMode = state.getInt("lesson_selection", 0)
         dirSpinner.setSelection(direction.coerceIn(0, 2))
         methodSpinner.setSelection(method.coerceIn(0, 1))
-        selectionSpinner.setSelection(selectionMode.coerceIn(0, 2))
+        selectionSpinner.setSelection(selectionMode.coerceIn(0, 3))
         blockSpinner.setSelection(listOf(10, 20, 30, 50).indexOf(ids.size).coerceAtLeast(0))
         running = true
         answering = false
-        next()
+        lastGradeOk = state.getBoolean("lesson_last_grade_ok", false)
+        lastGradeDetail = state.getString("lesson_last_grade_detail", "") ?: ""
+        next(
+            restoringAnswer = state.getBoolean("lesson_answered", false),
+            savedDirection = state.getInt("lesson_question_direction", direction)
+        )
+        if (state.getBoolean("lesson_examples_expanded", false)) toggleExamples()
     }
     override fun onDestroy() {
         running = false
