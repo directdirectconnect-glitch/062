@@ -1492,8 +1492,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                         "Речь не распознана — повтори или ответь кнопками"
                     return
                 }
-                grade(guesses.any { isCorrect(it, w) },
-                    "Распознано: ${guesses.firstOrNull() ?: "—"}", methodSource = "asr")
+                if (guesses.any { isCorrect(it, w) }) {
+                    grade(true, "Распознано: ${guesses.firstOrNull() ?: "—"}",
+                        methodSource = "asr")
+                } else {
+                    // ASR can mishear a correct answer. Do not block progression based
+                    // solely on a negative recognizer result without learner confirmation.
+                    status.text = if (uiEnglish)
+                        "Recognition did not confirm the answer. Retry or mark Know / Don't know."
+                    else "Распознавание не подтвердило ответ. Повтори или выбери «Знаю / Не знаю»."
+                }
             }
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -1801,6 +1809,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 put("sceneId", activeSceneId)
                 put("sessionId", sessionId)
                 put("assisted", assistedThisWord)
+                put("originalBlockIds", JSONArray(originalBlockIds))
+                put("pendingBlockIds", JSONArray(pendingBlockErrors.keys.toList()))
+                put("pendingBlockDirections", JSONArray(pendingBlockErrors.values.toList()))
+                put("remediationRound", remediationRound)
                 put("forcedDirections", JSONArray(reviewIds.map {
                     forcedReviewDirections[it] ?: -1
                 }))
@@ -1846,6 +1858,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 val forcedArray = IntArray(ids.size) { i -> forced?.optInt(i, -1) ?: -1 }
                 require(forcedArray.all { it in -1..1 })
                 putIntArray("lesson_forced_directions", forcedArray)
+                val originalJson = snapshot.optJSONArray("originalBlockIds")
+                val original = if (originalJson == null) ids else IntArray(originalJson.length()) {
+                    originalJson.getInt(it)
+                }
+                require(original.isNotEmpty() && original.size <= 50)
+                require(original.toSet().size == original.size)
+                require(original.all { id -> words.any { it.id == id } })
+                require(ids.all { it in original })
+                val pendingIdsJson = snapshot.optJSONArray("pendingBlockIds")
+                val pendingDirectionsJson = snapshot.optJSONArray("pendingBlockDirections")
+                val pendingIds = if (pendingIdsJson == null) intArrayOf() else
+                    IntArray(pendingIdsJson.length()) { pendingIdsJson.getInt(it) }
+                val pendingDirections = if (pendingDirectionsJson == null) intArrayOf() else
+                    IntArray(pendingDirectionsJson.length()) { pendingDirectionsJson.getInt(it) }
+                require(pendingIds.size == pendingDirections.size)
+                require(pendingIds.toSet().size == pendingIds.size)
+                require(pendingIds.all { it in original })
+                require(pendingDirections.all { it in 0..1 })
+                val retryRound = snapshot.optInt("remediationRound", 0)
+                require(retryRound in 0..100000)
+                putIntArray("lesson_original_block_ids", original)
+                putIntArray("lesson_pending_block_ids", pendingIds)
+                putIntArray("lesson_pending_block_directions", pendingDirections)
+                putInt("lesson_remediation_round", retryRound)
             }
         } catch (_: Exception) {
             sessionPrefs.edit().remove("snapshot").apply()
@@ -1877,6 +1913,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putString("lesson_scene_id", activeSceneId)
             outState.putString("lesson_session_id", sessionId)
             outState.putBoolean("lesson_assisted", assistedThisWord)
+            outState.putIntArray("lesson_original_block_ids", originalBlockIds.toIntArray())
+            outState.putIntArray("lesson_pending_block_ids", pendingBlockErrors.keys.toIntArray())
+            outState.putIntArray("lesson_pending_block_directions", pendingBlockErrors.values.toIntArray())
+            outState.putInt("lesson_remediation_round", remediationRound)
             outState.putIntArray("lesson_forced_directions",
                 reviewIds.map { forcedReviewDirections[it] ?: -1 }.toIntArray())
         }
@@ -1891,6 +1931,22 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         method = state.getInt("lesson_method", 0)
         if (method == 0 && !onDeviceRecognitionSupported) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
+        val savedOriginal = state.getIntArray("lesson_original_block_ids")?.toList().orEmpty()
+        originalBlockIds = savedOriginal.takeIf { it.isNotEmpty() &&
+            it.size <= 50 && it.distinct().size == it.size &&
+            it.all { id -> words.any { word -> word.id == id } } &&
+            ids.all { it in savedOriginal }
+        } ?: ids
+        val missedIds = state.getIntArray("lesson_pending_block_ids").orEmpty()
+        val missedDirections = state.getIntArray("lesson_pending_block_directions").orEmpty()
+        pendingBlockErrors = if (missedIds.size == missedDirections.size &&
+            missedIds.toSet().size == missedIds.size &&
+            missedIds.all { it in originalBlockIds } &&
+            missedDirections.all { it in 0..1 }
+        ) {
+            missedIds.zip(missedDirections.toList()).toMap()
+        } else emptyMap()
+        remediationRound = state.getInt("lesson_remediation_round", 0).coerceIn(0, 100000)
         val restoredDirections = state.getIntArray("lesson_forced_directions")
         forcedReviewDirections = if (restoredDirections?.size == ids.size) {
             ids.zip(restoredDirections.toList())
@@ -1907,7 +1963,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         dirSpinner.setSelection(direction.coerceIn(0, 2))
         methodSpinner.setSelection(method.coerceIn(0, 1))
         selectionSpinner.setSelection(selectionMode.coerceIn(0, 4))
-        blockSpinner.setSelection(listOf(10, 20, 30, 50).indexOf(ids.size).coerceAtLeast(0))
+        blockSpinner.setSelection(
+            listOf(10, 20, 30, 50).indexOfFirst { it >= originalBlockIds.size }
+                .coerceAtLeast(0)
+        )
         running = true
         answering = false
         lastGradeOk = state.getBoolean("lesson_last_grade_ok", false)
