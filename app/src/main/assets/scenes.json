@@ -1,0 +1,628 @@
+{
+  "schemaVersion": 1,
+  "scenes": [
+    {
+      "id": "park",
+      "titleRu": "Парк",
+      "titleEn": "Park",
+      "words": [
+        {
+          "wordId": 212,
+          "word": "tree",
+          "examples": [
+            {
+              "en": "a tall tree",
+              "ru": "высокое дерево"
+            },
+            {
+              "en": "I see a tree in the park.",
+              "ru": "Я вижу дерево в парке."
+            }
+          ]
+        },
+        {
+          "wordId": 711,
+          "word": "grass",
+          "examples": [
+            {
+              "en": "green grass",
+              "ru": "зелёная трава"
+            },
+            {
+              "en": "The grass is green.",
+              "ru": "Трава зелёная."
+            }
+          ]
+        },
+        {
+          "wordId": 1213,
+          "word": "path",
+          "examples": [
+            {
+              "en": "a park path",
+              "ru": "дорожка в парке"
+            },
+            {
+              "en": "I walk along the path.",
+              "ru": "Я иду по дорожке."
+            }
+          ]
+        },
+        {
+          "wordId": 571,
+          "word": "sky",
+          "examples": [
+            {
+              "en": "blue sky",
+              "ru": "голубое небо"
+            },
+            {
+              "en": "The sky is clear.",
+              "ru": "Небо ясное."
+            }
+          ]
+        },
+        {
+          "wordId": 1214,
+          "word": "leaf",
+          "examples": [
+            {
+              "en": "a green leaf",
+              "ru": "зелёный лист"
+            },
+            {
+              "en": "A leaf is on the path.",
+              "ru": "Лист лежит на дорожке."
+            }
+          ]
+        },
+        {
+          "wordId": 1215,
+          "word": "pine",
+          "examples": [
+            {
+              "en": "a tall pine",
+              "ru": "высокая сосна"
+            },
+            {
+              "en": "This pine is very tall.",
+              "ru": "Эта сосна очень высокая."
+            }
+          ]
+        },
+        {
+          "wordId": 1216,
+          "word": "birch",
+          "examples": [
+            {
+              "en": "a birch tree",
+              "ru": "берёза"
+            },
+            {
+              "en": "There is a birch near the path.",
+              "ru": "Рядом с дорожкой растёт берёза."
+            }
+          ]
+        },
+        {
+          "wordId": 1217,
+          "word": "spruce",
+          "examples": [
+            {
+              "en": "a spruce tree",
+              "ru": "ель"
+            },
+            {
+              "en": "I see a spruce in the park.",
+              "ru": "Я вижу ель в парке."
+            }
+          ]
+        },
+        {
+          "wordId": 1218,
+          "word": "bench",
+          "examples": [
+            {
+              "en": "a park bench",
+              "ru": "скамейка в парке"
+            },
+            {
+              "en": "I sit on the bench.",
+              "ru": "Я сижу на скамейке."
+            }
+          ]
+        },
+        {
+          "wordId": 1219,
+          "word": "pond",
+          "examples": [
+            {
+              "en": "a small pond",
+              "ru": "небольшой пруд"
+            },
+            {
+              "en": "There is a pond in the park.",
+              "ru": "В парке есть пруд."
+            }
+          ]
+        },
+        {
+          "wordId": 1220,
+          "word": "flower",
+          "examples": [
+            {
+              "en": "a yellow flower",
+              "ru": "жёлтый цветок"
+            },
+            {
+              "en": "I see flowers near the path.",
+              "ru": "Я вижу цветы у дорожки."
+            }
+          ]
+        },
+        {
+          "wordId": 1221,
+          "word": "bird",
+          "examples": [
+            {
+              "en": "a small bird",
+              "ru": "маленькая птица"
+            },
+            {
+              "en": "A bird is in the tree.",
+              "ru": "На дереве сидит птица."
+            }
+          ]
+        },
+        {
+          "wordId": 1222,
+          "word": "bush",
+          "examples": [
+            {
+              "en": "a green bush",
+              "ru": "зелёный куст"
+            },
+            {
+              "en": "A bush grows near the bench.",
+              "ru": "Рядом со скамейкой растёт куст."
+            }
+          ]
+        },
+        {
+          "wordId": 1223,
+          "word": "branch",
+          "examples": [
+            {
+              "en": "a tree branch",
+              "ru": "ветка дерева"
+            },
+            {
+              "en": "The branch is above me.",
+              "ru": "Ветка находится надо мной."
+            }
+          ]
+        },
+        {
+          "wordId": 1224,
+          "word": "shade",
+          "examples": [
+            {
+              "en": "tree shade",
+              "ru": "тень от дерева"
+            },
+            {
+              "en": "I sit in the shade.",
+              "ru": "Я сижу в тени."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "city",
+      "titleRu": "Город / улица",
+      "titleEn": "City street",
+      "words": [
+        {
+          "wordId": 1210,
+          "word": "bus",
+          "examples": [
+            {
+              "en": "a city bus",
+              "ru": "городской автобус"
+            },
+            {
+              "en": "The bus stops here.",
+              "ru": "Автобус останавливается здесь."
+            }
+          ]
+        },
+        {
+          "wordId": 400,
+          "word": "road",
+          "examples": [
+            {
+              "en": "a busy road",
+              "ru": "оживлённая дорога"
+            },
+            {
+              "en": "The road is busy.",
+              "ru": "На дороге много машин."
+            }
+          ]
+        },
+        {
+          "wordId": 1225,
+          "word": "pedestrian",
+          "examples": [
+            {
+              "en": "a pedestrian",
+              "ru": "пешеход"
+            },
+            {
+              "en": "A pedestrian is crossing the road.",
+              "ru": "Пешеход переходит дорогу."
+            }
+          ]
+        },
+        {
+          "wordId": 1226,
+          "word": "crossing",
+          "examples": [
+            {
+              "en": "a pedestrian crossing",
+              "ru": "пешеходный переход"
+            },
+            {
+              "en": "I am at the crossing.",
+              "ru": "Я нахожусь у перехода."
+            }
+          ]
+        },
+        {
+          "wordId": 1227,
+          "word": "traffic light",
+          "examples": [
+            {
+              "en": "a red traffic light",
+              "ru": "красный сигнал светофора"
+            },
+            {
+              "en": "The traffic light is green.",
+              "ru": "На светофоре зелёный свет."
+            }
+          ]
+        },
+        {
+          "wordId": 1228,
+          "word": "sidewalk",
+          "examples": [
+            {
+              "en": "a wide sidewalk",
+              "ru": "широкий тротуар"
+            },
+            {
+              "en": "I walk on the sidewalk.",
+              "ru": "Я иду по тротуару."
+            }
+          ]
+        },
+        {
+          "wordId": 422,
+          "word": "street",
+          "examples": [
+            {
+              "en": "a busy street",
+              "ru": "оживлённая улица"
+            },
+            {
+              "en": "I am on this street.",
+              "ru": "Я нахожусь на этой улице."
+            }
+          ]
+        },
+        {
+          "wordId": 1229,
+          "word": "intersection",
+          "examples": [
+            {
+              "en": "a road intersection",
+              "ru": "перекрёсток"
+            },
+            {
+              "en": "Turn left at the intersection.",
+              "ru": "Поверните налево на перекрёстке."
+            }
+          ]
+        },
+        {
+          "wordId": 1230,
+          "word": "bus stop",
+          "examples": [
+            {
+              "en": "a bus stop",
+              "ru": "автобусная остановка"
+            },
+            {
+              "en": "I wait at the bus stop.",
+              "ru": "Я жду на автобусной остановке."
+            }
+          ]
+        },
+        {
+          "wordId": 253,
+          "word": "car",
+          "examples": [
+            {
+              "en": "a parked car",
+              "ru": "припаркованная машина"
+            },
+            {
+              "en": "The car is near the crossing.",
+              "ru": "Машина стоит рядом с переходом."
+            }
+          ]
+        },
+        {
+          "wordId": 1231,
+          "word": "bicycle",
+          "examples": [
+            {
+              "en": "a bicycle lane",
+              "ru": "велосипедная дорожка"
+            },
+            {
+              "en": "I see a bicycle by the road.",
+              "ru": "Я вижу велосипед у дороги."
+            }
+          ]
+        },
+        {
+          "wordId": 428,
+          "word": "building",
+          "examples": [
+            {
+              "en": "a tall building",
+              "ru": "высокое здание"
+            },
+            {
+              "en": "This building is tall.",
+              "ru": "Это здание высокое."
+            }
+          ]
+        },
+        {
+          "wordId": 1232,
+          "word": "traffic",
+          "examples": [
+            {
+              "en": "heavy traffic",
+              "ru": "интенсивное движение"
+            },
+            {
+              "en": "There is a lot of traffic.",
+              "ru": "На дороге интенсивное движение."
+            }
+          ]
+        },
+        {
+          "wordId": 563,
+          "word": "sign",
+          "examples": [
+            {
+              "en": "a road sign",
+              "ru": "дорожный знак"
+            },
+            {
+              "en": "I see a sign by the road.",
+              "ru": "Я вижу знак у дороги."
+            }
+          ]
+        },
+        {
+          "wordId": 1211,
+          "word": "taxi",
+          "examples": [
+            {
+              "en": "a yellow taxi",
+              "ru": "жёлтое такси"
+            },
+            {
+              "en": "A taxi is waiting outside.",
+              "ru": "Такси ждёт снаружи."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "metro",
+      "titleRu": "Метро",
+      "titleEn": "Metro / subway",
+      "words": [
+        {
+          "wordId": 1233,
+          "word": "station",
+          "examples": [
+            {
+              "en": "a metro station",
+              "ru": "станция метро"
+            },
+            {
+              "en": "I am at the station.",
+              "ru": "Я на станции."
+            }
+          ]
+        },
+        {
+          "wordId": 529,
+          "word": "train",
+          "examples": [
+            {
+              "en": "a metro train",
+              "ru": "поезд метро"
+            },
+            {
+              "en": "The train is arriving.",
+              "ru": "Поезд прибывает."
+            }
+          ]
+        },
+        {
+          "wordId": 1234,
+          "word": "platform",
+          "examples": [
+            {
+              "en": "the next platform",
+              "ru": "следующая платформа"
+            },
+            {
+              "en": "I wait on the platform.",
+              "ru": "Я жду на платформе."
+            }
+          ]
+        },
+        {
+          "wordId": 1208,
+          "word": "ticket",
+          "examples": [
+            {
+              "en": "a metro ticket",
+              "ru": "билет на метро"
+            },
+            {
+              "en": "I have my ticket.",
+              "ru": "У меня есть билет."
+            }
+          ]
+        },
+        {
+          "wordId": 1235,
+          "word": "escalator",
+          "examples": [
+            {
+              "en": "an escalator",
+              "ru": "эскалатор"
+            },
+            {
+              "en": "I use the escalator.",
+              "ru": "Я пользуюсь эскалатором."
+            }
+          ]
+        },
+        {
+          "wordId": 1236,
+          "word": "turnstile",
+          "examples": [
+            {
+              "en": "a ticket turnstile",
+              "ru": "турникет для прохода"
+            },
+            {
+              "en": "I go through the turnstile.",
+              "ru": "Я прохожу через турникет."
+            }
+          ]
+        },
+        {
+          "wordId": 1237,
+          "word": "entrance",
+          "examples": [
+            {
+              "en": "the metro entrance",
+              "ru": "вход в метро"
+            },
+            {
+              "en": "Where is the entrance?",
+              "ru": "Где вход?"
+            }
+          ]
+        },
+        {
+          "wordId": 1238,
+          "word": "exit",
+          "examples": [
+            {
+              "en": "the station exit",
+              "ru": "выход со станции"
+            },
+            {
+              "en": "The exit is over there.",
+              "ru": "Выход вон там."
+            }
+          ]
+        },
+        {
+          "wordId": 1239,
+          "word": "carriage",
+          "examples": [
+            {
+              "en": "a train carriage",
+              "ru": "вагон поезда"
+            },
+            {
+              "en": "I am in the first carriage.",
+              "ru": "Я в первом вагоне."
+            }
+          ]
+        },
+        {
+          "wordId": 1240,
+          "word": "tunnel",
+          "examples": [
+            {
+              "en": "a dark tunnel",
+              "ru": "тёмный тоннель"
+            },
+            {
+              "en": "The train enters the tunnel.",
+              "ru": "Поезд въезжает в тоннель."
+            }
+          ]
+        },
+        {
+          "wordId": 1241,
+          "word": "metro map",
+          "examples": [
+            {
+              "en": "a metro map",
+              "ru": "схема метро"
+            },
+            {
+              "en": "I look at the metro map.",
+              "ru": "Я смотрю на схему метро."
+            }
+          ]
+        },
+        {
+          "wordId": 130,
+          "word": "line",
+          "examples": [
+            {
+              "en": "a metro line",
+              "ru": "линия метро"
+            },
+            {
+              "en": "This is the blue line.",
+              "ru": "Это синяя линия."
+            }
+          ]
+        },
+        {
+          "wordId": 1242,
+          "word": "stairs",
+          "examples": [
+            {
+              "en": "the station stairs",
+              "ru": "лестница станции"
+            },
+            {
+              "en": "I go down the stairs.",
+              "ru": "Я спускаюсь по лестнице."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
