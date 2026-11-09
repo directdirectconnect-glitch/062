@@ -233,6 +233,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var incorrect: Button
     private lateinit var repeat: Button
     private lateinit var skip: Button
+    private lateinit var ratingRow: LinearLayout
     private lateinit var dirSpinner: Spinner
     private lateinit var methodSpinner: Spinner
     private lateinit var blockSpinner: Spinner
@@ -688,9 +689,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, listen, 64, 8)
         repeat = button("Слушать слово", white, blue) {
             current?.let { word ->
-                handler.removeCallbacks(advanceRunnable)
-                say(question(word), questionLocale()) {
-                    if (running && current?.id == word.id && answering) scheduleAdvance()
+                if (learningMode) {
+                    learningPaused = false
+                    narrateLearningWord()
+                    updateButtons()
+                } else {
+                    handler.removeCallbacks(advanceRunnable)
+                    say(question(word), questionLocale()) {
+                        if (running && current?.id == word.id && answering) scheduleAdvance()
+                    }
                 }
             }
         }
@@ -710,6 +717,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }.apply { visibility = View.GONE }
         add(root, learningPauseButton, 52, 8)
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        ratingRow = rating
         correct = button("Знаю", blue) { grade(true, "Отмечено: знаю") }
         incorrect = button("Не знаю", neutralSurface, neutralInk) { grade(false, "Отмечено: не знаю") }
         rating.addView(correct, LinearLayout.LayoutParams(0, dp(58), 1f).apply { rightMargin = dp(6) })
@@ -718,7 +726,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         skip = button("Пропустить", white, muted) { grade(false, "Пропущено") }
         add(root, skip, 50, 12)
         nextWordButton = button(if (uiEnglish) "Next word →" else "Следующее слово →") {
-            if (running && answering) advanceToNext()
+            if (running && learningMode) {
+                pauseLearningAudio()
+                index++
+                next()
+            } else if (running && answering) advanceToNext()
         }.apply { visibility = View.GONE }
         add(root, nextWordButton, 54, 12)
         stats = text("", 14f, muted)
@@ -800,41 +812,83 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun updateButtons() {
-        listen.visibility = if (method == 0 && onDeviceRecognitionSupported) View.VISIBLE else View.GONE
-        correct.visibility = View.VISIBLE
-        incorrect.visibility = View.VISIBLE
-        listen.isEnabled = running && !answering
-        correct.isEnabled = running && !answering
-        incorrect.isEnabled = running && !answering
-        repeat.isEnabled = running && !answering
-        skip.isEnabled = running && !answering
+        val testing = !learningMode
+        listen.visibility = if (testing && method == 0 && onDeviceRecognitionSupported)
+            View.VISIBLE else View.GONE
+        ratingRow.visibility = if (testing) View.VISIBLE else View.GONE
+        correct.isEnabled = running && testing && !answering
+        incorrect.isEnabled = running && testing && !answering
+        listen.isEnabled = running && testing && !answering
+        repeat.isEnabled = running && (learningMode || !answering)
+        repeat.text = if (learningMode) {
+            if (uiEnglish) "Repeat English + translation" else "Повторить слово и перевод"
+        } else if (uiEnglish) "Listen to word" else "Слушать слово"
+        learningPauseButton.visibility = if (running && learningMode)
+            View.VISIBLE else View.GONE
+        learningPauseButton.text = if (learningPaused) {
+            if (uiEnglish) "Resume listening" else "Продолжить"
+        } else {
+            if (uiEnglish) "Pause listening" else "Пауза"
+        }
+        skip.visibility = if (testing) View.VISIBLE else View.GONE
+        skip.isEnabled = running && testing && !answering
+        nextWordButton.visibility = if (running && (learningMode || answering))
+            View.VISIBLE else View.GONE
     }
-    private fun startSession() {
+
+    private fun startSession(modeOverride: String? = null, fromReminder: Boolean = false) {
         handler.removeCallbacksAndMessages(null)
+        pauseLearningAudio()
         examplesDialog?.dismiss()
         familyDialog?.dismiss()
         examplesExpanded = false
         familyExpanded = false
         tts.stop(); recognizer?.cancel()
+        learningMode = when (modeOverride) {
+            "learn" -> true
+            "check" -> false
+            else -> lessonModeSpinner.selectedItemPosition == 0
+        }
+        lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
+        learningPaused = false
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
-        if (method == 0 && !onDeviceRecognitionSupported) {
+        if (!learningMode && method == 0 && !onDeviceRecognitionSupported) {
             method = 1
             methodSpinner.setSelection(1)
             status.text = "Автономное распознавание недоступно: включён режим ответа кнопками"
         }
-        sessionSize = listOf(10, 20, 30, 50)[blockSpinner.selectedItemPosition]
+        sessionSize = if (fromReminder) 10
+            else listOf(10, 20, 30, 50)[blockSpinner.selectedItemPosition]
         selectionMode = selectionSpinner.selectedItemPosition
-        val candidates = words.filter { w -> when (selectionMode) {
-            1 -> (0..1).any { prefs.getInt("${it}_${w.id}", -1) == 0 }
-            2 -> (0..1).all { prefs.getInt("${it}_${w.id}", -1) == -1 }
-            3 -> examplesByWord.containsKey(w.en.lowercase(Locale.ROOT))
-            4 -> familyIndex.containsKey(w.en.lowercase(Locale.ROOT))
-            else -> true
-        } }
-        reviewIds = candidates.shuffled().take(sessionSize).map { it.id }
+        activeSceneId = scenes.getOrNull(sceneSpinner.selectedItemPosition - 1)?.id ?: ""
+        val selectedScene = scenes.firstOrNull { it.id == activeSceneId }
+        val candidateWords = if (selectedScene != null) {
+            words.filter { it.id in selectedScene.wordIds }
+        } else words.filter { w ->
+            when (selectionMode) {
+                1 -> (0..1).any { prefs.getInt("${it}_${w.id}", -1) == 0 }
+                2 -> (0..1).all { prefs.getInt("${it}_${w.id}", -1) == -1 }
+                3 -> examplesByWord.containsKey(w.en.lowercase(Locale.ROOT))
+                4 -> familyIndex.containsKey(w.en.lowercase(Locale.ROOT))
+                else -> true
+            }
+        }
+        val ordered = if (fromReminder) candidateWords.shuffled().sortedBy { word ->
+            val attempts = (0..1).map { prefs.getInt("${it}_${word.id}", -1) }
+            if (learningMode) {
+                if (attempts.all { it == -1 }) 0 else if (attempts.any { it == 0 }) 1 else 2
+            } else {
+                if (attempts.any { it == 0 }) 0 else if (attempts.any { it == -1 }) 1 else 2
+            }
+        } else candidateWords.shuffled()
+        reviewIds = ordered.take(sessionSize).map { it.id }
         if (reviewIds.isEmpty()) {
-            running = false; status.text = "Для этого режима пока нет слов"; updateButtons(); return
+            running = false
+            status.text = if (uiEnglish) "No words in this selection" else
+                "Для выбранной подборки пока нет слов"
+            updateButtons()
+            return
         }
         index = 0; running = true; answering = false
         settingsDialog?.dismiss()
