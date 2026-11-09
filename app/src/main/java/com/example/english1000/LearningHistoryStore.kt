@@ -65,6 +65,11 @@ class LearningHistoryStore(context: Context) :
         )
     }
 
+    @Synchronized
+    fun clear() {
+        writableDatabase.delete("learning_events", null, null)
+    }
+
     fun totals(): Totals {
         readableDatabase.rawQuery(
             """SELECT COUNT(*),
