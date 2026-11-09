@@ -59,6 +59,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var cardHeading: TextView
     private var learningMode = false
     private var learningPaused = false
+    private var includeExamplesDuringLearning = false
     private var learningSequenceId = 0
     private var learningPauseSeconds = 3
     private val learningPauseOptions = listOf(3, 4, 5, 6, 10, 12)
@@ -394,7 +395,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         incoming.removeExtra(ReminderScheduler.EXTRA_START_REVIEW)
         incoming.removeExtra(ReminderScheduler.EXTRA_REVIEW_MODE)
         when (requested) {
-            "learn" -> startSession(modeOverride = "learn", fromReminder = true)
+            "learn" -> showLearningOptions(fromReminder = true)
             "check" -> startSession(modeOverride = "check", fromReminder = true)
             else -> android.app.AlertDialog.Builder(this)
                 .setTitle(if (uiEnglish) "Practice English" else "Давай проверим слова!")
@@ -402,8 +403,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     arrayOf("Learn words — listen", "Check words — test yourself")
                     else arrayOf("Изучать — слушать слова", "Проверить — вспомнить слова")
                 ) { _, which ->
-                    startSession(modeOverride = if (which == 0) "learn" else "check",
-                        fromReminder = true)
+                    if (which == 0) showLearningOptions(fromReminder = true)
+                    else startSession(modeOverride = "check", fromReminder = true)
                 }
                 .setNegativeButton(if (uiEnglish) "Not now" else "Не сейчас", null)
                 .show()
@@ -485,17 +486,25 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, header)
         // Both listening and recall are primary actions on phones and Fold screens.
         val modeActions = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val modeRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        modeActions.addView(button(if (uiEnglish) "Learn words" else "Изучать",
+        modeRow.addView(button(if (uiEnglish) "Learn words" else "Изучать",
             blue, white) {
-            startSession(modeOverride = "learn")
+            showLearningOptions()
         }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { rightMargin = dp(5) })
-        modeActions.addView(button(if (uiEnglish) "Check words" else "Проверять",
+        modeRow.addView(button(if (uiEnglish) "Check words" else "Проверять",
             neutralSurface, neutralInk) {
             startSession(modeOverride = "check")
         }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(5) })
+        add(modeActions, modeRow)
+        add(modeActions, button(if (uiEnglish) "Ask a word" else "Спроси слово",
+            neutralSurface, neutralInk) {
+            showAskWordOptions()
+        }, 50, 8)
         add(root, modeActions, top = 12)
 
         menu = LinearLayout(this).apply {
@@ -687,7 +696,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             say("Привет! Проверяем произношение.", Locale("ru", "RU"))
         }, 50, 6)
         if (ttsReady) updateOfflineVoiceControls()
-        add(menu, button("Начать новый блок") { startSession() }, 54, 12)
+        add(menu, button("Начать новый блок") {
+            if (lessonModeSpinner.selectedItemPosition == 0) showLearningOptions()
+            else startSession(modeOverride = "check")
+        }, 54, 12)
         // Settings live in a separate dialog reached from the standard three-dot menu.
         // No controls from this panel occupy the lesson screen.
         val settingsScroll = ScrollView(this).apply {
@@ -887,6 +899,24 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         applyTypography(menu)
     }
 
+    // The same pre-start checkbox is used for the two learning modes.
+    private fun showLearningOptions(fromReminder: Boolean = false) {
+        ExampleModeSetup.show(this,
+            if (uiEnglish) "Learn words" else "Изучение слов") { checked ->
+            startSession(modeOverride = "learn", fromReminder = fromReminder,
+                includeExamplesOverride = checked)
+        }
+    }
+
+    private fun showAskWordOptions() {
+        ExampleModeSetup.show(this,
+            if (uiEnglish) "Ask a word" else "Спроси слово") { checked ->
+            startActivity(Intent(this, AskWordActivity::class.java).apply {
+                putExtra(AskWordActivity.EXTRA_INCLUDE_EXAMPLES, checked)
+            })
+        }
+    }
+
     private fun updateButtons() {
         val testing = !learningMode
         listen.visibility = if (testing && method == 0 && onDeviceRecognitionSupported)
@@ -912,7 +942,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             View.VISIBLE else View.GONE
     }
 
-    private fun startSession(modeOverride: String? = null, fromReminder: Boolean = false) {
+    private fun startSession(
+        modeOverride: String? = null, fromReminder: Boolean = false,
+        includeExamplesOverride: Boolean? = null
+    ) {
         handler.removeCallbacksAndMessages(null)
         pauseLearningAudio()
         examplesDialog?.dismiss()
@@ -926,6 +959,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             else -> lessonModeSpinner.selectedItemPosition == 0
         }
         lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
+        includeExamplesDuringLearning = includeExamplesOverride ?: ExampleModeSetup.selected(this)
         learningPaused = false
         assistedThisWord = false
         sessionId = UUID.randomUUID().toString()
@@ -1263,18 +1297,36 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         fun stillCurrent() = running && learningMode && !learningPaused &&
             current?.id == wordId && playbackId == learningSequenceId &&
             !examplesExpanded && !familyExpanded && menu.visibility != View.VISIBLE
+        val selectedExamples = if (includeExamplesDuringLearning) scenePhrases(word) else emptyList()
+        fun scheduleNext() {
+            if (!stillCurrent()) return
+            status.text = if (uiEnglish)
+                "Next word in $learningPauseSeconds seconds"
+            else "Следующее слово через $learningPauseSeconds с"
+            handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
+        }
+        fun speakExampleAt(index: Int) {
+            if (!stillCurrent()) return
+            if (index >= selectedExamples.size) {
+                scheduleNext()
+                return
+            }
+            val example = selectedExamples[index]
+            status.text = if (uiEnglish) "Usage example" else "Пример употребления"
+            say(example.en, Locale.US) {
+                if (stillCurrent()) {
+                    say(example.ru, Locale("ru", "RU")) {
+                        if (stillCurrent()) speakExampleAt(index + 1)
+                    }
+                }
+            }
+        }
         status.text = if (uiEnglish) "English → Russian" else
             "Английское слово → русский перевод"
         say(word.en, Locale.US) {
             if (stillCurrent()) {
                 say(word.ru, Locale("ru", "RU")) {
-                    if (stillCurrent()) {
-                        status.text = if (uiEnglish)
-                            "Next word in $learningPauseSeconds seconds"
-                        else "Следующее слово через $learningPauseSeconds с"
-                        handler.postDelayed(learningAdvanceRunnable,
-                            learningPauseSeconds * 1000L)
-                    }
+                    if (stillCurrent()) speakExampleAt(0)
                 }
             }
         }
@@ -1586,6 +1638,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 put("lastGradeDetail", lastGradeDetail)
                 put("learningMode", learningMode)
                 put("learningPaused", learningPaused)
+                put("includeExamplesDuringLearning", includeExamplesDuringLearning)
                 put("sceneId", activeSceneId)
                 put("sessionId", sessionId)
                 put("assisted", assistedThisWord)
@@ -1624,6 +1677,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 putString("lesson_last_grade_detail", snapshot.optString("lastGradeDetail", ""))
                 putBoolean("lesson_learning_mode", snapshot.optBoolean("learningMode"))
                 putBoolean("lesson_learning_paused", snapshot.optBoolean("learningPaused"))
+                putBoolean("lesson_include_examples",
+                    snapshot.optBoolean("includeExamplesDuringLearning"))
                 putString("lesson_scene_id", snapshot.optString("sceneId", ""))
                 putString("lesson_session_id", snapshot.optString("sessionId", ""))
                 putBoolean("lesson_assisted", snapshot.optBoolean("assisted"))
@@ -1655,6 +1710,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putString("lesson_last_grade_detail", lastGradeDetail)
             outState.putBoolean("lesson_learning_mode", learningMode)
             outState.putBoolean("lesson_learning_paused", learningPaused)
+            outState.putBoolean("lesson_include_examples", includeExamplesDuringLearning)
             outState.putString("lesson_scene_id", activeSceneId)
             outState.putString("lesson_session_id", sessionId)
             outState.putBoolean("lesson_assisted", assistedThisWord)
@@ -1672,6 +1728,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         selectionMode = state.getInt("lesson_selection", 0)
         learningMode = state.getBoolean("lesson_learning_mode", false)
         learningPaused = state.getBoolean("lesson_learning_paused", false)
+        includeExamplesDuringLearning = state.getBoolean("lesson_include_examples",
+            ExampleModeSetup.selected(this))
         activeSceneId = state.getString("lesson_scene_id", "") ?: ""
         sessionId = state.getString("lesson_session_id", "")
             ?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
