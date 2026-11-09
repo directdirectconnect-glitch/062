@@ -29,6 +29,12 @@ import java.util.Locale
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
     data class Word(val id: Int, val en: String, val ru: String, val pron: String)
     data class PhraseExample(val en: String, val ru: String)
+    data class Scene(
+        val id: String, val titleRu: String, val titleEn: String,
+        val wordIds: List<Int>, val examples: Map<Int, List<PhraseExample>>
+    )
+    private val scenes = mutableListOf<Scene>()
+    private var activeSceneId = ""
     data class FamilyMember(val word: String, val ru: String, val pos: String, val build: String)
     data class WordFamily(
         val base: String, val baseRu: String, val basePos: String,
@@ -43,6 +49,27 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var examplesBody: LinearLayout
     private lateinit var nextWordButton: Button
     private lateinit var transitionSpinner: Spinner
+    private lateinit var lessonModeSpinner: Spinner
+    private lateinit var sceneSpinner: Spinner
+    private lateinit var learningPauseSpinner: Spinner
+    private lateinit var reminderSpinner: Spinner
+    private lateinit var learningPauseButton: Button
+    private lateinit var translationText: TextView
+    private lateinit var cardHeading: TextView
+    private var learningMode = false
+    private var learningPaused = false
+    private var learningSequenceId = 0
+    private var learningPauseSeconds = 3
+    private val learningPauseOptions = listOf(3, 4, 5, 6, 10, 12)
+    private val reminderHourOptions = listOf(0, 1, 2, 3, 4, 6, 8, 12, 24)
+    private val reminderPermissionRequestCode = 183
+    private val learningAdvanceRunnable = Runnable {
+        if (running && learningMode && !learningPaused && !examplesExpanded &&
+            !familyExpanded && menu.visibility != View.VISIBLE) {
+            index++
+            next()
+        }
+    }
     private var examplesExpanded = false
     private var lastGradeOk = false
     private var lastGradeDetail = ""
@@ -306,6 +333,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 familyIndex[member.word.lowercase(Locale.ROOT)] = family
             }
         }
+        val sceneBank = JSONObject(assets.open("scenes.json").bufferedReader().use {
+            it.readText()
+        }).getJSONArray("scenes")
+        for (i in 0 until sceneBank.length()) {
+            val item = sceneBank.getJSONObject(i)
+            val entries = item.getJSONArray("words")
+            val ids = mutableListOf<Int>()
+            val contextualExamples = mutableMapOf<Int, List<PhraseExample>>()
+            for (j in 0 until entries.length()) {
+                val entry = entries.getJSONObject(j)
+                val wordId = entry.getInt("wordId")
+                if (words.none { it.id == wordId }) continue
+                ids.add(wordId)
+                val arr = entry.getJSONArray("examples")
+                contextualExamples[wordId] = (0 until arr.length()).map { k ->
+                    val example = arr.getJSONObject(k)
+                    PhraseExample(example.getString("en"), example.getString("ru"))
+                }.take(2)
+            }
+            scenes.add(Scene(item.getString("id"), item.getString("titleRu"),
+                item.getString("titleEn"), ids, contextualExamples))
+        }
+        learningPauseSeconds = prefs.getInt("learning_pause_seconds", 3)
+            .takeIf { it in learningPauseOptions } ?: 3
         nextDelaySeconds = prefs.getInt("next_delay_seconds", 4)
         onDeviceRecognitionSupported =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -318,6 +369,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         buildUi()
         restoreSession(savedInstanceState)
         refresh()
+        handleReminderEntry(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent != null) {
+            setIntent(intent)
+            handleReminderEntry(intent)
+        }
     }
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
