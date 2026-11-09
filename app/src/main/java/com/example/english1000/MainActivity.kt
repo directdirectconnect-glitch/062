@@ -1151,6 +1151,51 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         applyTypography(examplesBody)
     }
 
+    // Playback is independent of test scoring. Listening to a word never marks
+    // it as learned; the learner must later pass a separate recall test.
+    private fun pauseLearningAudio() {
+        learningSequenceId++
+        handler.removeCallbacks(learningAdvanceRunnable)
+        if (::tts.isInitialized) tts.stop()
+    }
+
+    private fun resumeLearningWord() {
+        if (running && learningMode && !learningPaused && !examplesExpanded &&
+            !familyExpanded && menu.visibility != View.VISIBLE) narrateLearningWord()
+    }
+
+    private fun narrateLearningWord() {
+        val word = current ?: return
+        if (!running || !learningMode || learningPaused ||
+            examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
+        if (!ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
+            status.text = if (uiEnglish) "Install both offline TTS voices in Android settings."
+                else "Для прослушивания нужны офлайн-голоса английского и русского языка Android."
+            return
+        }
+        pauseLearningAudio()
+        val playbackId = learningSequenceId
+        val wordId = word.id
+        fun stillCurrent() = running && learningMode && !learningPaused &&
+            current?.id == wordId && playbackId == learningSequenceId &&
+            !examplesExpanded && !familyExpanded && menu.visibility != View.VISIBLE
+        status.text = if (uiEnglish) "English → Russian" else
+            "Английское слово → русский перевод"
+        say(word.en, Locale.US) {
+            if (stillCurrent()) {
+                say(word.ru, Locale("ru", "RU")) {
+                    if (stillCurrent()) {
+                        status.text = if (uiEnglish)
+                            "Next word in $learningPauseSeconds seconds"
+                        else "Следующее слово через $learningPauseSeconds с"
+                        handler.postDelayed(learningAdvanceRunnable,
+                            learningPauseSeconds * 1000L)
+                    }
+                }
+            }
+        }
+    }
+
     private fun scheduleAdvance() {
         handler.removeCallbacks(advanceRunnable)
         if (!running || !answering || examplesExpanded || familyExpanded ||
@@ -1353,7 +1398,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             englishOfflineVoices = offlineVoicesFor(Locale.US)
             russianOfflineVoices = offlineVoicesFor(Locale("ru", "RU"))
         }
-        runOnUiThread { updateOfflineVoiceControls() }
+        runOnUiThread {
+            updateOfflineVoiceControls()
+            if (ttsReady && running && learningMode && !learningPaused) resumeLearningWord()
+        }
     }
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -1364,6 +1412,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putInt("lesson_method", method)
             outState.putInt("lesson_selection", selectionMode)
             outState.putInt("lesson_question_direction", questionDirection)
+            outState.putBoolean("lesson_learning_mode", learningMode)
+            outState.putBoolean("lesson_learning_paused", learningPaused)
+            outState.putString("lesson_scene_id", activeSceneId)
             outState.putBoolean("lesson_answered", answering)
             outState.putBoolean("lesson_examples_expanded", examplesExpanded)
             outState.putBoolean("lesson_family_expanded", familyExpanded)
@@ -1378,6 +1429,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         index = state.getInt("lesson_index", 0)
         if (index !in reviewIds.indices) return
         direction = state.getInt("lesson_direction", 0)
+        learningMode = state.getBoolean("lesson_learning_mode", false)
+        learningPaused = state.getBoolean("lesson_learning_paused", false)
+        lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
+        activeSceneId = state.getString("lesson_scene_id", "") ?: ""
+        sceneSpinner.setSelection((scenes.indexOfFirst { it.id == activeSceneId } + 1)
+            .coerceAtLeast(0))
         method = state.getInt("lesson_method", 0)
         if (method == 0 && !onDeviceRecognitionSupported) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
@@ -1390,7 +1447,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         lastGradeOk = state.getBoolean("lesson_last_grade_ok", false)
         lastGradeDetail = state.getString("lesson_last_grade_detail", "") ?: ""
         next(
-            restoringAnswer = state.getBoolean("lesson_answered", false),
+            restoringAnswer = !learningMode && state.getBoolean("lesson_answered", false),
             savedDirection = state.getInt("lesson_question_direction", direction)
         )
         if (state.getBoolean("lesson_examples_expanded", false)) toggleExamples()
