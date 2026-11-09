@@ -1,0 +1,629 @@
+{
+  "schemaVersion": 1,
+  "examples": {
+    "airport": [
+      {
+        "en": "I'm at the airport.",
+        "ru": "Я в аэропорту."
+      },
+      {
+        "en": "How do I get to the airport?",
+        "ru": "Как добраться до аэропорта?"
+      },
+      {
+        "en": "What time should I arrive at the airport?",
+        "ru": "Во сколько мне нужно приехать в аэропорт?"
+      },
+      {
+        "en": "Is there a bus to the airport?",
+        "ru": "Есть автобус до аэропорта?"
+      },
+      {
+        "en": "I'm going to the airport now.",
+        "ru": "Я сейчас еду в аэропорт."
+      },
+      {
+        "en": "Can you take me to the airport?",
+        "ru": "Можете отвезти меня в аэропорт?"
+      }
+    ],
+    "coffee": [
+      {
+        "en": "I'd like a coffee, please.",
+        "ru": "Я бы хотел кофе, пожалуйста."
+      },
+      {
+        "en": "Can I have a coffee to go?",
+        "ru": "Можно мне кофе с собой?"
+      },
+      {
+        "en": "Do you have decaf coffee?",
+        "ru": "У вас есть кофе без кофеина?"
+      },
+      {
+        "en": "Where can I get a coffee?",
+        "ru": "Где я могу купить кофе?"
+      },
+      {
+        "en": "This coffee is too hot.",
+        "ru": "Этот кофе слишком горячий."
+      },
+      {
+        "en": "Could I have another coffee?",
+        "ru": "Можно мне ещё кофе?"
+      }
+    ],
+    "hotel": [
+      {
+        "en": "Where is my hotel?",
+        "ru": "Где находится мой отель?"
+      },
+      {
+        "en": "I'd like to book a hotel room.",
+        "ru": "Я бы хотел забронировать номер в отеле."
+      },
+      {
+        "en": "Is breakfast included at the hotel?",
+        "ru": "Завтрак включён в стоимость проживания в отеле?"
+      },
+      {
+        "en": "Can I check in at the hotel now?",
+        "ru": "Я могу сейчас заселиться в отель?"
+      },
+      {
+        "en": "How far is the hotel from here?",
+        "ru": "Как далеко отсюда до отеля?"
+      },
+      {
+        "en": "Could you call the hotel for me?",
+        "ru": "Не могли бы вы позвонить в отель за меня?"
+      }
+    ],
+    "restaurant": [
+      {
+        "en": "Is there a restaurant nearby?",
+        "ru": "Поблизости есть ресторан?"
+      },
+      {
+        "en": "I'd like a table for two at the restaurant.",
+        "ru": "Я бы хотел столик на двоих в ресторане."
+      },
+      {
+        "en": "What time does the restaurant open?",
+        "ru": "Во сколько открывается ресторан?"
+      },
+      {
+        "en": "Can we pay by card at this restaurant?",
+        "ru": "В этом ресторане можно заплатить картой?"
+      },
+      {
+        "en": "Is this restaurant open for lunch?",
+        "ru": "Этот ресторан открыт в обед?"
+      },
+      {
+        "en": "Could you recommend a good restaurant?",
+        "ru": "Не могли бы вы порекомендовать хороший ресторан?"
+      }
+    ],
+    "ticket": [
+      {
+        "en": "I'd like to buy a ticket.",
+        "ru": "Я бы хотел купить билет."
+      },
+      {
+        "en": "How much is a one-way ticket?",
+        "ru": "Сколько стоит билет в одну сторону?"
+      },
+      {
+        "en": "Where can I show my ticket?",
+        "ru": "Где мне предъявить билет?"
+      },
+      {
+        "en": "Can I change my ticket?",
+        "ru": "Могу ли я изменить билет?"
+      },
+      {
+        "en": "I can't find my ticket.",
+        "ru": "Я не могу найти свой билет."
+      },
+      {
+        "en": "Does this ticket include luggage?",
+        "ru": "Включён ли багаж в этот билет?"
+      }
+    ],
+    "passport": [
+      {
+        "en": "Here is my passport.",
+        "ru": "Вот мой паспорт."
+      },
+      {
+        "en": "Where is passport control?",
+        "ru": "Где паспортный контроль?"
+      },
+      {
+        "en": "I need to renew my passport.",
+        "ru": "Мне нужно обновить паспорт."
+      },
+      {
+        "en": "Can I show a digital copy of my passport?",
+        "ru": "Могу я показать цифровую копию паспорта?"
+      },
+      {
+        "en": "My passport is in my bag.",
+        "ru": "Мой паспорт в сумке."
+      },
+      {
+        "en": "I've lost my passport.",
+        "ru": "Я потерял паспорт."
+      }
+    ],
+    "bus": [
+      {
+        "en": "Which bus goes to the city center?",
+        "ru": "Какой автобус идёт в центр города?"
+      },
+      {
+        "en": "Where is the bus stop?",
+        "ru": "Где автобусная остановка?"
+      },
+      {
+        "en": "How much is the bus fare?",
+        "ru": "Сколько стоит проезд на автобусе?"
+      },
+      {
+        "en": "Does this bus go to the airport?",
+        "ru": "Этот автобус идёт до аэропорта?"
+      },
+      {
+        "en": "What time is the next bus?",
+        "ru": "Во сколько следующий автобус?"
+      },
+      {
+        "en": "Can I pay on the bus?",
+        "ru": "Можно оплатить проезд в автобусе?"
+      }
+    ],
+    "taxi": [
+      {
+        "en": "Where can I get a taxi?",
+        "ru": "Где можно взять такси?"
+      },
+      {
+        "en": "Could you call me a taxi?",
+        "ru": "Не могли бы вы вызвать мне такси?"
+      },
+      {
+        "en": "How much is a taxi to the airport?",
+        "ru": "Сколько стоит такси до аэропорта?"
+      },
+      {
+        "en": "I need a taxi for six o'clock.",
+        "ru": "Мне нужно такси на шесть часов."
+      },
+      {
+        "en": "Can I pay for the taxi by card?",
+        "ru": "Я могу оплатить такси картой?"
+      },
+      {
+        "en": "Please stop the taxi here.",
+        "ru": "Пожалуйста, остановите такси здесь."
+      }
+    ],
+    "water": [
+      {
+        "en": "Could I have some water, please?",
+        "ru": "Можно мне воды, пожалуйста?"
+      },
+      {
+        "en": "Is this water safe to drink?",
+        "ru": "Эту воду безопасно пить?"
+      },
+      {
+        "en": "I'd like a bottle of water.",
+        "ru": "Я бы хотел бутылку воды."
+      },
+      {
+        "en": "Do you have still water?",
+        "ru": "У вас есть негазированная вода?"
+      },
+      {
+        "en": "Can I get some hot water?",
+        "ru": "Можно мне немного горячей воды?"
+      },
+      {
+        "en": "Where can I refill my water bottle?",
+        "ru": "Где можно наполнить бутылку водой?"
+      }
+    ],
+    "train": [
+      {
+        "en": "What time does the train leave?",
+        "ru": "Во сколько отправляется поезд?"
+      },
+      {
+        "en": "Is this the train to Berlin?",
+        "ru": "Это поезд до Берлина?"
+      },
+      {
+        "en": "Where can I buy a train ticket?",
+        "ru": "Где купить билет на поезд?"
+      },
+      {
+        "en": "The train is running late.",
+        "ru": "Поезд опаздывает."
+      },
+      {
+        "en": "Which platform is my train on?",
+        "ru": "С какой платформы отправляется мой поезд?"
+      },
+      {
+        "en": "Can I take this train with my ticket?",
+        "ru": "Я могу сесть на этот поезд по своему билету?"
+      }
+    ],
+    "shop": [
+      {
+        "en": "Is there a shop nearby?",
+        "ru": "Поблизости есть магазин?"
+      },
+      {
+        "en": "What time does the shop close?",
+        "ru": "Во сколько закрывается магазин?"
+      },
+      {
+        "en": "I want to shop for souvenirs.",
+        "ru": "Я хочу купить сувениры."
+      },
+      {
+        "en": "Can I return this to the shop?",
+        "ru": "Я могу вернуть это в магазин?"
+      },
+      {
+        "en": "Does this shop accept cards?",
+        "ru": "В этом магазине принимают карты?"
+      },
+      {
+        "en": "I'm looking for a bookshop.",
+        "ru": "Я ищу книжный магазин."
+      }
+    ],
+    "pay": [
+      {
+        "en": "Can I pay by card?",
+        "ru": "Могу я оплатить картой?"
+      },
+      {
+        "en": "I'd like to pay now.",
+        "ru": "Я бы хотел заплатить сейчас."
+      },
+      {
+        "en": "Do I need to pay in advance?",
+        "ru": "Мне нужно оплатить заранее?"
+      },
+      {
+        "en": "Where can I pay for parking?",
+        "ru": "Где можно оплатить парковку?"
+      },
+      {
+        "en": "Can we pay separately?",
+        "ru": "Мы можем заплатить раздельно?"
+      },
+      {
+        "en": "I'll pay in cash.",
+        "ru": "Я заплачу наличными."
+      }
+    ],
+    "buy": [
+      {
+        "en": "Where can I buy a ticket?",
+        "ru": "Где можно купить билет?"
+      },
+      {
+        "en": "I'd like to buy this one.",
+        "ru": "Я бы хотел купить вот это."
+      },
+      {
+        "en": "Can I buy it online?",
+        "ru": "Можно купить это онлайн?"
+      },
+      {
+        "en": "I need to buy some food.",
+        "ru": "Мне нужно купить еды."
+      },
+      {
+        "en": "Is this a good place to buy souvenirs?",
+        "ru": "Это хорошее место для покупки сувениров?"
+      },
+      {
+        "en": "Can I buy two of these?",
+        "ru": "Могу я купить две такие вещи?"
+      }
+    ],
+    "where": [
+      {
+        "en": "Where is the nearest station?",
+        "ru": "Где ближайшая станция?"
+      },
+      {
+        "en": "Where can I get a taxi?",
+        "ru": "Где я могу взять такси?"
+      },
+      {
+        "en": "Where do I check in?",
+        "ru": "Где мне зарегистрироваться?"
+      },
+      {
+        "en": "Where is the bathroom?",
+        "ru": "Где туалет?"
+      },
+      {
+        "en": "Where can I pay?",
+        "ru": "Где я могу оплатить?"
+      },
+      {
+        "en": "Where are you from?",
+        "ru": "Откуда вы?"
+      }
+    ],
+    "help": [
+      {
+        "en": "Can you help me, please?",
+        "ru": "Вы можете мне помочь, пожалуйста?"
+      },
+      {
+        "en": "I need help with my luggage.",
+        "ru": "Мне нужна помощь с багажом."
+      },
+      {
+        "en": "Could you help me find the station?",
+        "ru": "Не могли бы вы помочь мне найти станцию?"
+      },
+      {
+        "en": "Thank you for your help.",
+        "ru": "Спасибо за вашу помощь."
+      },
+      {
+        "en": "Is there anyone who can help?",
+        "ru": "Кто-нибудь может помочь?"
+      },
+      {
+        "en": "I need help with this form.",
+        "ru": "Мне нужна помощь с этим бланком."
+      }
+    ],
+    "need": [
+      {
+        "en": "I need a room for tonight.",
+        "ru": "Мне нужен номер на сегодня."
+      },
+      {
+        "en": "Do I need a reservation?",
+        "ru": "Мне нужно бронирование?"
+      },
+      {
+        "en": "I need to find a pharmacy.",
+        "ru": "Мне нужно найти аптеку."
+      },
+      {
+        "en": "What do I need to bring?",
+        "ru": "Что мне нужно взять с собой?"
+      },
+      {
+        "en": "I need some more time.",
+        "ru": "Мне нужно ещё немного времени."
+      },
+      {
+        "en": "Do you need any help?",
+        "ru": "Вам нужна помощь?"
+      }
+    ],
+    "want": [
+      {
+        "en": "I want to see the city.",
+        "ru": "Я хочу посмотреть город."
+      },
+      {
+        "en": "Do you want some coffee?",
+        "ru": "Хотите кофе?"
+      },
+      {
+        "en": "I don't want a receipt.",
+        "ru": "Мне не нужен чек."
+      },
+      {
+        "en": "What do you want to order?",
+        "ru": "Что вы хотите заказать?"
+      },
+      {
+        "en": "I want to go home.",
+        "ru": "Я хочу домой."
+      },
+      {
+        "en": "I want to learn English.",
+        "ru": "Я хочу выучить английский."
+      }
+    ],
+    "go": [
+      {
+        "en": "How do I go to the city center?",
+        "ru": "Как мне добраться до центра города?"
+      },
+      {
+        "en": "I need to go now.",
+        "ru": "Мне нужно сейчас идти."
+      },
+      {
+        "en": "Can we go by train?",
+        "ru": "Можем поехать на поезде?"
+      },
+      {
+        "en": "Let's go to the restaurant.",
+        "ru": "Давай пойдём в ресторан."
+      },
+      {
+        "en": "Where do I go after security?",
+        "ru": "Куда мне идти после досмотра?"
+      },
+      {
+        "en": "I go to work by bus.",
+        "ru": "Я езжу на работу на автобусе."
+      }
+    ],
+    "time": [
+      {
+        "en": "What time is it?",
+        "ru": "Который час?"
+      },
+      {
+        "en": "What time does the shop open?",
+        "ru": "Во сколько открывается магазин?"
+      },
+      {
+        "en": "Do you have time for a question?",
+        "ru": "У вас есть время для вопроса?"
+      },
+      {
+        "en": "I need more time.",
+        "ru": "Мне нужно больше времени."
+      },
+      {
+        "en": "It's time to leave.",
+        "ru": "Пора уходить."
+      },
+      {
+        "en": "Is this a good time to call?",
+        "ru": "Сейчас удобно позвонить?"
+      }
+    ],
+    "take": [
+      {
+        "en": "Can you take me to the hotel?",
+        "ru": "Можете отвезти меня в отель?"
+      },
+      {
+        "en": "How long does it take?",
+        "ru": "Сколько это занимает времени?"
+      },
+      {
+        "en": "Can I take this seat?",
+        "ru": "Можно занять это место?"
+      },
+      {
+        "en": "I'll take this one.",
+        "ru": "Я возьму вот это."
+      },
+      {
+        "en": "Please take a seat.",
+        "ru": "Пожалуйста, присаживайтесь."
+      },
+      {
+        "en": "Do I need to take off my shoes?",
+        "ru": "Мне нужно снять обувь?"
+      }
+    ],
+    "plane": [
+      {
+        "en": "What time does the plane leave?",
+        "ru": "Во сколько вылетает самолёт?"
+      },
+      {
+        "en": "I'm waiting for my plane.",
+        "ru": "Я жду свой самолёт."
+      },
+      {
+        "en": "Is the plane on time?",
+        "ru": "Самолёт вылетает по расписанию?"
+      },
+      {
+        "en": "Can I bring this on the plane?",
+        "ru": "Можно взять это в самолёт?"
+      },
+      {
+        "en": "Where do I board the plane?",
+        "ru": "Где посадка на самолёт?"
+      },
+      {
+        "en": "My plane has been delayed.",
+        "ru": "Мой самолёт задерживается."
+      }
+    ],
+    "travel": [
+      {
+        "en": "I love to travel.",
+        "ru": "Я люблю путешествовать."
+      },
+      {
+        "en": "I travel for work.",
+        "ru": "Я езжу в командировки."
+      },
+      {
+        "en": "How do you usually travel?",
+        "ru": "Как вы обычно путешествуете?"
+      },
+      {
+        "en": "I want to travel by train.",
+        "ru": "Я хочу путешествовать на поезде."
+      },
+      {
+        "en": "It's easy to travel around the city.",
+        "ru": "По городу легко передвигаться."
+      },
+      {
+        "en": "Do I need insurance to travel?",
+        "ru": "Нужна ли мне страховка для путешествия?"
+      }
+    ],
+    "can": [
+      {
+        "en": "Can you speak more slowly?",
+        "ru": "Можете говорить помедленнее?"
+      },
+      {
+        "en": "Can I pay by card?",
+        "ru": "Можно оплатить картой?"
+      },
+      {
+        "en": "Can you show me the way?",
+        "ru": "Можете показать мне дорогу?"
+      },
+      {
+        "en": "Can I sit here?",
+        "ru": "Можно здесь сесть?"
+      },
+      {
+        "en": "Can we leave our bags here?",
+        "ru": "Можем оставить здесь сумки?"
+      },
+      {
+        "en": "Can you repeat that, please?",
+        "ru": "Можете повторить, пожалуйста?"
+      }
+    ],
+    "book": [
+      {
+        "en": "I'm reading a book.",
+        "ru": "Я читаю книгу."
+      },
+      {
+        "en": "Do you have this book in English?",
+        "ru": "У вас есть эта книга на английском?"
+      },
+      {
+        "en": "Can I borrow this book?",
+        "ru": "Могу я взять эту книгу?"
+      },
+      {
+        "en": "Where can I buy a travel book?",
+        "ru": "Где можно купить путеводитель?"
+      },
+      {
+        "en": "This book is easy to read.",
+        "ru": "Эту книгу легко читать."
+      },
+      {
+        "en": "Could you recommend a good book?",
+        "ru": "Не могли бы вы посоветовать хорошую книгу?"
+      }
+    ]
+  }
+}
