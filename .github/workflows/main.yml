@@ -3,7 +3,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, 'integrate/**', 'develop/**', 'design/**']
+    branches: [main, 'integrate/**', 'develop/**', 'design/**', 'beta/**']
   workflow_dispatch:
 
 jobs:
