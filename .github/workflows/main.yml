@@ -31,6 +31,9 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Verify local content and integrated activities
+        run: python3 scripts/validate_integration.py
+
       - name: Run unit tests and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
