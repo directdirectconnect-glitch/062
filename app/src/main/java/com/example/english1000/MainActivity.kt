@@ -387,6 +387,45 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
 
+    // Android displayed a notification: only react to a notification tap.
+    private fun handleReminderEntry(incoming: Intent?) {
+        if (incoming?.getBooleanExtra(ReminderScheduler.EXTRA_START_REVIEW, false) != true) return
+        val requested = incoming.getStringExtra(ReminderScheduler.EXTRA_REVIEW_MODE) ?: "choose"
+        incoming.removeExtra(ReminderScheduler.EXTRA_START_REVIEW)
+        incoming.removeExtra(ReminderScheduler.EXTRA_REVIEW_MODE)
+        when (requested) {
+            "learn" -> startSession(modeOverride = "learn", fromReminder = true)
+            "check" -> startSession(modeOverride = "check", fromReminder = true)
+            else -> android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Practice English" else "Давай проверим слова!")
+                .setItems(if (uiEnglish)
+                    arrayOf("Learn words — listen", "Check words — test yourself")
+                    else arrayOf("Изучать — слушать слова", "Проверить — вспомнить слова")
+                ) { _, which ->
+                    startSession(modeOverride = if (which == 0) "learn" else "check",
+                        fromReminder = true)
+                }
+                .setNegativeButton(if (uiEnglish) "Not now" else "Не сейчас", null)
+                .show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == reminderPermissionRequestCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ReminderScheduler.schedule(this)
+            } else {
+                Toast.makeText(this, if (uiEnglish)
+                    "Enable notifications in Android settings to receive reminders."
+                    else "Для напоминаний разреши уведомления в настройках Android.",
+                    Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
     private fun rounded(color: Int, radius: Int = 12): GradientDrawable = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
@@ -1182,6 +1221,49 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             add(examplesBody, row, top = 8)
         }
         applyTypography(examplesBody)
+    }
+
+    private fun pauseLearningAudio() {
+        learningSequenceId++
+        handler.removeCallbacks(learningAdvanceRunnable)
+        if (::tts.isInitialized) tts.stop()
+    }
+
+    private fun resumeLearningWord() {
+        if (running && learningMode && !learningPaused && !examplesExpanded &&
+            !familyExpanded && menu.visibility != View.VISIBLE) narrateLearningWord()
+    }
+
+    private fun narrateLearningWord() {
+        val word = current ?: return
+        if (!running || !learningMode || learningPaused ||
+            examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
+        if (!ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
+            status.text = if (uiEnglish) "Install both offline TTS voices in Android settings."
+                else "Для прослушивания нужны офлайн-голоса английского и русского языка Android."
+            return
+        }
+        pauseLearningAudio()
+        val playbackId = learningSequenceId
+        val wordId = word.id
+        fun stillCurrent() = running && learningMode && !learningPaused &&
+            current?.id == wordId && playbackId == learningSequenceId &&
+            !examplesExpanded && !familyExpanded && menu.visibility != View.VISIBLE
+        status.text = if (uiEnglish) "English → Russian" else
+            "Английское слово → русский перевод"
+        say(word.en, Locale.US) {
+            if (stillCurrent()) {
+                say(word.ru, Locale("ru", "RU")) {
+                    if (stillCurrent()) {
+                        status.text = if (uiEnglish)
+                            "Next word in $learningPauseSeconds seconds"
+                        else "Следующее слово через $learningPauseSeconds с"
+                        handler.postDelayed(learningAdvanceRunnable,
+                            learningPauseSeconds * 1000L)
+                    }
+                }
+            }
+        }
     }
 
     private fun scheduleAdvance() {
