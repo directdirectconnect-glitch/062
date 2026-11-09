@@ -478,6 +478,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
         add(root, header)
+        // Two equal first-class activities. Pick the current location in Settings.
+        val modeActions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        modeActions.addView(button(if (uiEnglish) "Learn words" else "Изучать",
+            blue, white) {
+            startSession(modeOverride = "learn")
+        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { rightMargin = dp(5) })
+        modeActions.addView(button(if (uiEnglish) "Check words" else "Проверять",
+            neutralSurface, neutralInk) {
+            startSession(modeOverride = "check")
+        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(5) })
+        add(root, modeActions, top = 12)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -780,7 +794,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (resources.configuration.screenWidthDp >= 600) {
             val lessonViews = listOf(card, examplesToggle, familyButton, status, listen, repeat,
                 learningPauseButton, rating, skip, nextWordButton)
-            val sidebarViews = listOf(counter, progress, stats)
+            val sidebarViews = listOf(modeActions, counter, progress, stats)
             lessonViews.forEach { root.removeView(it) }
             sidebarViews.forEach { root.removeView(it) }
             val columns = LinearLayout(this).apply {
