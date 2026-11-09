@@ -52,12 +52,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var reviewIds: List<Int> = emptyList()
     private var current: Word? = null
 
-    private val navy = Color.rgb(17, 55, 34)
-    private val muted = Color.rgb(83, 99, 84)
-    private val blue = Color.rgb(15, 91, 49)
-    private val bg = Color.rgb(245, 249, 241)
+    private val navy = Color.rgb(29, 35, 43)
+    private val muted = Color.rgb(105, 115, 126)
+    private val blue = Color.rgb(42, 81, 110)
+    private val bg = Color.rgb(246, 247, 249)
     private val white = Color.WHITE
-    private val red = Color.rgb(204, 18, 22)
+    private val red = Color.rgb(170, 63, 70)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
     private lateinit var prompt: TextView
@@ -140,7 +140,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
-    private fun rounded(color: Int, radius: Int = 18): GradientDrawable = GradientDrawable().apply {
+    private fun rounded(color: Int, radius: Int = 12): GradientDrawable = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
     }
     private fun text(value: String, size: Float, color: Int = navy, bold: Boolean = false): TextView =
@@ -151,8 +151,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     private fun button(value: String, color: Int = blue, ink: Int = white, action: () -> Unit): Button =
         Button(this).apply {
-            text = value; textSize = 16f; isAllCaps = false
-            setTextColor(ink); background = rounded(color, 16)
+            text = value; textSize = 15f; isAllCaps = false
+            setTextColor(ink); background = rounded(color, 10)
             setOnClickListener { action() }
         }
     private fun add(parent: LinearLayout, view: View, height: Int = -2, top: Int = 0) {
@@ -181,24 +181,24 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(navy, 14)
+            background = rounded(navy, 12)
             setPadding(dp(14), dp(10), dp(12), dp(10))
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        add(brand, text("English Words", 22f, white, true).apply { gravity = Gravity.START })
-        add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, Color.rgb(203, 227, 206)).apply { gravity = Gravity.START }, top = 3)
+        add(brand, text("ENGLISH WORDS", 21f, white, true).apply { gravity = Gravity.START })
+        add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, Color.rgb(190, 200, 211)).apply { gravity = Gravity.START }, top = 3)
         header.addView(brand, LinearLayout.LayoutParams(0, dp(60), 1f))
-        menuButton = button("☰  Меню", Color.rgb(234, 242, 232), navy) { toggleMenu() }
+        menuButton = button("Меню", Color.rgb(235, 238, 242), navy) { toggleMenu() }
         header.addView(menuButton, LinearLayout.LayoutParams(dp(112), dp(48)))
         add(root, header)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(18))
-            background = rounded(white, 14)
+            background = rounded(white, 12)
             visibility = View.GONE
         }
-        add(menu, text("НАСТРОЙКИ ОБУЧЕНИЯ", 18f, navy, true))
+        add(menu, text("НАСТРОЙКИ", 16f, navy, true))
         deviceInfo = text("", 13f, muted).apply { gravity = Gravity.START }
         add(menu, deviceInfo, top = 10)
         updateDeviceCapabilities()
@@ -249,10 +249,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dp(12), dp(30), dp(12), dp(30))
-            background = rounded(white, 14)
+            background = rounded(white, 12)
             minimumHeight = dp(290)
         }
-        add(card, text("ПЕРЕВЕДИ СЛОВО", 13f, muted, true))
+        add(card, text("ПЕРЕВОД", 12f, muted, true))
         prompt = text("Нажми «Меню»\nи начни урок", 37f, navy, true).apply {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
@@ -265,15 +265,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         status.setPadding(dp(6), dp(18), dp(6), dp(16))
         add(root, status)
 
-        listen = button("🎤  Говори перевод", navy) { listenNow() }
+        listen = button("Говори перевод", navy) { listenNow() }
         add(root, listen, 64, 8)
-        repeat = button("🔊  Слушать слово", white, blue) {
+        repeat = button("Слушать слово", white, blue) {
             current?.let { say(question(it), questionLocale()) }
         }
         add(root, repeat, 56, 12)
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        correct = button("✓  Знаю", Color.rgb(32, 151, 109)) { grade(true, "Отмечено: знаю") }
-        incorrect = button("✕  Не знаю", Color.rgb(205, 72, 81)) { grade(false, "Отмечено: не знаю") }
+        correct = button("Знаю", Color.rgb(42, 105, 88)) { grade(true, "Отмечено: знаю") }
+        incorrect = button("Не знаю", Color.rgb(165, 76, 82)) { grade(false, "Отмечено: не знаю") }
         rating.addView(correct, LinearLayout.LayoutParams(0, dp(58), 1f).apply { rightMargin = dp(6) })
         rating.addView(incorrect, LinearLayout.LayoutParams(0, dp(58), 1f).apply { leftMargin = dp(6) })
         add(root, rating, top = 12)
@@ -295,7 +295,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val sidePanel = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(16), dp(20), dp(16), dp(20))
-                background = rounded(white, 16)
+                background = rounded(white, 12)
             }
             lessonViews.forEach { add(mainPanel, it, top = 10) }
             sidebarViews.forEach { add(sidePanel, it, top = 14) }
