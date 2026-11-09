@@ -29,7 +29,16 @@ import java.util.Locale
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
     data class Word(val id: Int, val en: String, val ru: String, val pron: String)
     data class PhraseExample(val en: String, val ru: String)
+    data class FamilyMember(val word: String, val ru: String, val pos: String, val build: String)
+    data class WordFamily(
+        val base: String, val baseRu: String, val basePos: String,
+        val members: List<FamilyMember>, val forms: List<FamilyMember>
+    )
     private val examplesByWord = mutableMapOf<String, List<PhraseExample>>()
+    private val familyIndex = mutableMapOf<String, WordFamily>()
+    private lateinit var familyButton: Button
+    private var familyDialog: android.app.AlertDialog? = null
+    private var familyExpanded = false
     private lateinit var examplesToggle: Button
     private lateinit var examplesBody: LinearLayout
     private lateinit var nextWordButton: Button
@@ -278,6 +287,25 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 PhraseExample(phrase.getString("en"), phrase.getString("ru"))
             }
         }
+        val familyBank = JSONObject(assets.open("word_families.json").bufferedReader().use {
+            it.readText()
+        }).getJSONArray("families")
+        fun parseFamilyMembers(entries: JSONArray): List<FamilyMember> =
+            (0 until entries.length()).map { i ->
+                val item = entries.getJSONObject(i)
+                FamilyMember(item.getString("word"), item.getString("ru"),
+                    item.getString("pos"), item.getString("build"))
+            }
+        for (i in 0 until familyBank.length()) {
+            val item = familyBank.getJSONObject(i)
+            val family = WordFamily(item.getString("base"), item.getString("baseRu"),
+                item.getString("basePos"), parseFamilyMembers(item.getJSONArray("members")),
+                parseFamilyMembers(item.getJSONArray("forms")))
+            familyIndex[family.base.lowercase(Locale.ROOT)] = family
+            (family.members + family.forms).forEach { member ->
+                familyIndex[member.word.lowercase(Locale.ROOT)] = family
+            }
+        }
         nextDelaySeconds = prefs.getInt("next_delay_seconds", 4)
         onDeviceRecognitionSupported =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -503,6 +531,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             toggleExamples()
         }.apply { visibility = View.GONE }
         add(root, examplesToggle, 52, 12)
+        familyButton = button(if (uiEnglish) "Word family  ▾" else "Семья слова  ▾",
+            white, navy) {
+            openFamily()
+        }.apply { visibility = View.GONE }
+        add(root, familyButton, 52, 8)
         examplesBody = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -543,7 +576,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, stats, top = 20)
         updateButtons()
         if (resources.configuration.screenWidthDp >= 600) {
-            val lessonViews = listOf(card, examplesToggle, status, listen, repeat, rating, skip, nextWordButton)
+            val lessonViews = listOf(card, examplesToggle, familyButton, status, listen, repeat, rating, skip, nextWordButton)
             val sidebarViews = listOf(counter, progress, stats)
             lessonViews.forEach { root.removeView(it) }
             sidebarViews.forEach { root.removeView(it) }
@@ -629,7 +662,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun startSession() {
         handler.removeCallbacksAndMessages(null)
         examplesDialog?.dismiss()
+        familyDialog?.dismiss()
         examplesExpanded = false
+        familyExpanded = false
         tts.stop(); recognizer?.cancel()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
@@ -664,8 +699,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running) return
         handler.removeCallbacks(advanceRunnable)
         examplesExpanded = false
+        familyExpanded = false
         examplesBody.visibility = View.GONE
         examplesToggle.visibility = View.GONE
+        familyButton.visibility = View.GONE
         nextWordButton.visibility = View.GONE
         if (index >= reviewIds.size) {
             running = false; current = null; answering = false
@@ -689,8 +726,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         pronunciation.text = if (questionDirection == 0) w.pron else "Произношение появится после ответа"
         status.text = if (ttsReady) "Слушай слово..." else "Озвучивание недоступно; можно отвечать кнопками"
         updateExamplesControls(w)
+        updateFamilyControl(w)
         if (restoringAnswer) {
             answering = true
+            updateFamilyControl(w)
             pronunciation.text = "${w.en}  •  ${w.pron}"
             status.text = (if (lastGradeOk) "Окей!" else "Не окей.") +
                 "\n$lastGradeDetail\nПравильно: ${answer(w)}"
@@ -707,6 +746,96 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
     }
+    private fun updateFamilyControl(word: Word) {
+        // In RU → EN mode, reveal the English family only after the answer.
+        val visible = familyIndex.containsKey(word.en.lowercase(Locale.ROOT)) &&
+            (questionDirection == 0 || answering)
+        familyButton.visibility = if (visible) View.VISIBLE else View.GONE
+        if (visible) {
+            val size = familyIndex[word.en.lowercase(Locale.ROOT)]?.members?.size ?: 0
+            familyButton.text = if (uiEnglish) "Word family ($size)  ›"
+                else "Семья слова ($size)  ›"
+        }
+    }
+
+    private fun openFamily() {
+        val target = current ?: return
+        val family = familyIndex[target.en.lowercase(Locale.ROOT)] ?: return
+        if (familyDialog?.isShowing == true) return
+        familyExpanded = true
+        handler.removeCallbacks(advanceRunnable)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(16))
+            setBackgroundColor(white)
+        }
+        // Main word and translation remain the strongest visual elements.
+        add(root, text(family.base, 30f, navy, true).apply { gravity = Gravity.START })
+        add(root, text(family.baseRu, 22f, navy).apply { gravity = Gravity.START }, top = 3)
+        add(root, text(family.basePos, 11f, muted).apply { gravity = Gravity.START }, top = 3)
+        add(root, text(if (uiEnglish) "RELATED WORDS" else "ПРОИЗВОДНЫЕ СЛОВА",
+            12f, muted, true).apply { gravity = Gravity.START }, top = 20)
+        family.members.forEach { member -> addFamilyRow(root, member) }
+        if (family.forms.isNotEmpty()) {
+            add(root, text(if (uiEnglish) "FORMS" else "ФОРМЫ СЛОВА",
+                12f, muted, true).apply { gravity = Gravity.START }, top = 20)
+            family.forms.forEach { member -> addFamilyRow(root, member) }
+        }
+        add(root, text(
+            if (uiEnglish) "Related words are learned and checked separately."
+            else "Родственные слова изучаются и проверяются отдельно.",
+            12f, muted).apply { gravity = Gravity.START }, top = 15)
+        applyTypography(root)
+        val scroller = ScrollView(this).apply {
+            setFillViewport(false)
+            addView(root)
+        }
+        familyDialog = android.app.AlertDialog.Builder(this)
+            .setTitle(if (uiEnglish) "Word family" else "Семья слова")
+            .setView(scroller)
+            .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
+            .create().apply {
+                setOnDismissListener {
+                    familyExpanded = false
+                    familyDialog = null
+                    if (running && answering) scheduleAdvance()
+                }
+            }
+        familyDialog?.show()
+        familyDialog?.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.94f).toInt().coerceAtMost(dp(660)),
+            (resources.displayMetrics.heightPixels * 0.78f).toInt()
+        )
+    }
+
+    private fun addFamilyRow(parent: LinearLayout, item: FamilyMember) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(bg, 10)
+            setPadding(dp(12), dp(10), dp(8), dp(10))
+        }
+        val labels = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        add(labels, text(item.word, 20f, navy, true).apply {
+            gravity = Gravity.START
+        })
+        add(labels, text(item.ru, 16f, navy).apply {
+            gravity = Gravity.START
+        }, top = 2)
+        // Grammatical class is secondary and intentionally abbreviated.
+        add(labels, text(item.pos + "  ·  " + item.build, 11f, muted).apply {
+            gravity = Gravity.START
+        }, top = 4)
+        row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(button("▶", neutralSurface, neutralInk) {
+            handler.removeCallbacks(advanceRunnable)
+            say(item.word, Locale.US) {
+                if (running && answering && !familyExpanded) scheduleAdvance()
+            }
+        }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { leftMargin = dp(8) })
+        add(parent, row, top = 8)
+    }
+
     private fun updateExamplesControls(word: Word) {
         val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
         examplesToggle.visibility = if (phrases.isEmpty()) View.GONE else View.VISIBLE
@@ -783,8 +912,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun scheduleAdvance() {
         handler.removeCallbacks(advanceRunnable)
-        if (!running || !answering || examplesExpanded || menu.visibility == View.VISIBLE ||
-            nextDelaySeconds == 0) return
+        if (!running || !answering || examplesExpanded || familyExpanded ||
+            menu.visibility == View.VISIBLE || nextDelaySeconds == 0) return
         handler.postDelayed(advanceRunnable, nextDelaySeconds * 1000L)
     }
 
@@ -966,6 +1095,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         lastGradeOk = ok
         lastGradeDetail = detail
         nextWordButton.visibility = View.VISIBLE
+        updateFamilyControl(w)
         updateButtons(); refresh()
         say((if (ok) "Окей. " else "Не окей. ") + answer(w), answerLocale()) {
             if (running && current?.id == w.id && answering) scheduleAdvance()
@@ -995,6 +1125,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             outState.putInt("lesson_question_direction", questionDirection)
             outState.putBoolean("lesson_answered", answering)
             outState.putBoolean("lesson_examples_expanded", examplesExpanded)
+            outState.putBoolean("lesson_family_expanded", familyExpanded)
             outState.putBoolean("lesson_last_grade_ok", lastGradeOk)
             outState.putString("lesson_last_grade_detail", lastGradeDetail)
         }
@@ -1022,11 +1153,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             savedDirection = state.getInt("lesson_question_direction", direction)
         )
         if (state.getBoolean("lesson_examples_expanded", false)) toggleExamples()
+        if (state.getBoolean("lesson_family_expanded", false)) openFamily()
     }
     override fun onDestroy() {
         running = false
         handler.removeCallbacksAndMessages(null)
         examplesDialog?.dismiss()
+        familyDialog?.dismiss()
         settingsDialog?.dismiss()
         recognizer?.destroy(); tts.stop(); tts.shutdown()
         super.onDestroy()
