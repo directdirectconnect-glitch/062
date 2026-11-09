@@ -159,6 +159,14 @@
     ],
     "bus": [
       {
+        "en": "I get on the bus.",
+        "ru": "Я сажусь в автобус."
+      },
+      {
+        "en": "How can I get there by bus?",
+        "ru": "Как мне туда добраться на автобусе?"
+      },
+      {
         "en": "Which bus goes to the city center?",
         "ru": "Какой автобус идёт в центр города?"
       },
@@ -169,14 +177,6 @@
       {
         "en": "How much is the bus fare?",
         "ru": "Сколько стоит проезд на автобусе?"
-      },
-      {
-        "en": "Does this bus go to the airport?",
-        "ru": "Этот автобус идёт до аэропорта?"
-      },
-      {
-        "en": "What time is the next bus?",
-        "ru": "Во сколько следующий автобус?"
       },
       {
         "en": "Can I pay on the bus?",
