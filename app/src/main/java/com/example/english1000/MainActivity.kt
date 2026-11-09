@@ -37,6 +37,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var russianVoiceSpinner: Spinner
     private lateinit var speedSpinner: Spinner
     private lateinit var voiceInfo: TextView
+    private lateinit var deviceInfo: TextView
+    private var onDeviceRecognitionSupported = false
     private var recognizer: SpeechRecognizer? = null
     private var direction = 0
     private var method = 0
@@ -128,6 +130,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val w = json.getJSONObject(i)
             words.add(Word(w.getInt("id"), w.getString("en"), w.getString("ru"), w.optString("pron")))
         }
+        onDeviceRecognitionSupported =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         tts = TextToSpeech(this, this)
         buildUi()
         refresh()
@@ -193,6 +198,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             visibility = View.GONE
         }
         add(menu, text("НАСТРОЙКИ ОБУЧЕНИЯ", 18f, navy, true))
+        deviceInfo = text("", 13f, muted).apply { gravity = Gravity.START }
+        add(menu, deviceInfo, top = 10)
+        updateDeviceCapabilities()
         dirSpinner = spinner(listOf("English → Русский", "Русский → English", "Смешанный"))
         methodSpinner = spinner(listOf("Голосовая проверка", "Кнопки: знаю / не знаю"))
         blockSpinner = spinner(listOf("10 слов", "20 слов", "30 слов", "50 слов")).apply { setSelection(3) }
@@ -275,6 +283,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         updateButtons()
     }
 
+    private fun updateDeviceCapabilities() {
+        if (!::deviceInfo.isInitialized) return
+        val recognition = if (onDeviceRecognitionSupported) {
+            "Автономное распознавание Android: доступно (языковые пакеты проверяются при запуске)"
+        } else {
+            "Автономное распознавание Android: недоступно. Используй кнопки «Знаю / Не знаю»"
+        }
+        deviceInfo.text = "Android ${Build.VERSION.RELEASE} · API ${Build.VERSION.SDK_INT}\n" +
+            recognition + "\nИнтерфейс и словарь доступны без распознавания речи."
+    }
+
     private fun toggleMenu() {
         menu.visibility = if (menu.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         menuButton.text = if (menu.visibility == View.VISIBLE) "✕  Закрыть" else "☰  Меню"
@@ -294,6 +313,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         tts.stop(); recognizer?.cancel()
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
+        if (method == 0 && !onDeviceRecognitionSupported) {
+            method = 1
+            methodSpinner.setSelection(1)
+        }
         sessionSize = listOf(10, 20, 30, 50)[blockSpinner.selectedItemPosition]
         selectionMode = selectionSpinner.selectedItemPosition
         val candidates = words.filter { w -> when (selectionMode) {
@@ -335,7 +358,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         prompt.textSize = when { question(w).length > 20 -> 30f; question(w).length > 13 -> 38f; else -> 52f }
         // The English spelling/pronunciation must not reveal the answer in RU → EN mode.
         pronunciation.text = if (questionDirection == 0) w.pron else "Произношение появится после ответа"
-        status.text = "Слушай слово..."
+        status.text = if (ttsReady) "Слушай слово..." else "Озвучивание недоступно; можно отвечать кнопками"
         updateButtons(); refresh()
         say(question(w), questionLocale()) {
             if (running && current?.id == w.id && !answering) {
@@ -442,8 +465,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             return
         }
         // Never fall back to a cloud recognizer: this training mode is offline-only.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-            !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+        if (!onDeviceRecognitionSupported) {
             status.text = "Автономное распознавание недоступно. " +
                 "Установи офлайн-пакеты английского и русского в настройках распознавания речи Android."
             return
