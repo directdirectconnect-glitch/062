@@ -323,9 +323,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         menuButton.text = if (menu.visibility == View.VISIBLE) "✕  Закрыть" else "☰  Меню"
     }
     private fun updateButtons() {
-        listen.visibility = if (method == 0) View.VISIBLE else View.GONE
-        correct.visibility = if (method == 1) View.VISIBLE else View.GONE
-        incorrect.visibility = if (method == 1) View.VISIBLE else View.GONE
+        listen.visibility = if (method == 0 && onDeviceRecognitionSupported) View.VISIBLE else View.GONE
+        correct.visibility = View.VISIBLE
+        incorrect.visibility = View.VISIBLE
         listen.isEnabled = running && !answering
         correct.isEnabled = running && !answering
         incorrect.isEnabled = running && !answering
@@ -340,6 +340,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (method == 0 && !onDeviceRecognitionSupported) {
             method = 1
             methodSpinner.setSelection(1)
+            status.text = "Автономное распознавание недоступно: включён режим ответа кнопками"
         }
         sessionSize = listOf(10, 20, 30, 50)[blockSpinner.selectedItemPosition]
         selectionMode = selectionSpinner.selectedItemPosition
@@ -440,7 +441,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun say(value: String, locale: Locale, done: (() -> Unit)? = null) {
         if (!ttsReady) {
-            status.text = "Голосовой движок ещё не готов"
+            status.text = "Голосовой движок ещё не готов. Ответь кнопками или повтори позже"
             done?.invoke()
             return
         }
