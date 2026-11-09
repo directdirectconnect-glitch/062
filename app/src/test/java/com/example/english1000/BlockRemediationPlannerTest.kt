@@ -81,6 +81,6 @@ class BlockRemediationPlannerTest {
             pending, answer(7, direction = 1, correct = true)
         )
         assertEquals(mapOf(3 to 0, 10 to 0), remaining)
-        assertEquals(listOf(3, 10), BlockRemediationPlanner.nextRound(listOf(10, 7, 3), remaining).reversed())
+        assertEquals(listOf(10, 3), BlockRemediationPlanner.nextRound(listOf(10, 7, 3), remaining))
     }
 }
