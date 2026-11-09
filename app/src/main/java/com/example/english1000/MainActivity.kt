@@ -81,6 +81,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private val advanceRunnable = Runnable { if (running && answering) advanceToNext() }
     private val words = mutableListOf<Word>()
     private val handler = Handler(Looper.getMainLooper())
+    // Do not let playback or automatic grading continue behind Ask Word/other apps.
+    private var resumeLearningAfterForeground = false
+    private var resumeAnswerTimerAfterForeground = false
     private lateinit var tts: TextToSpeech
     private var ttsReady = false
     private var englishOfflineVoices: List<Voice> = emptyList()
@@ -1961,8 +1964,26 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     override fun onPause() {
+        resumeLearningAfterForeground = running && learningMode && !learningPaused
+        resumeAnswerTimerAfterForeground = running && !learningMode && answering
+        handler.removeCallbacks(advanceRunnable)
+        pauseLearningAudio()
+        if (::tts.isInitialized) tts.stop()
+        recognizer?.cancel()
         persistActiveSession(commitNow = true)
         super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (resumeLearningAfterForeground) {
+            resumeLearningAfterForeground = false
+            handler.post { if (running && learningMode && !learningPaused) resumeLearningWord() }
+        }
+        if (resumeAnswerTimerAfterForeground) {
+            resumeAnswerTimerAfterForeground = false
+            handler.post { if (running && !learningMode && answering) scheduleAdvance() }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
