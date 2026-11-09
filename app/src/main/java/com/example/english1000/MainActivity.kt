@@ -381,6 +381,46 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
 
+    // A reminder is a voluntary invitation. Never start a test just because
+    // Android displayed a notification: only react to a notification tap.
+    private fun handleReminderEntry(incoming: Intent?) {
+        if (incoming?.getBooleanExtra(ReminderScheduler.EXTRA_START_REVIEW, false) != true) return
+        val requested = incoming.getStringExtra(ReminderScheduler.EXTRA_REVIEW_MODE) ?: "choose"
+        incoming.removeExtra(ReminderScheduler.EXTRA_START_REVIEW)
+        incoming.removeExtra(ReminderScheduler.EXTRA_REVIEW_MODE)
+        when (requested) {
+            "learn" -> startSession(modeOverride = "learn", fromReminder = true)
+            "check" -> startSession(modeOverride = "check", fromReminder = true)
+            else -> android.app.AlertDialog.Builder(this)
+                .setTitle(if (uiEnglish) "Practice English" else "Давай проверим слова!")
+                .setItems(if (uiEnglish)
+                    arrayOf("Learn words — listen", "Check words — test yourself")
+                    else arrayOf("Изучать — слушать слова", "Проверить — вспомнить слова")
+                ) { _, which ->
+                    startSession(modeOverride = if (which == 0) "learn" else "check",
+                        fromReminder = true)
+                }
+                .setNegativeButton(if (uiEnglish) "Not now" else "Не сейчас", null)
+                .show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == reminderPermissionRequestCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ReminderScheduler.schedule(this)
+            } else {
+                Toast.makeText(this, if (uiEnglish)
+                    "Enable notifications in Android settings to receive reminders."
+                    else "Для напоминаний разреши уведомления в настройках Android.",
+                    Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
     private fun rounded(color: Int, radius: Int = 12): GradientDrawable = GradientDrawable().apply {
         setColor(color); cornerRadius = dp(radius).toFloat()
@@ -790,8 +830,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     android.app.AlertDialog.Builder(this)
                         .setTitle("English Words")
                         .setMessage(if (uiEnglish)
-                            "Offline vocabulary practice • version 0.8.7"
-                            else "Тренировка слов без интернета • версия 0.8.7")
+                            "Offline vocabulary practice • version 0.8.9"
+                            else "Обучение и проверка слов без интернета • версия 0.8.9")
                         .setPositiveButton("OK", null).show()
                     true
                 }
