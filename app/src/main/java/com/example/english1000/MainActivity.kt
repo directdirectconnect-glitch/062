@@ -56,6 +56,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var reminderSpinner: Spinner
     private lateinit var learningPauseButton: Button
     private lateinit var translationText: TextView
+    private lateinit var learningExamplePreview: TextView
     private lateinit var cardHeading: TextView
     private var learningMode = false
     private var learningPaused = false
@@ -745,6 +746,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(card, translationText)
         pronunciation = text("", 29f, blue, true).apply { setPadding(dp(2), dp(4), dp(2), dp(10)) }
         add(card, pronunciation)
+        learningExamplePreview = text("", 15f, muted).apply {
+            visibility = View.GONE
+            setPadding(dp(9), dp(9), dp(9), dp(2))
+        }
+        add(card, learningExamplePreview)
         add(root, card, top = 18)
         examplesToggle = button(if (uiEnglish) "Everyday phrases  ▾" else "Примеры из жизни  ▾", white, blue) {
             toggleExamples()
@@ -1018,6 +1024,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running) return
         handler.removeCallbacks(advanceRunnable)
         pauseLearningAudio()
+        learningExamplePreview.visibility = View.GONE
+        learningExamplePreview.text = ""
         examplesExpanded = false
         familyExpanded = false
         examplesBody.visibility = View.GONE
@@ -1298,6 +1306,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             current?.id == wordId && playbackId == learningSequenceId &&
             !examplesExpanded && !familyExpanded && menu.visibility != View.VISIBLE
         val selectedExamples = if (includeExamplesDuringLearning) scenePhrases(word) else emptyList()
+        if (includeExamplesDuringLearning && selectedExamples.isEmpty()) {
+            status.text = if (uiEnglish) "No curated examples for this word yet."
+                else "Для этого слова примеры пока не добавлены."
+        }
         fun scheduleNext() {
             if (!stillCurrent()) return
             status.text = if (uiEnglish)
@@ -1312,6 +1324,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 return
             }
             val example = selectedExamples[index]
+            learningExamplePreview.text = "${example.en}\n${example.ru}"
+            learningExamplePreview.visibility = View.VISIBLE
             status.text = if (uiEnglish) "Usage example" else "Пример употребления"
             say(example.en, Locale.US) {
                 if (stillCurrent()) {
