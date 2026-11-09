@@ -1940,8 +1940,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             it.all { id -> words.any { word -> word.id == id } } &&
             ids.all { it in savedOriginal }
         } ?: ids
-        val missedIds = state.getIntArray("lesson_pending_block_ids").orEmpty()
-        val missedDirections = state.getIntArray("lesson_pending_block_directions").orEmpty()
+        val missedIds = (state.getIntArray("lesson_pending_block_ids") ?: intArrayOf())
+        val missedDirections = (state.getIntArray("lesson_pending_block_directions") ?: intArrayOf())
         pendingBlockErrors = if (missedIds.size == missedDirections.size &&
             missedIds.toSet().size == missedIds.size &&
             missedIds.all { it in originalBlockIds } &&
