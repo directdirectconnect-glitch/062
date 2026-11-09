@@ -173,7 +173,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val scroll = ScrollView(this).apply { setFillViewport(true); setBackgroundColor(bg) }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(16), dp(18), dp(24))
+            val wide = resources.configuration.screenWidthDp >= 600
+            setPadding(dp(if (wide) 24 else 14), dp(16), dp(if (wide) 24 else 14), dp(24))
         }
         scroll.addView(root)
         setContentView(scroll)
@@ -189,7 +190,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, Color.rgb(190, 200, 211)).apply { gravity = Gravity.START }, top = 3)
         header.addView(brand, LinearLayout.LayoutParams(0, dp(60), 1f))
         menuButton = button("Меню", Color.rgb(235, 238, 242), navy) { toggleMenu() }
-        header.addView(menuButton, LinearLayout.LayoutParams(dp(112), dp(48)))
+        header.addView(menuButton, LinearLayout.LayoutParams(dp(if (resources.configuration.screenWidthDp >= 600) 112 else 92), dp(48)))
         add(root, header)
 
         menu = LinearLayout(this).apply {
@@ -299,10 +300,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
             lessonViews.forEach { add(mainPanel, it, top = 10) }
             sidebarViews.forEach { add(sidePanel, it, top = 14) }
-            columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 3f))
-            columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.35f).apply {
-                leftMargin = dp(16)
+            // On an unfolded Fold the progress panel stays on the left and the
+            // active word receives the larger, right-hand reading area.
+            columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.15f).apply {
+                rightMargin = dp(16)
             })
+            columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 3f))
             add(root, columns, top = 16)
         }
     }
