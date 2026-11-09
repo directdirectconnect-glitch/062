@@ -122,6 +122,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         tts = TextToSpeech(this, this)
         buildUi()
+        restoreSession(savedInstanceState)
         refresh()
     }
 
@@ -241,6 +242,29 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
+        if (resources.configuration.screenWidthDp >= 600) {
+            val lessonViews = listOf(card, status, listen, repeat, rating, skip)
+            val sidebarViews = listOf(counter, progress, stats)
+            lessonViews.forEach { root.removeView(it) }
+            sidebarViews.forEach { root.removeView(it) }
+            val columns = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.TOP
+            }
+            val mainPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            val sidePanel = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16), dp(20), dp(16), dp(20))
+                background = rounded(white, 16)
+            }
+            lessonViews.forEach { add(mainPanel, it, top = 10) }
+            sidebarViews.forEach { add(sidePanel, it, top = 14) }
+            columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 3f))
+            columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.35f).apply {
+                leftMargin = dp(16)
+            })
+            add(root, columns, top = 16)
+        }
     }
 
     private fun toggleMenu() {
@@ -393,6 +417,34 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     override fun onInit(statusCode: Int) {
         ttsReady = statusCode == TextToSpeech.SUCCESS
         if (ttsReady) tts.language = Locale.US
+    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (running && current != null) {
+            outState.putIntArray("lesson_ids", reviewIds.toIntArray())
+            outState.putInt("lesson_index", index)
+            outState.putInt("lesson_direction", direction)
+            outState.putInt("lesson_method", method)
+            outState.putInt("lesson_selection", selectionMode)
+            outState.putInt("lesson_question_direction", questionDirection)
+        }
+    }
+    private fun restoreSession(state: Bundle?) {
+        val ids = state?.getIntArray("lesson_ids")?.toList() ?: return
+        if (ids.isEmpty() || ids.any { id -> words.none { it.id == id } }) return
+        reviewIds = ids
+        index = state.getInt("lesson_index", 0)
+        if (index !in reviewIds.indices) return
+        direction = state.getInt("lesson_direction", 0)
+        method = state.getInt("lesson_method", 0)
+        selectionMode = state.getInt("lesson_selection", 0)
+        dirSpinner.setSelection(direction.coerceIn(0, 2))
+        methodSpinner.setSelection(method.coerceIn(0, 1))
+        selectionSpinner.setSelection(selectionMode.coerceIn(0, 2))
+        blockSpinner.setSelection(listOf(10, 20, 30, 50).indexOf(ids.size).coerceAtLeast(0))
+        running = true
+        answering = false
+        next()
     }
     override fun onDestroy() {
         running = false
