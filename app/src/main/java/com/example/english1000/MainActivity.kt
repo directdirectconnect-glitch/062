@@ -155,7 +155,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun buildUi() {
-        val scroll = ScrollView(this).apply { fillViewport = true; setBackgroundColor(bg) }
+        val scroll = ScrollView(this).apply { setFillViewport(true); setBackgroundColor(bg) }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(16), dp(18), dp(24))
