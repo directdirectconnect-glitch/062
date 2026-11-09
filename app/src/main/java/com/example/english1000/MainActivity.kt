@@ -158,6 +158,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             .putInt("font_weight", weightChoice)
             .putInt("writing_style", writingChoice).apply()
         appearanceRoot?.let(::applyTypography)
+        if (::menu.isInitialized) applyTypography(menu)
     }
     private fun enableLiveAppearance(spinner: Spinner) {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -175,6 +176,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private val red = Color.rgb(170, 63, 70)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
+    private var settingsDialog: android.app.AlertDialog? = null
+    private var examplesDialog: android.app.AlertDialog? = null
     private lateinit var prompt: TextView
     private lateinit var pronunciation: TextView
     private lateinit var counter: TextView
@@ -322,8 +325,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(brand, text("ENGLISH WORDS", 21f, white, true).apply { gravity = Gravity.START })
         add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, Color.rgb(190, 200, 211)).apply { gravity = Gravity.START }, top = 3)
         header.addView(brand, LinearLayout.LayoutParams(0, dp(60), 1f))
-        menuButton = button("Меню", Color.rgb(235, 238, 242), navy) { toggleMenu() }
-        header.addView(menuButton, LinearLayout.LayoutParams(dp(if (resources.configuration.screenWidthDp >= 600) 112 else 92), dp(48)))
+        menuButton = button("⋮", Color.rgb(235, 238, 242), navy) { showOverflowMenu() }.apply {
+            textSize = 26f
+            contentDescription = if (uiEnglish) "More options" else "Дополнительные действия"
+        }
+        header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
         add(root, header)
 
         menu = LinearLayout(this).apply {
@@ -418,7 +424,22 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }, 50, 6)
         if (ttsReady) updateOfflineVoiceControls()
         add(menu, button("Начать новый блок") { startSession() }, 54, 12)
-        add(root, menu, top = 10)
+        // Settings live in a separate dialog reached from the standard three-dot menu.
+        // No controls from this panel occupy the lesson screen.
+        val settingsScroll = ScrollView(this).apply {
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            addView(menu)
+        }
+        settingsDialog = android.app.AlertDialog.Builder(this)
+            .setTitle(if (uiEnglish) "Settings" else "Настройки")
+            .setView(settingsScroll)
+            .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
+            .create().apply {
+                setOnDismissListener {
+                    menu.visibility = View.GONE
+                    if (running && answering) scheduleAdvance()
+                }
+            }
 
         counter = text("Выбери блок в меню", 16f, navy, true)
         add(root, counter, top = 24)
@@ -434,7 +455,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             minimumHeight = dp(290)
         }
         add(card, text("ПЕРЕВОД", 12f, muted, true))
-        prompt = text("Нажми «Меню»\nи начни урок", 37f, navy, true).apply {
+        prompt = text(if (uiEnglish) "Open ⋮ and start a lesson" else
+            "Открой ⋮ и начни урок", 37f, navy, true).apply {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
         add(card, prompt)
@@ -451,16 +473,22 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             background = rounded(white, 12)
             visibility = View.GONE
         }
-        add(root, examplesBody, top = 8)
-
-        status = text("Настройки открываются по кнопке «Меню»", 17f, muted)
+        // Phrase examples are displayed in a scrollable dialog instead of
+        // pushing the lesson controls off screen on compact Fold displays.
+        status = text(if (uiEnglish) "Open settings from the three-dot menu" else
+            "Настройки находятся в меню ⋮", 15f, muted)
         status.setPadding(dp(6), dp(18), dp(6), dp(16))
         add(root, status)
 
         listen = button("Говори перевод", navy) { listenNow() }
         add(root, listen, 64, 8)
         repeat = button("Слушать слово", white, blue) {
-            current?.let { say(question(it), questionLocale()) }
+            current?.let { word ->
+                handler.removeCallbacks(advanceRunnable)
+                say(question(word), questionLocale()) {
+                    if (running && current?.id == word.id && answering) scheduleAdvance()
+                }
+            }
         }
         add(root, repeat, 56, 12)
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -479,7 +507,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, stats, top = 20)
         updateButtons()
         if (resources.configuration.screenWidthDp >= 600) {
-            val lessonViews = listOf(card, examplesToggle, examplesBody, status, listen, repeat, rating, skip, nextWordButton)
+            val lessonViews = listOf(card, examplesToggle, status, listen, repeat, rating, skip, nextWordButton)
             val sidebarViews = listOf(counter, progress, stats)
             lessonViews.forEach { root.removeView(it) }
             sidebarViews.forEach { root.removeView(it) }
@@ -517,16 +545,41 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             recognition + "\nИнтерфейс и словарь доступны без распознавания речи."
     }
 
-    private fun toggleMenu() {
-        menu.visibility = if (menu.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-        menuButton.text = if (menu.visibility == View.VISIBLE) "✕  Закрыть" else "☰  Меню"
-        // Reading or adjusting settings must not trigger a surprise word change.
-        if (menu.visibility == View.VISIBLE) {
-            handler.removeCallbacks(advanceRunnable)
-        } else if (answering) {
-            scheduleAdvance()
+    private fun showOverflowMenu() {
+        val popup = PopupMenu(this, menuButton)
+        popup.menu.add(0, 1, 0, if (uiEnglish) "Appearance and settings" else "Оформление и настройки")
+        popup.menu.add(0, 2, 1, if (uiEnglish) "Start new block" else "Начать новый блок")
+        popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> { openSettingsDialog(); true }
+                2 -> { openSettingsDialog(); true }
+                3 -> {
+                    android.app.AlertDialog.Builder(this)
+                        .setTitle("English Words")
+                        .setMessage(if (uiEnglish)
+                            "Offline vocabulary practice • version 0.8.7"
+                            else "Тренировка слов без интернета • версия 0.8.7")
+                        .setPositiveButton("OK", null).show()
+                    true
+                }
+                else -> false
+            }
         }
+        popup.show()
     }
+
+    private fun openSettingsDialog() {
+        handler.removeCallbacks(advanceRunnable)
+        menu.visibility = View.VISIBLE
+        settingsDialog?.show()
+        settingsDialog?.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.92f).toInt().coerceAtMost(dp(560)),
+            -2
+        )
+        applyTypography(menu)
+    }
+
     private fun updateButtons() {
         listen.visibility = if (method == 0 && onDeviceRecognitionSupported) View.VISIBLE else View.GONE
         correct.visibility = View.VISIBLE
@@ -539,6 +592,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
     private fun startSession() {
         handler.removeCallbacksAndMessages(null)
+        examplesDialog?.dismiss()
         examplesExpanded = false
         tts.stop(); recognizer?.cancel()
         direction = dirSpinner.selectedItemPosition
@@ -561,7 +615,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             running = false; status.text = "Для этого режима пока нет слов"; updateButtons(); return
         }
         index = 0; running = true; answering = false
-        menu.visibility = View.GONE; menuButton.text = "☰  Меню"
+        settingsDialog?.dismiss()
+        menu.visibility = View.GONE
         next()
     }
     private fun key(w: Word) = "${questionDirection}_${w.id}"
@@ -581,7 +636,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             prompt.text = "Блок завершён!"
             pronunciation.text = ""
             counter.text = "Все ${reviewIds.size} слов проверены"
-            status.text = "Открой меню, чтобы начать следующий блок"
+            status.text = if (uiEnglish) "Open ⋮ to begin another block" else
+                "Открой ⋮, чтобы начать следующий блок"
             progress.progress = 100
             updateButtons(); refresh(); return
         }
@@ -627,19 +683,32 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val word = current ?: return
         val phrases = examplesByWord[word.en.lowercase(Locale.ROOT)].orEmpty()
         if (phrases.isEmpty()) return
-        examplesExpanded = !examplesExpanded
-        examplesToggle.text = if (uiEnglish) {
-            "Everyday phrases (${phrases.size})  " + if (examplesExpanded) "▴" else "▾"
-        } else {
-            "Примеры из жизни (${phrases.size})  " + if (examplesExpanded) "▴" else "▾"
+        if (examplesDialog?.isShowing == true) return
+        examplesExpanded = true
+        handler.removeCallbacks(advanceRunnable)
+        showExamples(word, phrases)
+        (examplesBody.parent as? android.view.ViewGroup)?.removeView(examplesBody)
+        val phraseScroll = ScrollView(this).apply {
+            setPadding(dp(8), dp(6), dp(8), dp(8))
+            addView(examplesBody)
         }
-        if (examplesExpanded) {
-            handler.removeCallbacks(advanceRunnable)
-            showExamples(word, phrases)
-        } else {
-            examplesBody.visibility = View.GONE
-            if (answering) scheduleAdvance()
-        }
+        examplesDialog = android.app.AlertDialog.Builder(this)
+            .setTitle(if (uiEnglish) "Everyday phrases" else "Примеры из жизни")
+            .setView(phraseScroll)
+            .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
+            .create().apply {
+                setOnDismissListener {
+                    examplesExpanded = false
+                    examplesBody.visibility = View.GONE
+                    examplesDialog = null
+                    if (running && answering) scheduleAdvance()
+                }
+            }
+        examplesDialog?.show()
+        val dialogWidth = (resources.displayMetrics.widthPixels * 0.94f).toInt()
+            .coerceAtMost(dp(660))
+        val dialogHeight = (resources.displayMetrics.heightPixels * 0.77f).toInt()
+        examplesDialog?.window?.setLayout(dialogWidth, dialogHeight)
     }
 
     private fun showExamples(word: Word, phrases: List<PhraseExample>) {
@@ -921,6 +990,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     override fun onDestroy() {
         running = false
         handler.removeCallbacksAndMessages(null)
+        examplesDialog?.dismiss()
+        settingsDialog?.dismiss()
         recognizer?.destroy(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
