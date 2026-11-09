@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Build
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -440,18 +441,41 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = "Разреши доступ к микрофону и нажми кнопку ещё раз"
             return
         }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            status.text = "На телефоне не найдена служба распознавания речи"; return
+        // Never fall back to a cloud recognizer: this training mode is offline-only.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+            status.text = "Автономное распознавание недоступно. " +
+                "Установи офлайн-пакеты английского и русского в настройках распознавания речи Android."
+            return
         }
         recognizer?.destroy()
-        recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        recognizer = try {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
+        } catch (e: Exception) {
+            status.text = "Не удалось запустить автономное распознавание: ${e.message}"
+            return
+        }
         recognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) { status.text = "🎤 Слушаю твой ответ..." }
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { status.text = "Проверяю ответ..." }
-            override fun onError(error: Int) { if (!answering) status.text = "Не расслышала (код $error). Нажми микрофон и повтори ответ" }
+            override fun onError(error: Int) {
+                if (!answering) {
+                    status.text = when (error) {
+                        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ->
+                            "Этот язык не поддерживается автономным распознаванием Android"
+                        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
+                            "Офлайн-пакет языка не установлен. Загрузи его в настройках Android"
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
+                            "Нет разрешения на использование микрофона"
+                        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
+                            "Не расслышала ответ. Нажми микрофон и повтори"
+                        else -> "Ошибка автономного распознавания (код $error). Попробуй ещё раз"
+                    }
+                }
+            }
             override fun onResults(results: Bundle?) {
                 if (answering) return
                 val guesses = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
@@ -465,6 +489,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (questionDirection == 0) "ru-RU" else "en-US")
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
         try { recognizer?.startListening(intent) }
         catch (e: Exception) { status.text = "Ошибка микрофона: ${e.message}" }
