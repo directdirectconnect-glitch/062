@@ -189,12 +189,33 @@ class OfflineVoskEngine(private val activity: Activity) {
                     service = localService
                     onStatus("🎤 Офлайн Vosk: слушаю…")
                     var accepted = false
+                    // The timed SpeechService overload can emit onTimeout without
+                    // flushing recognized speech. Stop explicitly at the deadline.
+                    val finishDeadline = Runnable {
+                        if (requested == generation && !accepted) {
+                            try {
+                                localService.stop()
+                                ui.postDelayed({
+                                    if (requested == generation && !accepted) {
+                                        accepted = true
+                                        stop()
+                                        onError("Speech recognition timeout")
+                                    }
+                                }, 1500L)
+                            } catch (e: Exception) {
+                                accepted = true
+                                stop()
+                                onError(e.message ?: "Could not finalize offline recognition")
+                            }
+                        }
+                    }
                     val listener = object : RecognitionListener {
                         private fun accept(hypothesis: String) {
                             val candidates = hypotheses(hypothesis)
                             if (candidates.isEmpty()) return
                             if (requested == generation && !accepted) {
                                 accepted = true
+                                ui.removeCallbacks(finishDeadline)
                                 stop()
                                 if (onCandidates == null) onTranscript(candidates.first())
                                 else onCandidates(candidates)
@@ -222,8 +243,11 @@ class OfflineVoskEngine(private val activity: Activity) {
                         }
                     }
                     try {
-                        // Time-bounded capture, with silence-triggered early result.
-                        if (!localService.startListening(listener, 12000)) {
+                        // Natural pauses emit onResult. At the recording deadline,
+                        // stop() delivers onFinalResult rather than losing speech.
+                        if (localService.startListening(listener)) {
+                            ui.postDelayed(finishDeadline, 12000L)
+                        } else {
                             stop()
                             onError("Could not start local microphone")
                         }
