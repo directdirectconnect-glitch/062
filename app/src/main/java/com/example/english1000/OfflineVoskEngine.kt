@@ -128,11 +128,11 @@ class OfflineVoskEngine(private val activity: Activity) {
             try {
                 val directory = ensureExtracted(activity, language)
                 if (requested != generation) return@Thread
-                loaded = Model(directory.absolutePath)
-                val recognizer = Recognizer(loaded, 16000.0f)
-                opened = SpeechService(recognizer, 16000.0f)
-                val readyModel = loaded
-                val readyService = opened
+                val readyModel = Model(directory.absolutePath)
+                loaded = readyModel
+                val recognizer = Recognizer(readyModel, 16000.0f)
+                val readyService = SpeechService(recognizer, 16000.0f)
+                opened = readyService
                 ui.post {
                     if (requested != generation || activity.isDestroyed || activity.isFinishing) {
                         readyService.shutdown()
