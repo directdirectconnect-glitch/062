@@ -11,6 +11,7 @@ import org.vosk.android.SpeechService
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Offline-only voice recognizer. The EN/RU ZIPs are packaged inside the APK
@@ -21,7 +22,7 @@ import java.util.zip.ZipInputStream
  */
 class OfflineVoskEngine(private val activity: Activity) {
     private val ui = Handler(Looper.getMainLooper())
-    private var generation = 0
+    private val generation = AtomicInteger(0)
     private var service: SpeechService? = null
     private var model: Model? = null
     private var activeRecognizer: Recognizer? = null
@@ -117,7 +118,7 @@ class OfflineVoskEngine(private val activity: Activity) {
         onError: (String) -> Unit
     ) {
         stop()
-        val requested = generation
+        val requested = generation.get()
         if (!packaged(activity, language)) {
             onError("Local $language speech model not packaged")
             return
@@ -129,7 +130,7 @@ class OfflineVoskEngine(private val activity: Activity) {
             var ownedRecognizer: Recognizer? = null
             try {
                 val directory = ensureExtracted(activity, language)
-                if (requested != generation) return@Thread
+                if (requested != generation.get()) return@Thread
                 val readyModel = Model(directory.absolutePath)
                 loaded = readyModel
                 val recognizer = Recognizer(readyModel, 16000.0f)
@@ -137,7 +138,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                 val readyService = SpeechService(recognizer, 16000.0f)
                 opened = readyService
                 ui.post {
-                    if (requested != generation || activity.isDestroyed || activity.isFinishing) {
+                    if (requested != generation.get() || activity.isDestroyed || activity.isFinishing) {
                         readyService.shutdown()
                         recognizer.close()
                         readyModel.close()
@@ -157,7 +158,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                                     ""
                                 }
                                 if (value.isNotBlank()) ui.post {
-                                    if (requested == generation && !accepted) {
+                                    if (requested == generation.get() && !accepted) {
                                         accepted = true
                                         stop()
                                         onTranscript(value)
@@ -169,7 +170,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                             override fun onPartialResult(hypothesis: String) {}
                             override fun onError(exception: Exception) {
                                 ui.post {
-                                    if (requested == generation) {
+                                    if (requested == generation.get()) {
                                         stop()
                                         onError(exception.message ?: "Speech recognition failed")
                                     }
@@ -177,7 +178,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                             }
                             override fun onTimeout() {
                                 ui.post {
-                                    if (requested == generation) {
+                                    if (requested == generation.get()) {
                                         stop()
                                         onError("Speech recognition timeout")
                                     }
@@ -194,7 +195,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                 ownedRecognizer = null
             } catch (e: Exception) {
                 ui.post {
-                    if (requested == generation) {
+                    if (requested == generation.get()) {
                         stop()
                         onError(e.message ?: "Could not load offline model")
                     }
@@ -209,7 +210,7 @@ class OfflineVoskEngine(private val activity: Activity) {
     }
 
     fun stop() {
-        generation++
+        generation.incrementAndGet()
         val running = service
         service = null
         try { running?.cancel() } catch (_: Exception) {}
