@@ -106,15 +106,45 @@ class OfflineVoskEngine(private val activity: Activity) {
         }
     }
 
+    private var cachedLanguage: String? = null
+
     /**
-     * Returns control immediately while the packaged model is unpacked and initialized.
-     * Recording and callbacks are only activated for the current Activity session.
+     * Returns candidates with reasonably similar Vosk acoustic confidence.
+     * Vosk 0.3.75 changes "text" to "alternatives" when N-best is enabled.
+     * Never treat partial words as completed answers.
+     */
+    private fun hypotheses(payload: String): List<String> {
+        return try {
+            val json = JSONObject(payload)
+            val alternatives = json.optJSONArray("alternatives")
+            if (alternatives == null || alternatives.length() == 0) {
+                listOf(json.optString("text").trim()).filter { it.isNotBlank() }
+            } else {
+                val top = alternatives.optJSONObject(0)?.optDouble("confidence", 0.0) ?: 0.0
+                (0 until minOf(alternatives.length(), 3)).mapNotNull { index ->
+                    val item = alternatives.optJSONObject(index) ?: return@mapNotNull null
+                    val confidence = item.optDouble("confidence", 0.0)
+                    val phrase = item.optString("text").trim()
+                    if (phrase.isNotBlank() &&
+                        (index == 0 || (top > 0.0 && confidence >= top * 0.82))) {
+                        phrase
+                    } else null
+                }.distinct()
+            }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    /**
+     * Local RU/EN recognizer: cache the native acoustic model between short
+     * answers (Fold and phones otherwise reload a full Vosk model per word).
+     * The model stays available only while this Activity is alive. No internet.
      */
     fun listen(
         language: String,
         onStatus: (String) -> Unit,
-        onTranscript: (String) -> Unit,
-        onError: (String) -> Unit
+        onTranscript: (String) -> Unit = {},
+        onError: (String) -> Unit,
+        onCandidates: ((List<String>) -> Unit)? = null
     ) {
         stop()
         val requested = generation
@@ -122,74 +152,88 @@ class OfflineVoskEngine(private val activity: Activity) {
             onError("Local $language speech model not packaged")
             return
         }
-        onStatus("Подготавливаю офлайн-распознавание ($language)…")
+        val reusable = if (cachedLanguage == language) model else null
+        onStatus(if (reusable != null) "🎤 Готовлю микрофон ($language)…"
+                 else "Подготавливаю офлайн-распознавание ($language)…")
         Thread({
-            var loaded: Model? = null
+            var newModel: Model? = null
             var opened: SpeechService? = null
             var ownedRecognizer: Recognizer? = null
             try {
-                val directory = ensureExtracted(activity, language)
                 if (requested != generation) return@Thread
-                val readyModel = Model(directory.absolutePath)
-                loaded = readyModel
-                val recognizer = Recognizer(readyModel, 16000.0f)
-                ownedRecognizer = recognizer
-                val readyService = SpeechService(recognizer, 16000.0f)
-                opened = readyService
+                val selectedModel = reusable ?: run {
+                    val directory = ensureExtracted(activity, language)
+                    if (requested != generation) return@Thread
+                    Model(directory.absolutePath).also { newModel = it }
+                }
+                if (requested != generation) return@Thread
+                val localRecognizer = Recognizer(selectedModel, 16000.0f)
+                ownedRecognizer = localRecognizer
+                localRecognizer.setMaxAlternatives(3)
+                val localService = SpeechService(localRecognizer, 16000.0f)
+                opened = localService
                 ui.post {
                     if (requested != generation || activity.isDestroyed || activity.isFinishing) {
-                        readyService.shutdown()
-                        recognizer.close()
-                        readyModel.close()
+                        localService.shutdown()
+                        localRecognizer.close()
+                        if (reusable == null) selectedModel.close()
                         return@post
                     }
-                    model = readyModel
-                    activeRecognizer = recognizer
-                    service = readyService
+                    if (model !== selectedModel) {
+                        val previousModel = model
+                        model = selectedModel
+                        cachedLanguage = language
+                        if (previousModel !== selectedModel) previousModel?.close()
+                    }
+                    activeRecognizer = localRecognizer
+                    service = localService
                     onStatus("🎤 Офлайн Vosk: слушаю…")
                     var accepted = false
+                    val listener = object : RecognitionListener {
+                        private fun accept(hypothesis: String) {
+                            val candidates = hypotheses(hypothesis)
+                            if (candidates.isEmpty()) return
+                            if (requested == generation && !accepted) {
+                                accepted = true
+                                stop()
+                                if (onCandidates == null) onTranscript(candidates.first())
+                                else onCandidates(candidates)
+                            }
+                        }
+
+                        override fun onResult(hypothesis: String) = accept(hypothesis)
+                        override fun onFinalResult(hypothesis: String) = accept(hypothesis)
+                        override fun onPartialResult(hypothesis: String) {}
+
+                        override fun onError(exception: Exception) {
+                            if (requested == generation && !accepted) {
+                                accepted = true
+                                stop()
+                                onError(exception.message ?: "Speech recognition failed")
+                            }
+                        }
+
+                        override fun onTimeout() {
+                            if (requested == generation && !accepted) {
+                                accepted = true
+                                stop()
+                                onError("Speech recognition timeout")
+                            }
+                        }
+                    }
                     try {
-                        readyService.startListening(object : RecognitionListener {
-                            private fun accept(hypothesis: String) {
-                                val value = try {
-                                    JSONObject(hypothesis).optString("text").trim()
-                                } catch (_: Exception) {
-                                    ""
-                                }
-                                if (value.isNotBlank()) ui.post {
-                                    if (requested == generation && !accepted) {
-                                        accepted = true
-                                        stop()
-                                        onTranscript(value)
-                                    }
-                                }
-                            }
-                            override fun onResult(hypothesis: String) = accept(hypothesis)
-                            override fun onFinalResult(hypothesis: String) = accept(hypothesis)
-                            override fun onPartialResult(hypothesis: String) {}
-                            override fun onError(exception: Exception) {
-                                ui.post {
-                                    if (requested == generation) {
-                                        stop()
-                                        onError(exception.message ?: "Speech recognition failed")
-                                    }
-                                }
-                            }
-                            override fun onTimeout() {
-                                ui.post {
-                                    if (requested == generation) {
-                                        stop()
-                                        onError("Speech recognition timeout")
-                                    }
-                                }
-                            }
-                        })
+                        // Time-bounded capture, with silence-triggered early result.
+                        if (!localService.startListening(listener, 12000)) {
+                            stop()
+                            onError("Could not start local microphone")
+                        }
                     } catch (e: Exception) {
                         stop()
                         onError(e.message ?: "Cannot start local microphone")
                     }
                 }
-                loaded = null
+                // Ownership transferred to the main-thread callback.
+                newModel = null
                 opened = null
                 ownedRecognizer = null
             } catch (e: Exception) {
@@ -200,14 +244,14 @@ class OfflineVoskEngine(private val activity: Activity) {
                     }
                 }
             } finally {
-                // Loaded objects are owned by UI after successful handoff.
-                if (opened != null) opened.shutdown()
-                if (ownedRecognizer != null) ownedRecognizer.close()
-                if (loaded != null) loaded.close()
+                try { opened?.shutdown() } catch (_: Exception) {}
+                try { ownedRecognizer?.close() } catch (_: Exception) {}
+                try { newModel?.close() } catch (_: Exception) {}
             }
         }, "EnglishWords-Vosk-$language").start()
     }
 
+    /** End an utterance, but keep the model for the next short word. */
     fun stop() {
         generation++
         val running = service
@@ -216,7 +260,13 @@ class OfflineVoskEngine(private val activity: Activity) {
         try { running?.shutdown() } catch (_: Exception) {}
         try { activeRecognizer?.close() } catch (_: Exception) {}
         activeRecognizer = null
+    }
+
+    /** Release native model memory when the owning Activity is destroyed. */
+    fun release() {
+        stop()
         try { model?.close() } catch (_: Exception) {}
         model = null
+        cachedLanguage = null
     }
 }
