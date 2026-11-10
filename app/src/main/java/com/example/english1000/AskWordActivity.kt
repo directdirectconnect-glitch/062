@@ -179,7 +179,10 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         setContentView(scroll)
 
         add(root, text(if (uiEnglish) "Translate a word" else "Перевести слово",
-            29f, ink, true).apply { gravity = Gravity.START })
+            29f, ink, true).apply {
+            gravity = Gravity.START
+            contentDescription = if (uiEnglish) "ASK A WORD" else "СПРОСИ СЛОВО"
+        })
         add(root, text(
             if (uiEnglish) "Say a Russian word. I'll pronounce its English translation."
             else "Назови русское слово — услышишь английский перевод.",
