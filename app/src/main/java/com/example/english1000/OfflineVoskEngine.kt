@@ -189,12 +189,36 @@ class OfflineVoskEngine(private val activity: Activity) {
                     service = localService
                     onStatus("🎤 Офлайн Vosk: слушаю…")
                     var accepted = false
+                    // SpeechService.startListening(listener, timeout) emits onTimeout
+                    // WITHOUT onFinalResult. Use an independent deadline and
+                    // gracefully stop the recognizer to flush the final phrase.
+                    val finishDeadline = Runnable {
+                        if (requested == generation && !accepted) {
+                            try {
+                                localService.stop()
+                                // The Vosk final callback is posted asynchronously.
+                                // A blank final result is treated as silence.
+                                ui.postDelayed({
+                                    if (requested == generation && !accepted) {
+                                        accepted = true
+                                        stop()
+                                        onError("Speech recognition timeout")
+                                    }
+                                }, 1500L)
+                            } catch (e: Exception) {
+                                accepted = true
+                                stop()
+                                onError(e.message ?: "Could not finalize offline recognition")
+                            }
+                        }
+                    }
                     val listener = object : RecognitionListener {
                         private fun accept(hypothesis: String) {
                             val candidates = hypotheses(hypothesis)
                             if (candidates.isEmpty()) return
                             if (requested == generation && !accepted) {
                                 accepted = true
+                                ui.removeCallbacks(finishDeadline)
                                 stop()
                                 if (onCandidates == null) onTranscript(candidates.first())
                                 else onCandidates(candidates)
@@ -222,8 +246,12 @@ class OfflineVoskEngine(private val activity: Activity) {
                         }
                     }
                     try {
-                        // Time-bounded capture, with silence-triggered early result.
-                        if (!localService.startListening(listener, 12000)) {
+                        // End-of-speech naturally posts onResult. At the 12-second
+                        // deadline, stop() flushes onFinalResult instead of dropping
+                        // the current speech as the timed Vosk overload does.
+                        if (localService.startListening(listener)) {
+                            ui.postDelayed(finishDeadline, 12000L)
+                        } else {
                             stop()
                             onError("Could not start local microphone")
                         }
