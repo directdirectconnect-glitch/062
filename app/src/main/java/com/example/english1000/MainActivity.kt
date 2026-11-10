@@ -942,6 +942,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             removeFromParent(columns)
             compactNavigation(expanded)
             if (expanded) {
+                // Remove pane containers too: they may still belong to columns
+                // from an earlier unfold -> fold -> unfold resize sequence.
+                columns.removeAllViews()
                 sidebarViews.forEach { add(sidePanel, it, top = 12) }
                 lessonViews.forEach { add(mainPanel, it, top = 10) }
                 columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.5f).apply {
