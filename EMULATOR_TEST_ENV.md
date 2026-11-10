@@ -14,8 +14,8 @@ The workflow compiles the app's actual debug APK, validates local resources, run
 - Listening mode launches, checking mode exposes manual response controls.
 - Force-stop and restart recovers the active checking screen.
 - Window dimensions change to a wide unfolded-like format, then back to compact. Manual-check controls remain accessible.
-- Each stage captures Android UI hierarchy XML and a PNG screenshot.
-- On failure, the script captures the last screenshot and recent logcat events.
+- Each stage captures Android UI hierarchy XML and attempts to capture a PNG screenshot. **AOSP ATD disables hardware rendering; the PNGs from this target are black and must not be used for visual layout verification.** The UI XML is the valid evidence for this CI target.
+- On failure, the script captures the last screen image (subject to the ATD limitation) and recent logcat events.
 
 ## Artifacts on successful runs
 - `EnglishWords-095-Emulator-Report`: screenshots, UI hierarchies, trace, result.json and logcat.
@@ -31,3 +31,9 @@ Passing these tests does not imply all functional flows are correct. More end-to
 - This test uses a disposable emulator, never the user's phone data.
 - It does not modify `main` or the previously released beta APK.
 - Screenshots and logs are retained in GitHub Actions artifacts for 30 days.
+
+## Latest verified run — 10 November 2026
+
+[GitHub Actions #5](https://github.com/directdirectconnect-glitch/062/actions/runs/42772224573) **succeeded**. All seven smoke checks passed on Android 13 with Wi-Fi/data disabled, including main screen, Ask Word, Learn, manual Check, process restart, wide Fold-like resize, and compact resize. JVM tests and APK build also passed. Artifacts: `EnglishWords-095-Emulator-Report` and `EnglishWords-095-Emulator-Tested-APK`.
+
+This run verified the candidate in `test/0.9.5-emulator`, including a fallback to manual checking if an Android offline language pack is unavailable. That fix has **not yet been merged into** `beta/0.9.5-unified`; the two APK binaries are not interchangeable as proof of the same build.
