@@ -439,6 +439,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     else "Для напоминаний разреши уведомления в настройках Android.",
                     Toast.LENGTH_LONG).show()
             }
+        } else if (requestCode == 12) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                // First voice attempt on a newly installed Fold/phone must work
+                // immediately after the Android microphone permission dialog.
+                handler.post { listenNow() }
+            } else if (::status.isInitialized) {
+                status.text = if (uiEnglish) "Allow microphone access in Android settings."
+                    else "Разреши доступ к микрофону в настройках Android."
+            }
         }
     }
 
@@ -1582,13 +1591,34 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     }
                 },
                 onError = { reason ->
-                    if (running && !answering) {
-                        method = 1
-                        methodSpinner.setSelection(1)
-                        updateButtons()
-                        status.text = if (uiEnglish)
-                            "Offline Vosk unavailable: $reason. Use buttons."
-                        else "Vosk недоступен: $reason. Отвечай кнопками."
+                    if (running && !answering && current?.id == word.id) {
+                        if (reason == "Speech recognition timeout") {
+                            // Silence is not a fatal Vosk failure. Keep the
+                            // microphone mode available for another attempt.
+                            status.text = if (uiEnglish)
+                                "No speech recognized. Tap the mic and repeat."
+                            else "Не расслышала слово. Нажми микрофон и повтори."
+                        } else {
+                            method = 1
+                            methodSpinner.setSelection(1)
+                            updateButtons()
+                            status.text = if (uiEnglish)
+                                "Offline Vosk unavailable: $reason. Use buttons."
+                            else "Vosk недоступен: $reason. Отвечай кнопками."
+                        }
+                    }
+                },
+                onCandidates = { phrases ->
+                    if (running && !answering && current?.id == word.id) {
+                        val matching = phrases.firstOrNull { isCorrect(it, word) }
+                        if (matching != null) {
+                            grade(true, "Vosk: $matching", methodSource = "asr")
+                        } else {
+                            val heard = phrases.firstOrNull().orEmpty()
+                            status.text = if (uiEnglish)
+                                "Vosk heard '$heard'. Tap mic to retry or use Know / Don't know."
+                            else "Vosk услышал: «$heard». Нажми микрофон и повтори или ответь кнопками."
+                        }
                     }
                 })
             return
@@ -2165,7 +2195,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         settingsDialog?.dismiss()
         pauseLearningAudio()
-        recognizer?.destroy(); vosk.stop(); tts.stop(); tts.shutdown()
+        recognizer?.destroy(); vosk.release(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
 }
