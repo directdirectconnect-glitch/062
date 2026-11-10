@@ -96,6 +96,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var deviceInfo: TextView
     private var onDeviceRecognitionSupported = false
     private var recognizer: SpeechRecognizer? = null
+    private val vosk by lazy { OfflineVoskEngine(this) }
+    private fun packagedOfflineVoice(): Boolean =
+        OfflineVoskEngine.packaged(this, "ru") &&
+            OfflineVoskEngine.packaged(this, "en")
+    private fun anyOfflineVoice(): Boolean = packagedOfflineVoice() || onDeviceRecognitionSupported
     private var direction = 0
     private var method = 0
     private var questionDirection = 0
@@ -917,10 +922,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun updateDeviceCapabilities() {
         if (!::deviceInfo.isInitialized) return
-        val recognition = if (onDeviceRecognitionSupported) {
-            "Автономное распознавание Android: доступно (языковые пакеты проверяются при запуске)"
+        val recognition = if (packagedOfflineVoice()) {
+            "Встроенный Vosk RU/EN: доступен без интернета. Первое включение готовит локальные модели."
+        } else if (onDeviceRecognitionSupported) {
+            "Автономное распознавание Android: доступно (пакеты проверяются при запуске)"
         } else {
-            "Автономное распознавание Android: недоступно. Используй кнопки «Знаю / Не знаю»"
+            "Автономное распознавание недоступно. Используй кнопки «Знаю / Не знаю»"
         }
         deviceInfo.text = "Android ${Build.VERSION.RELEASE} · API ${Build.VERSION.SDK_INT}\n" +
             recognition + "\nИнтерфейс и словарь доступны без распознавания речи."
@@ -941,8 +948,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     android.app.AlertDialog.Builder(this)
                         .setTitle("English Words")
                         .setMessage(if (uiEnglish)
-                            "Offline vocabulary practice • version 0.9.4 preview"
-                            else "Тренировка слов без интернета • версия 0.9.4 (тестовая)")
+                            "Offline vocabulary practice • version 0.9.7 preview"
+                            else "Автономная речь RU/EN • версия 0.9.7 (тестовая)")
                         .setPositiveButton("OK", null).show()
                     true
                 }
@@ -986,7 +993,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun updateButtons() {
         val testing = !learningMode
-        listen.visibility = if (testing && method == 0 && onDeviceRecognitionSupported)
+        listen.visibility = if (testing && method == 0 && anyOfflineVoice())
             View.VISIBLE else View.GONE
         ratingRow.visibility = if (testing) View.VISIBLE else View.GONE
         correct.isEnabled = running && testing && !answering
@@ -1038,7 +1045,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         examplesExpanded = false
         familyExpanded = false
-        tts.stop(); recognizer?.cancel()
+        tts.stop(); recognizer?.cancel(); vosk.stop()
         learningMode = when (modeOverride) {
             "learn" -> true
             "check" -> false
@@ -1055,7 +1062,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         remediationRound = 0
         direction = dirSpinner.selectedItemPosition
         method = methodSpinner.selectedItemPosition
-        if (!learningMode && method == 0 && !onDeviceRecognitionSupported) {
+        if (!learningMode && method == 0 && !anyOfflineVoice()) {
             method = 1
             methodSpinner.setSelection(1)
             status.text = "Автономное распознавание недоступно: включён режим ответа кнопками"
@@ -1565,7 +1572,38 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             status.text = "Разреши доступ к микрофону и нажми кнопку ещё раз"
             return
         }
-        // Never fall back to a cloud recognizer: this training mode is offline-only.
+        // Prefer bundled RU/EN Vosk for genuine offline recognition on Android 8+.
+        val word = current ?: return
+        val spokenLanguage = if (questionDirection == 0) "ru" else "en"
+        if (OfflineVoskEngine.packaged(this, spokenLanguage)) {
+            vosk.listen(spokenLanguage,
+                onStatus = { message ->
+                    if (running && !answering && current?.id == word.id) status.text = message
+                },
+                onTranscript = { phrase ->
+                    if (running && !answering && current?.id == word.id) {
+                        if (isCorrect(phrase, word)) {
+                            grade(true, "Vosk: $phrase", methodSource = "asr")
+                        } else {
+                            status.text = if (uiEnglish)
+                                "Vosk heard '$phrase'. Repeat or use Know / Don't know."
+                            else "Vosk услышал: «$phrase». Повтори или ответь кнопками."
+                        }
+                    }
+                },
+                onError = { reason ->
+                    if (running && !answering) {
+                        method = 1
+                        methodSpinner.setSelection(1)
+                        updateButtons()
+                        status.text = if (uiEnglish)
+                            "Offline Vosk unavailable: $reason. Use buttons."
+                        else "Vosk недоступен: $reason. Отвечай кнопками."
+                    }
+                })
+            return
+        }
+        // On-device Android ASR is allowed only if locally supported; never cloud.
         if (!onDeviceRecognitionSupported) {
             status.text = "Автономное распознавание недоступно. " +
                 "Установи офлайн-пакеты английского и русского в настройках распознавания речи Android."
@@ -1586,11 +1624,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             override fun onEndOfSpeech() { status.text = "Проверяю ответ..." }
             override fun onError(error: Int) {
                 if (!answering) {
+                    if (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+                        error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
+                        // The service may exist without an installed on-device language
+                        // model. Keep the exercise usable offline via manual answers.
+                        method = 1
+                        methodSpinner.setSelection(1)
+                        updateButtons()
+                        status.text = if (uiEnglish)
+                            "Offline speech language unavailable. Use Know / Don't know."
+                        else "Нет локального пакета распознавания. Отвечай кнопками «Знаю / Не знаю»."
+                        return
+                    }
                     status.text = when (error) {
-                        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ->
-                            "Этот язык не поддерживается автономным распознаванием Android"
-                        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
-                            "Офлайн-пакет языка не установлен. Загрузи его в настройках Android"
                         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
                             "Нет разрешения на использование микрофона"
                         SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
@@ -1648,6 +1694,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running || answering) return
         answering = true
         recognizer?.cancel()
+        vosk.stop()
         // A hinted "know" is practice, not an independently verified recall.
         if (!ok || !assistedThisWord) {
             prefs.edit().putInt(key(w), if (ok) 1 else 0).apply()
@@ -1765,6 +1812,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         tts.stop()
         recognizer?.cancel()
+        vosk.stop()
         examplesExpanded = false
         familyExpanded = false
         learningMode = false
@@ -2018,6 +2066,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         pauseLearningAudio()
         if (::tts.isInitialized) tts.stop()
         recognizer?.cancel()
+        vosk.stop()
         persistActiveSession(commitNow = true)
         super.onPause()
     }
@@ -2070,7 +2119,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (index !in reviewIds.indices) return
         direction = state.getInt("lesson_direction", 0)
         method = state.getInt("lesson_method", 0)
-        if (method == 0 && !onDeviceRecognitionSupported) method = 1
+        if (method == 0 && !anyOfflineVoice()) method = 1
         selectionMode = state.getInt("lesson_selection", 0)
         val savedOriginal = state.getIntArray("lesson_original_block_ids")?.toList().orEmpty()
         originalBlockIds = savedOriginal.takeIf { it.isNotEmpty() &&
@@ -2130,7 +2179,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         settingsDialog?.dismiss()
         pauseLearningAudio()
-        recognizer?.destroy(); tts.stop(); tts.shutdown()
+        recognizer?.destroy(); vosk.stop(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
 }

@@ -56,6 +56,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
     private var retryCount = 0
     private var speechGeneration = 0
     private var recognizer: SpeechRecognizer? = null
+    private val vosk by lazy { OfflineVoskEngine(this) }
     private lateinit var tts: TextToSpeech
     private lateinit var status: TextView
     private lateinit var russianWord: TextView
@@ -430,13 +431,37 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun isVoiceAvailable(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+        OfflineVoskEngine.packaged(this, "ru") ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(this))
 
     private fun startListening() {
         if (!listeningEnabled || listening || speaking || isFinishing || isDestroyed ||
             !isVoiceAvailable() || checkSelfPermission(Manifest.permission.RECORD_AUDIO) !=
                 PackageManager.PERMISSION_GRANTED) return
+        if (OfflineVoskEngine.packaged(this, "ru")) {
+            listening = true
+            vosk.listen("ru",
+                onStatus = { message -> if (listeningEnabled) status.text = message },
+                onTranscript = { phrase ->
+                    if (listeningEnabled && listening) {
+                        listening = false
+                        retryCount = 0
+                        lookup(phrase)
+                    }
+                },
+                onError = { reason ->
+                    if (listeningEnabled) {
+                        listening = false
+                        listeningEnabled = false
+                        micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
+                        status.text = if (uiEnglish) "Local voice unavailable: $reason. Type a word."
+                            else "Локальная речь недоступна: $reason. Введи слово вручную."
+                    }
+                }
+            )
+            return
+        }
         recognizer?.destroy()
         recognizer = try {
             SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
@@ -514,6 +539,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun stopListening() {
         listening = false
+        vosk.stop()
         recognizer?.cancel()
         recognizer?.destroy()
         recognizer = null

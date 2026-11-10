@@ -1,0 +1,89 @@
+name: English Words 0.9.7 APK Emulator Test
+
+on:
+  push:
+    branches: ['develop/0.9.7-vosk-preview']
+    paths:
+      - 'app/**'
+      - 'scripts/**'
+      - '.github/workflows/android-apk-emulator.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: apk-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout APK test branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK tools
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 35 compile platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Download and verify the bundled Vosk EN/RU models
+        run: python3 scripts/prepare_vosk_models.py
+
+      - name: Check offline assets, run JVM tests and build actual APK
+        run: |
+          python3 scripts/validate_integration.py
+          gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Verify Vosk assets in the APK before emulator tests
+        run: python3 scripts/verify_vosk_apk.py
+
+      - name: Enable Linux KVM for emulator
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+          else
+            echo "::warning::KVM not exposed on this runner; emulator may start slowly."
+          fi
+
+      - name: Run Android 13 offline APK smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: aosp_atd
+          arch: x86_64
+          profile: pixel_5
+          cores: 2
+          ram-size: 3072M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: python3 scripts/smoke_apk_emulator.py
+
+      - name: Publish emulator screenshots, logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-097-Emulator-Report
+          path: build/emulator-smoke/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish emulator-tested APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-097-Emulator-Tested-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
