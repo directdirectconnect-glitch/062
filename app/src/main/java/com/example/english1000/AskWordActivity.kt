@@ -78,7 +78,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
         includeExamples = intent.getBooleanExtra(EXTRA_INCLUDE_EXAMPLES,
             ExampleModeSetup.selected(this))
-        val choice = prefs.getInt("ui_theme", 2)
+        val choice = prefs.getInt("ui_theme", 1)
         dark = choice == 1 || (choice == 2 &&
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES)
