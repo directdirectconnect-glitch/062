@@ -6,6 +6,10 @@ on:
     branches: [main, 'integrate/**', 'develop/**', 'design/**', 'beta/**']
   workflow_dispatch:
 
+concurrency:
+  group: apk-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
