@@ -232,12 +232,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
     // Monochrome palettes only: no purple, green, red, or colorful accents.
-    private val navy: Int get() = if (isDarkTheme) Color.rgb(238, 240, 243) else Color.rgb(26, 31, 37)
-    private val muted: Int get() = if (isDarkTheme) Color.rgb(177, 182, 187) else Color.rgb(102, 110, 119)
-    private val blue: Int get() = if (isDarkTheme) Color.rgb(225, 228, 232) else Color.rgb(34, 43, 54)
-    private val bg: Int get() = if (isDarkTheme) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
-    private val white: Int get() = if (isDarkTheme) Color.rgb(31, 34, 38) else Color.WHITE
-    private val neutralSurface: Int get() = if (isDarkTheme) Color.rgb(48, 52, 57) else Color.rgb(233, 236, 239)
+    private val navy: Int get() = if (isDarkTheme) Color.rgb(241, 235, 225) else Color.rgb(27, 42, 57)
+    private val muted: Int get() = if (isDarkTheme) Color.rgb(191, 183, 171) else Color.rgb(102, 113, 125)
+    private val blue: Int get() = if (isDarkTheme) Color.rgb(210, 181, 138) else Color.rgb(34, 53, 72)
+    private val bg: Int get() = if (isDarkTheme) Color.rgb(11, 24, 39) else Color.rgb(241, 245, 249)
+    private val white: Int get() = if (isDarkTheme) Color.rgb(26, 43, 61) else Color.WHITE
+    private val neutralSurface: Int get() = if (isDarkTheme) Color.rgb(38, 55, 73) else Color.rgb(226, 233, 239)
     private val neutralInk: Int get() = if (isDarkTheme) Color.rgb(235, 238, 242) else Color.rgb(38, 45, 52)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
@@ -454,8 +454,21 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     private fun button(value: String, color: Int = blue, ink: Int = white, action: () -> Unit): Button =
         Button(this).apply {
-            text = tr(value); textSize = 15f; isAllCaps = false
-            setTextColor(ink); background = rounded(color, 10)
+            text = tr(value)
+            textSize = 15f
+            isAllCaps = false
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            letterSpacing = 0.015f
+            setTextColor(ink)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(color, color)
+            ).apply {
+                cornerRadius = dp(16).toFloat()
+                setStroke(dp(1), if (isDarkTheme) Color.rgb(112, 100, 83)
+                    else Color.rgb(205, 193, 177))
+            }
+            minimumHeight = dp(48)
             setOnClickListener { action() }
         }
     private fun add(parent: LinearLayout, view: View, height: Int = -2, top: Int = 0) {
@@ -483,49 +496,84 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         setContentView(scroll)
         appearanceRoot = root
 
+        // Premium home navigation: exactly three primary actions, no separate offline mode.
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(navy, 12)
-            setPadding(dp(14), dp(10), dp(12), dp(10))
+            setPadding(dp(12), dp(18), dp(8), dp(20))
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        add(brand, text("ENGLISH WORDS", 21f, white, true).apply { gravity = Gravity.START })
-        add(brand, text("ОФЛАЙН-СЛОВАРЬ · ${words.size} СЛОВ", 11f, white).apply { gravity = Gravity.START; alpha = .78f }, top = 3)
-        header.addView(brand, LinearLayout.LayoutParams(0, dp(60), 1f))
-        menuButton = button("⋮", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
-            textSize = 26f
-            contentDescription = if (uiEnglish) "More options" else "Дополнительные действия"
+        add(brand, text("English Words", 29f, navy).apply {
+            gravity = Gravity.START
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            letterSpacing = 0.015f
+        })
+        add(brand, text("LANGUAGE LEARNING", 10f, muted).apply {
+            letterSpacing = 0.25f
+        }, top = 3)
+        header.addView(brand, LinearLayout.LayoutParams(0, dp(80), 1f))
+        menuButton = button("⚙", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
+            textSize = 22f
+            contentDescription = if (uiEnglish) "Settings" else "Настройки"
         }
         header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
         add(root, header)
-        // Both listening and recall are primary actions on phones and Fold screens.
+
+        fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    intArrayOf(Color.rgb(34, 53, 72), Color.rgb(15, 28, 43))
+                ).apply {
+                    cornerRadius = dp(22).toFloat()
+                    setStroke(dp(1), Color.rgb(156, 135, 103))
+                }
+                setPadding(dp(22), dp(20), dp(18), dp(20))
+                isClickable = true
+                isFocusable = true
+                contentDescription = title
+                setOnClickListener { action() }
+                elevation = dp(3).toFloat()
+            }
+            card.addView(text(symbol, 29f, Color.rgb(214, 187, 146)).apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(dp(62), dp(64)))
+            card.addView(text(title, 20f, Color.WHITE).apply {
+                typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+                gravity = Gravity.CENTER_VERTICAL
+            }, LinearLayout.LayoutParams(0, dp(70), 1f).apply { leftMargin = dp(12) })
+            card.addView(text("›", 30f, Color.rgb(214, 187, 146)).apply {
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(dp(30), dp(54)))
+            return card
+        }
         val modeActions = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        val modeRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        modeRow.addView(button(if (uiEnglish) "Learn words" else "Изучать",
-            blue, white) {
-            showLearningOptions()
-        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { rightMargin = dp(5) })
-        modeRow.addView(button(if (uiEnglish) "Check words" else "Проверять",
-            neutralSurface, neutralInk) {
-            startSession(modeOverride = "check")
-        }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(5) })
-        add(modeActions, modeRow)
-        add(modeActions, button(if (uiEnglish) "Ask a word" else "Спроси слово",
-            neutralSurface, neutralInk) {
+        add(modeActions, premiumAction("Перевести слово", "А ⇄ Я") {
             showAskWordOptions()
-        }, 50, 8)
+        }, top = 10)
+        add(modeActions, premiumAction("Учить слова", "▤") {
+            showLearningOptions()
+        }, top = 14)
+        add(modeActions, premiumAction("Проверка знаний", "✓") {
+            startSession(modeOverride = "check")
+        }, top = 14)
         add(root, modeActions, top = 12)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(18))
-            background = rounded(white, 12)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(if (isDarkTheme) Color.rgb(26, 39, 54) else Color.rgb(247, 248, 250),
+                    if (isDarkTheme) Color.rgb(15, 27, 41) else Color.rgb(234, 239, 244))
+            ).apply {
+                cornerRadius = dp(20).toFloat()
+                setStroke(dp(1), Color.rgb(160, 137, 103))
+            }
             visibility = View.GONE
         }
         add(menu, text("НАСТРОЙКИ", 16f, navy, true))
@@ -875,11 +923,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun updateDeviceCapabilities() {
         if (!::deviceInfo.isInitialized) return
         val recognition = if (packagedOfflineVoice()) {
-            "Встроенный Vosk RU/EN: доступен без интернета. Первое включение готовит локальные модели."
+            "Vosk: встроенные английская и русская модели — без интернета"
         } else if (onDeviceRecognitionSupported) {
-            "Автономное распознавание Android: доступно (пакеты проверяются при запуске)"
+            "Автономное распознавание Android: доступно (языковые пакеты проверяются при запуске)"
         } else {
-            "Автономное распознавание недоступно. Используй кнопки «Знаю / Не знаю»"
+            "Автономное распознавание Android: недоступно. Используй кнопки «Знаю / Не знаю»"
         }
         deviceInfo.text = "Android ${Build.VERSION.RELEASE} · API ${Build.VERSION.SDK_INT}\n" +
             recognition + "\nИнтерфейс и словарь доступны без распознавания речи."
@@ -900,8 +948,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     android.app.AlertDialog.Builder(this)
                         .setTitle("English Words")
                         .setMessage(if (uiEnglish)
-                            "Offline vocabulary practice • version 0.9.7 preview"
-                            else "Автономная речь RU/EN • версия 0.9.7 (тестовая)")
+                            "Offline vocabulary practice • version 0.9.4 preview"
+                            else "Тренировка слов без интернета • версия 0.9.4 (тестовая)")
                         .setPositiveButton("OK", null).show()
                     true
                 }
@@ -1764,7 +1812,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         tts.stop()
         recognizer?.cancel()
-        vosk.stop()
         examplesExpanded = false
         familyExpanded = false
         learningMode = false
