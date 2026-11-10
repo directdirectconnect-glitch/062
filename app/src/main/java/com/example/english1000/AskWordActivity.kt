@@ -260,46 +260,15 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         }
         add(root, examplesPanel, 14)
 
-        // Foldable / tablet: retain the word card while input and history occupy
-        // a separate pane. Compact windows use the same views in reading order.
-        val inputViews = listOf<View>(status, wordInput, controls, historyButton, examplesPanel)
-        val contentColumns = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-        }
-        val translationPane = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val inputPane = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        fun detach(view: View) {
-            (view.parent as? android.view.ViewGroup)?.removeView(view)
-        }
-        var expandedLayout: Boolean? = null
-        fun arrangeForWidth(widthPx: Int) {
-            val availableDp = (widthPx - root.paddingLeft - root.paddingRight) /
-                resources.displayMetrics.density
-            val expanded = availableDp >= 620f
-            if (expandedLayout == expanded) return
-            expandedLayout = expanded
-            (listOf<View>(card) + inputViews).forEach(::detach)
-            detach(contentColumns)
-            if (expanded) {
-                contentColumns.removeAllViews()
-                add(translationPane, card, 4)
-                inputViews.forEach { add(inputPane, it, 12) }
-                contentColumns.addView(translationPane,
-                    LinearLayout.LayoutParams(0, -2, 1.25f).apply { rightMargin = px(18) })
-                contentColumns.addView(inputPane, LinearLayout.LayoutParams(0, -2, 1f))
-                add(root, contentColumns, 16)
-            } else {
-                add(root, card, 16)
-                add(root, status, 14)
-                add(root, wordInput, 12)
-                add(root, controls, 10)
-                add(root, historyButton, 10)
-                add(root, examplesPanel, 14)
-            }
-        }
+        // Fold expands the same translation screen rather than adding a
+        // second pane. Update insets when resized without an activity restart.
         root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
-            arrangeForWidth(right - left)
+            val isWide = (right - left) / resources.displayMetrics.density >= 600f
+            val horizontalPadding = px(if (isWide) 28 else 16)
+            if (root.paddingLeft != horizontalPadding) {
+                root.setPadding(horizontalPadding, root.paddingTop,
+                    horizontalPadding, root.paddingBottom)
+            }
         }
     }
 
