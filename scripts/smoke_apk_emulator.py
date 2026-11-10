@@ -130,9 +130,13 @@ def ensure_alive() -> None:
 
 
 def launch() -> None:
-    output = adb("shell", "am", "start", "-W", "-n", ACTIVITY, timeout=50)
-    TRACE.append(output.strip())
-    time.sleep(2)
+    for attempt in range(2):
+        output = adb("shell", "am", "start", "-W", "-n", ACTIVITY, timeout=50)
+        TRACE.append(f"Start attempt {attempt + 1}: " + output.strip())
+        time.sleep(2.5)
+        if adb("shell", "pidof", PKG, check=False).strip():
+            return
+        time.sleep(1)
     ensure_alive()
 
 
@@ -155,7 +159,10 @@ def main() -> None:
     adb("shell", "svc", "data", "disable")
     adb("shell", "logcat", "-c", check=False)
     adb("install", "-r", str(APK), timeout=90)
-    adb("shell", "pm", "clear", PKG)
+    # Brand-new AVD: the app has no previous user data. Do not call pm clear here:
+    # Android may asynchronously force-stop a just-launched Activity during data clear.
+    adb("shell", "pm", "grant", PKG, "android.permission.RECORD_AUDIO",
+        check=False)
     adb("shell", "wm", "size", "884x2208")
     adb("shell", "wm", "density", "440")
     launch()
