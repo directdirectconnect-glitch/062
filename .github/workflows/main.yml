@@ -43,6 +43,10 @@ jobs:
       - name: Run unit tests and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
+      - name: Verify offline models and native libraries are in APK
+        if: hashFiles('scripts/verify_vosk_apk.py') != ''
+        run: python3 scripts/verify_vosk_apk.py
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
