@@ -3,7 +3,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, 'integrate/**', 'develop/**', 'design/**', 'beta/**']
+    branches: [main, 'integrate/**', 'develop/**', 'test/0.9.7-s20fe-install', 'design/**', 'beta/**']
   workflow_dispatch:
 
 concurrency:
