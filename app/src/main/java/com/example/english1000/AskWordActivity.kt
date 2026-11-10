@@ -66,12 +66,12 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var micButton: Button
     private var uiEnglish = false
     private var dark = false
-    private val ink get() = if (dark) Color.rgb(239, 240, 241) else Color.rgb(27, 30, 34)
-    private val muted get() = if (dark) Color.rgb(175, 180, 186) else Color.rgb(105, 111, 117)
-    private val canvasColor get() = if (dark) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
-    private val surface get() = if (dark) Color.rgb(33, 36, 39) else Color.WHITE
-    private val secondary get() = if (dark) Color.rgb(49, 53, 57) else Color.rgb(234, 236, 238)
-    private val opposite get() = if (dark) Color.rgb(22, 25, 28) else Color.WHITE
+    private val ink get() = if (dark) Color.rgb(241, 235, 225) else Color.rgb(27, 42, 57)
+    private val muted get() = if (dark) Color.rgb(192, 184, 173) else Color.rgb(104, 116, 128)
+    private val canvasColor get() = if (dark) Color.rgb(11, 24, 39) else Color.rgb(241, 245, 249)
+    private val surface get() = if (dark) Color.rgb(26, 43, 61) else Color.WHITE
+    private val secondary get() = if (dark) Color.rgb(38, 55, 73) else Color.rgb(226, 233, 239)
+    private val opposite get() = Color.WHITE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -133,7 +133,8 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
     private fun shape(color: Int, corners: Int = 12): GradientDrawable =
         GradientDrawable().apply {
             setColor(color)
-            cornerRadius = px(corners).toFloat()
+            cornerRadius = px(if (corners == 12) 20 else corners).toFloat()
+            setStroke(px(1), Color.rgb(166, 143, 108))
         }
 
     private fun text(value: String, size: Float, color: Int = ink, bold: Boolean = false) =
@@ -142,13 +143,16 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             textSize = size
             setTextColor(color)
             gravity = Gravity.CENTER
-            if (bold) setTypeface(null, Typeface.BOLD)
+            typeface = Typeface.create("sans-serif-light", if (bold) Typeface.NORMAL else Typeface.NORMAL)
+            letterSpacing = 0.015f
         }
 
     private fun action(value: String, prominent: Boolean = false, onClick: () -> Unit) =
         Button(this).apply {
             text = value
             textSize = 15f
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            letterSpacing = 0.015f
             isAllCaps = false
             setTextColor(if (prominent) opposite else ink)
             background = shape(if (prominent) ink else secondary)
@@ -173,8 +177,8 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         scroll.addView(root)
         setContentView(scroll)
 
-        add(root, text(if (uiEnglish) "ASK A WORD" else "СПРОСИ СЛОВО",
-            22f, ink, true).apply { gravity = Gravity.START })
+        add(root, text(if (uiEnglish) "Translate a word" else "Перевести слово",
+            29f, ink, true).apply { gravity = Gravity.START })
         add(root, text(
             if (uiEnglish) "Say a Russian word. I'll pronounce its English translation."
             else "Назови русское слово — услышишь английский перевод.",
