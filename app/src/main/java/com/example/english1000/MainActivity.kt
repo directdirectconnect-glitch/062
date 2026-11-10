@@ -449,8 +449,21 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     private fun button(value: String, color: Int = blue, ink: Int = white, action: () -> Unit): Button =
         Button(this).apply {
-            text = tr(value); textSize = 15f; isAllCaps = false
-            setTextColor(ink); background = rounded(color, 10)
+            text = tr(value)
+            textSize = 15f
+            isAllCaps = false
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            letterSpacing = 0.015f
+            setTextColor(ink)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(color, color)
+            ).apply {
+                cornerRadius = dp(16).toFloat()
+                setStroke(dp(1), if (isDarkTheme) Color.rgb(112, 100, 83)
+                    else Color.rgb(205, 193, 177))
+            }
+            minimumHeight = dp(48)
             setOnClickListener { action() }
         }
     private fun add(parent: LinearLayout, view: View, height: Int = -2, top: Int = 0) {
@@ -548,7 +561,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(18))
-            background = rounded(white, 12)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(if (isDarkTheme) Color.rgb(26, 39, 54) else Color.rgb(247, 248, 250),
+                    if (isDarkTheme) Color.rgb(15, 27, 41) else Color.rgb(234, 239, 244))
+            ).apply {
+                cornerRadius = dp(20).toFloat()
+                setStroke(dp(1), Color.rgb(160, 137, 103))
+            }
             visibility = View.GONE
         }
         add(menu, text("НАСТРОЙКИ", 16f, navy, true))
