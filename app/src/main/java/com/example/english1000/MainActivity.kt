@@ -935,7 +935,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val availableDp = (widthPx - root.paddingLeft - root.paddingRight) /
                 resources.displayMetrics.density
             // Leave at least ~220 dp for navigation and ~350 dp for the active lesson.
-            val expanded = availableDp >= 620f
+            val expanded = AdaptiveDisplayPolicy.useTwoPanes(availableDp)
             if (expandedLayout == expanded) return
             expandedLayout = expanded
             (sidebarViews + lessonViews).forEach(::removeFromParent)
