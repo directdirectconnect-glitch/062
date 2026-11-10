@@ -126,7 +126,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var uiEnglish = false
     // The default follows Android's current light/dark setting.
     // 0 = light, 1 = dark, 2 = system.
-    private var themeChoice = 2
+    private var themeChoice = 1
     private var isDarkTheme = false
     private lateinit var themeSpinner: Spinner
     private var fontChoice = 1
@@ -309,7 +309,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        themeChoice = prefs.getInt("ui_theme", 2).coerceIn(0, 2)
+        themeChoice = prefs.getInt("ui_theme", 1).coerceIn(0, 2)
         isDarkTheme = when (themeChoice) {
             0 -> false
             1 -> true
@@ -898,31 +898,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
-        if (resources.configuration.screenWidthDp >= 600) {
-            val lessonViews = listOf(card, examplesToggle, familyButton, status, listen, repeat,
-                learningPauseButton, rating, skip, nextWordButton)
-            val sidebarViews = listOf(modeActions, counter, progress, stats)
-            lessonViews.forEach { root.removeView(it) }
-            sidebarViews.forEach { root.removeView(it) }
-            val columns = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.TOP
+        // Fold / tablet: a single full-width screen, identical in structure to
+        // the phone. Do not split navigation and lesson into simultaneous panes.
+        root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
+            val expanded = (right - left) / resources.displayMetrics.density >= 600f
+            val padding = dp(if (expanded) 32 else 14)
+            if (root.paddingLeft != padding) {
+                root.setPadding(padding, root.paddingTop, padding, root.paddingBottom)
             }
-            val mainPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            val sidePanel = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(20), dp(16), dp(20))
-                background = rounded(white, 12)
-            }
-            lessonViews.forEach { add(mainPanel, it, top = 10) }
-            sidebarViews.forEach { add(sidePanel, it, top = 14) }
-            // On an unfolded Fold the progress panel stays on the left and the
-            // active word receives the larger, right-hand reading area.
-            columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.15f).apply {
-                rightMargin = dp(16)
-            })
-            columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 3f))
-            add(root, columns, top = 16)
         }
         applyTypography(root)
     }
