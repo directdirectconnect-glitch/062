@@ -886,91 +886,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
-        // Reflow the existing live views when the usable window changes size.
-        // A Fold can resize without rotating; do not rely on screenWidthDp at launch.
-        // Reparenting keeps the current lesson, progress, answers and microphone controls.
-        val lessonViews = listOf<View>(card, examplesToggle, familyButton, status, listen,
-            repeat, learningPauseButton, rating, skip, nextWordButton)
-        val sidebarViews = listOf<View>(modeActions, counter, progress, stats)
-        val columns = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-        }
-        val mainPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val sidePanel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(18), dp(12), dp(18))
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(28, 46, 64), Color.rgb(15, 29, 45))
-            ).apply {
-                cornerRadius = dp(20).toFloat()
-                setStroke(dp(1), Color.rgb(156, 135, 103))
-            }
-        }
-        fun removeFromParent(view: View) {
-            (view.parent as? android.view.ViewGroup)?.removeView(view)
-        }
-        fun compactNavigation(compact: Boolean) {
-            val longSymbols = listOf("А ⇄ Я", "▤", "✓")
-            val shortSymbols = listOf("⇄", "▤", "✓")
-            for (i in 0 until modeActions.childCount) {
-                val actionCard = modeActions.getChildAt(i) as? LinearLayout ?: continue
-                val glyph = actionCard.getChildAt(0) as? TextView ?: continue
-                val label = actionCard.getChildAt(1) as? TextView ?: continue
-                val chevron = actionCard.getChildAt(2)
-                actionCard.setPadding(dp(if (compact) 9 else 22), dp(16),
-                    dp(if (compact) 9 else 18), dp(16))
-                glyph.text = if (compact) shortSymbols[i] else longSymbols[i]
-                glyph.textSize = if (compact) 23f else 29f
-                glyph.layoutParams = glyph.layoutParams.apply {
-                    width = dp(if (compact) 32 else 62)
-                }
-                label.textSize = if (compact) 16f else 20f
-                chevron.visibility = if (compact) View.GONE else View.VISIBLE
-            }
-        }
-        var expandedLayout: Boolean? = null
-        fun arrangeForWidth(widthPx: Int) {
-            val availableDp = (widthPx - root.paddingLeft - root.paddingRight) /
-                resources.displayMetrics.density
-            // Leave at least ~220 dp for navigation and ~350 dp for the active lesson.
-            val expanded = availableDp >= 620f
-            if (expandedLayout == expanded) return
-            expandedLayout = expanded
-            (sidebarViews + lessonViews).forEach(::removeFromParent)
-            removeFromParent(columns)
-            compactNavigation(expanded)
-            if (expanded) {
-                // Remove pane containers too: they may still belong to columns
-                // from an earlier unfold -> fold -> unfold resize sequence.
-                columns.removeAllViews()
-                sidebarViews.forEach { add(sidePanel, it, top = 12) }
-                lessonViews.forEach { add(mainPanel, it, top = 10) }
-                columns.addView(sidePanel, LinearLayout.LayoutParams(0, -2, 1.5f).apply {
-                    rightMargin = dp(14)
-                })
-                columns.addView(mainPanel, LinearLayout.LayoutParams(0, -2, 2.7f))
-                add(root, columns, top = 16)
-            } else {
-                add(root, modeActions, top = 12)
-                add(root, counter, top = 24)
-                add(root, progress, 6, 12)
-                add(root, card, top = 18)
-                add(root, examplesToggle, 52, 12)
-                add(root, familyButton, 52, 8)
-                add(root, status)
-                add(root, listen, 64, 8)
-                add(root, repeat, 56, 12)
-                add(root, learningPauseButton, 52, 8)
-                add(root, rating, top = 12)
-                add(root, skip, 50, 12)
-                add(root, nextWordButton, 54, 12)
-                add(root, stats, top = 20)
-            }
-        }
+        // Keep exactly the phone's single-column screen on an unfolded Fold.
+        // The scroll container expands with the window; do not split the current
+        // lesson or show parallel navigation, testing and statistics panels.
         root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
-            arrangeForWidth(right - left)
+            val isWide = (right - left) / resources.displayMetrics.density >= 600f
+            val horizontalPadding = dp(if (isWide) 32 else 14)
+            if (root.paddingLeft != horizontalPadding) {
+                root.setPadding(horizontalPadding, root.paddingTop,
+                    horizontalPadding, root.paddingBottom)
+            }
         }
         applyTypography(root)
     }
