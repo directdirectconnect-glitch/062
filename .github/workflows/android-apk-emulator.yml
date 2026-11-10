@@ -1,8 +1,8 @@
-name: English Words 0.9.7 APK Emulator Test
+name: English Words 0.9.7 S20 Side-by-side Emulator Test
 
 on:
   push:
-    branches: ['develop/0.9.7-vosk-preview']
+    branches: ['test/0.9.7-s20fe-install']
     paths:
       - 'app/**'
       - 'scripts/**'
@@ -74,7 +74,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-097-Emulator-Report
+          name: EnglishWords-097-S20-Emulator-Report
           path: build/emulator-smoke/
           if-no-files-found: warn
           retention-days: 30
@@ -83,7 +83,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-097-Emulator-Tested-APK
+          name: EnglishWords-097-S20-Emulator-Tested-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
