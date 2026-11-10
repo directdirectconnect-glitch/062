@@ -276,7 +276,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         fun arrangeForWidth(widthPx: Int) {
             val availableDp = (widthPx - root.paddingLeft - root.paddingRight) /
                 resources.displayMetrics.density
-            val expanded = availableDp >= 620f
+            val expanded = AdaptiveDisplayPolicy.useTwoPanes(availableDp)
             if (expandedLayout == expanded) return
             expandedLayout = expanded
             (listOf<View>(card) + inputViews).forEach(::detach)
