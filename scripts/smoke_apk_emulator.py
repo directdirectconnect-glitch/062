@@ -17,7 +17,7 @@ from xml.etree import ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "build" / "emulator-smoke"
 REPORT.mkdir(parents=True, exist_ok=True)
-PKG = "com.example.english1000"
+PKG = "com.example.english1000.s20test"
 ACTIVITY = PKG + "/.MainActivity"
 APK = ROOT / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
 PASSED: list[str] = []
