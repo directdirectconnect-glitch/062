@@ -24,6 +24,7 @@ class OfflineVoskEngine(private val activity: Activity) {
     private var generation = 0
     private var service: SpeechService? = null
     private var model: Model? = null
+    private var activeRecognizer: Recognizer? = null
 
     companion object {
         private val extractionLock = Any()
@@ -125,21 +126,25 @@ class OfflineVoskEngine(private val activity: Activity) {
         Thread({
             var loaded: Model? = null
             var opened: SpeechService? = null
+            var ownedRecognizer: Recognizer? = null
             try {
                 val directory = ensureExtracted(activity, language)
                 if (requested != generation) return@Thread
                 val readyModel = Model(directory.absolutePath)
                 loaded = readyModel
                 val recognizer = Recognizer(readyModel, 16000.0f)
+                ownedRecognizer = recognizer
                 val readyService = SpeechService(recognizer, 16000.0f)
                 opened = readyService
                 ui.post {
                     if (requested != generation || activity.isDestroyed || activity.isFinishing) {
                         readyService.shutdown()
+                        recognizer.close()
                         readyModel.close()
                         return@post
                     }
                     model = readyModel
+                    activeRecognizer = recognizer
                     service = readyService
                     onStatus("🎤 Офлайн Vosk: слушаю…")
                     var accepted = false
@@ -186,6 +191,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                 }
                 loaded = null
                 opened = null
+                ownedRecognizer = null
             } catch (e: Exception) {
                 ui.post {
                     if (requested == generation) {
@@ -196,6 +202,7 @@ class OfflineVoskEngine(private val activity: Activity) {
             } finally {
                 // Loaded objects are owned by UI after successful handoff.
                 if (opened != null) opened.shutdown()
+                if (ownedRecognizer != null) ownedRecognizer.close()
                 if (loaded != null) loaded.close()
             }
         }, "EnglishWords-Vosk-$language").start()
@@ -205,8 +212,10 @@ class OfflineVoskEngine(private val activity: Activity) {
         generation++
         val running = service
         service = null
-        try { running?.stop() } catch (_: Exception) {}
+        try { running?.cancel() } catch (_: Exception) {}
         try { running?.shutdown() } catch (_: Exception) {}
+        try { activeRecognizer?.close() } catch (_: Exception) {}
+        activeRecognizer = null
         try { model?.close() } catch (_: Exception) {}
         model = null
     }
