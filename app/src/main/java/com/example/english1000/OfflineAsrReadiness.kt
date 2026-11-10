@@ -23,3 +23,4 @@ internal object OfflineAsrReadiness {
 
     private fun modelReady(directory: File): Boolean =
         OfflineModelLayout.hasRequiredFiles(directory)
+}
