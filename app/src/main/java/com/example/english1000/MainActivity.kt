@@ -119,9 +119,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var current: Word? = null
 
     private var uiEnglish = false
-    // The default follows Android's current light/dark setting.
+    // Premium dark navy is the default; the user can choose light or system.
     // 0 = light, 1 = dark, 2 = system.
-    private var themeChoice = 2
+    private var themeChoice = 1
     private var isDarkTheme = false
     private lateinit var themeSpinner: Spinner
     private var fontChoice = 1
@@ -304,7 +304,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        themeChoice = prefs.getInt("ui_theme", 2).coerceIn(0, 2)
+        themeChoice = prefs.getInt("ui_theme", 1).coerceIn(0, 2)
         isDarkTheme = when (themeChoice) {
             0 -> false
             1 -> true
