@@ -102,6 +102,20 @@ def expect_text(label: str, *fragments: str) -> None:
         raise AssertionError(f"Expected one of {fragments!r} on {label}, got {visible[:65]!r}")
 
 
+def expect_text_scroll(label: str, *fragments: str) -> None:
+    """A vertical ScrollView only exposes on-screen children to UiAutomator."""
+    for attempt in range(5):
+        nodes = hierarchy(label + "_scroll" + str(attempt))
+        visible = [n for n in matching(nodes, fragments) if visible_center(n)]
+        if visible:
+            return
+        width, height = screen_size()
+        adb("shell", "input", "swipe", str(width // 2), str(height * 4 // 5),
+            str(width // 2), str(height // 4), "350")
+        time.sleep(0.8)
+    raise AssertionError(f"Control {fragments!r} not reachable after scrolling")
+
+
 def tap_text(label: str, *fragments: str, scroll: bool = True) -> None:
     for attempt in range(5 if scroll else 1):
         nodes = hierarchy(label + "_search" + str(attempt))
@@ -189,14 +203,14 @@ def main() -> None:
     report("Learning mode launches from the same example options")
 
     tap_text("check_start", "Проверять", "Check words")
-    expect_text("check_button", "Не знаю", "Don't know")
+    expect_text_scroll("check_button", "Не знаю", "Don't know")
     stage("04_checking_words")
     report("Checking mode shows manual answer controls without requiring ASR")
 
     # Process-death recovery: current question is persisted by the app.
     adb("shell", "am", "force-stop", PKG)
     launch()
-    expect_text("restored_check", "Не знаю", "Don't know")
+    expect_text_scroll("restored_check", "Не знаю", "Don't know")
     stage("05_restored_after_force_stop")
     report("Current manual-check screen survives process restart")
 
@@ -205,7 +219,7 @@ def main() -> None:
     adb("shell", "wm", "density", "320")
     time.sleep(2)
     ensure_alive()
-    expect_text("wide_check", "Не знаю", "Don't know")
+    expect_text_scroll("wide_check", "Не знаю", "Don't know")
     stage("06_fold_width_adapted")
     report("Unfolded-width layout preserves manual-check controls")
 
@@ -214,7 +228,7 @@ def main() -> None:
     adb("shell", "wm", "density", "440")
     time.sleep(2)
     ensure_alive()
-    expect_text("fold_back", "Не знаю", "Don't know")
+    expect_text_scroll("fold_back", "Не знаю", "Don't know")
     stage("07_folded_width_adapted")
     report("Folded-width layout preserves manual-check controls")
     print("SMOKE PASS: all checks completed", flush=True)
