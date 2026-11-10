@@ -1538,11 +1538,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             override fun onEndOfSpeech() { status.text = "Проверяю ответ..." }
             override fun onError(error: Int) {
                 if (!answering) {
+                    if (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+                        error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
+                        // The service may exist without an installed on-device language
+                        // model. Keep the exercise usable offline via manual answers.
+                        method = 1
+                        methodSpinner.setSelection(1)
+                        updateButtons()
+                        status.text = if (uiEnglish)
+                            "Offline speech language unavailable. Use Know / Don't know."
+                        else "Нет локального пакета распознавания. Отвечай кнопками «Знаю / Не знаю»."
+                        return
+                    }
                     status.text = when (error) {
-                        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ->
-                            "Этот язык не поддерживается автономным распознаванием Android"
-                        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
-                            "Офлайн-пакет языка не установлен. Загрузи его в настройках Android"
                         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
                             "Нет разрешения на использование микрофона"
                         SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
