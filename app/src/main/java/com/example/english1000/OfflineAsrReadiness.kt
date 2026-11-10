@@ -22,8 +22,4 @@ internal object OfflineAsrReadiness {
     }
 
     private fun modelReady(directory: File): Boolean =
-        directory.isDirectory &&
-            File(directory, "am").isDirectory &&
-            File(directory, "conf").isDirectory &&
-            File(directory, "graph").isDirectory
-}
+        OfflineModelLayout.hasRequiredFiles(directory)
