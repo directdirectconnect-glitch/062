@@ -244,8 +244,18 @@ if __name__ == "__main__":
         print("SMOKE FAIL:", error_message, file=sys.stderr, flush=True)
         try:
             screenshot("FAIL_last_screen")
-        except Exception:
-            pass
+        except Exception as diagnostic_error:
+            TRACE.append("Screenshot diagnostic failed: " + str(diagnostic_error))
+        try:
+            nodes = hierarchy("FAIL_last_hierarchy")
+            TRACE.append("Visible UI text at failure: " + repr([n.get("text", "") for n in nodes if n.get("text")][:80]))
+        except Exception as diagnostic_error:
+            TRACE.append("UI diagnostic failed: " + str(diagnostic_error))
+        try:
+            TRACE.append("Foreground activity: " + adb("shell", "dumpsys", "activity", "activities", timeout=30, check=False)[-12000:])
+            TRACE.append("Process ID: " + adb("shell", "pidof", PKG, check=False).strip())
+        except Exception as diagnostic_error:
+            TRACE.append("Process diagnostic failed: " + str(diagnostic_error))
     finally:
         try:
             (REPORT / "logcat.txt").write_text(
