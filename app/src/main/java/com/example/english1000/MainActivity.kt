@@ -1688,11 +1688,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         s.lowercase(Locale.ROOT).replace('ё', 'е'), Normalizer.Form.NFD
     ).replace(Regex("\\p{M}+"), "").replace(Regex("[^\\p{L}\\p{N} ]"), " ")
         .trim().replace(Regex("\\s+"), " ")
-    private fun isCorrect(heard: String, w: Word): Boolean {
-        val h = normalize(heard)
-        val answers = answer(w).split(',', ';', '/').map { normalize(it) }.filter { it.isNotBlank() }
-        return answers.any { a -> h == a || h == "to $a" || (questionDirection == 0 && h == a.removePrefix("быть ")) }
-    }
+    private fun isCorrect(heard: String, w: Word): Boolean =
+        VoiceAnswerMatcher.matches(heard, answer(w), questionDirection)
     private fun grade(
         ok: Boolean, detail: String, methodSource: String = "manual",
         skipped: Boolean = false
