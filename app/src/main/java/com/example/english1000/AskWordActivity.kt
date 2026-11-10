@@ -79,7 +79,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
         includeExamples = intent.getBooleanExtra(EXTRA_INCLUDE_EXAMPLES,
             ExampleModeSetup.selected(this))
-        val choice = prefs.getInt("ui_theme", 2)
+        val choice = prefs.getInt("ui_theme", 1)
         dark = choice == 1 || (choice == 2 &&
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES)
@@ -262,6 +262,15 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             visibility = View.GONE
         }
         add(root, examplesPanel, 14)
+
+        // Keep the same one-column translation screen in both Fold positions.
+        root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
+            val expanded = (right - left) / resources.displayMetrics.density >= 600f
+            val padding = px(if (expanded) 28 else 16)
+            if (root.paddingLeft != padding) {
+                root.setPadding(padding, root.paddingTop, padding, root.paddingBottom)
+            }
+        }
     }
 
     private fun normalized(value: String): String =
