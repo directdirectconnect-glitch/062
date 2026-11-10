@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "build" / "emulator-smoke"
 REPORT.mkdir(parents=True, exist_ok=True)
 PKG = "com.example.english1000.s20test"
-ACTIVITY = PKG + "/.MainActivity"
+ACTIVITY = PKG + "/com.example.english1000.MainActivity"
 APK = ROOT / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
 PASSED: list[str] = []
 TRACE: list[str] = []
@@ -170,7 +170,7 @@ def main() -> None:
     adb("shell", "settings", "put", "global", "animator_duration_scale", "0")
     # No app INTERNET permission; also disable emulator networking for the smoke run.
     adb("shell", "svc", "wifi", "disable")
-    adb("shell", "svc", "data", "disable")
+    adb("shell", "svc", "data", "disable", check=False)  # AOSP ATD has no telephony service
     adb("shell", "logcat", "-c", check=False)
     adb("install", "-r", str(APK), timeout=90)
     # Brand-new AVD: the app has no previous user data. Do not call pm clear here:
