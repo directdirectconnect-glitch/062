@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-build-only fixture; the production APK never exports it. -->
+        <activity
+            android:name=".VoiceProbeActivity"
+            android:exported="true"
+            android:excludeFromRecents="true" />
+    </application>
+</manifest>
