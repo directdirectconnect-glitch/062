@@ -34,6 +34,12 @@ jobs:
       - name: Verify local content and integrated activities
         run: python3 scripts/validate_integration.py
 
+      - name: Bundle offline speech models when supported by branch
+        run: |
+          if [ -f scripts/prepare_vosk_models.py ]; then
+            python3 scripts/prepare_vosk_models.py
+          fi
+
       - name: Run unit tests and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
