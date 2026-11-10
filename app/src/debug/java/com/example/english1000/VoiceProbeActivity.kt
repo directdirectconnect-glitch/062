@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Base64
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.TextView
@@ -20,11 +21,18 @@ class VoiceProbeActivity : Activity() {
     private var engine: OfflineVoskEngine? = null
     private lateinit var status: TextView
     private var started = false
+    private var acceptedExpected: String = ""
+
+    private fun suppliedWord(): String = try {
+        val encoded = intent.getStringExtra("expected_b64") ?: ""
+        String(Base64.decode(encoded, Base64.NO_WRAP), Charsets.UTF_8)
+    } catch (_: Exception) { "" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val language = intent.getStringExtra("lang") ?: ""
-        val expected = intent.getStringExtra("expected") ?: ""
+        val expected = suppliedWord()
+        acceptedExpected = expected
         status = TextView(this).apply {
             text = "VOICE_PROBE_LOADING"
             textSize = 26f
@@ -55,7 +63,7 @@ class VoiceProbeActivity : Activity() {
         if (started) return
         started = true
         val language = intent.getStringExtra("lang") ?: return
-        val expected = intent.getStringExtra("expected") ?: return
+        val expected = acceptedExpected
         val recognizer = OfflineVoskEngine(this)
         engine = recognizer
         recognizer.listen(
