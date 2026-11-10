@@ -1,8 +1,8 @@
-name: English Words 0.9.6 APK Emulator Test
+name: English Words 0.9.7 APK Emulator Test
 
 on:
   push:
-    branches: ['develop/0.9.6-stability']
+    branches: ['develop/0.9.7-vosk-preview']
     paths:
       - 'app/**'
       - 'scripts/**'
@@ -38,6 +38,9 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Download and verify the bundled Vosk EN/RU models
+        run: python3 scripts/prepare_vosk_models.py
+
       - name: Check offline assets, run JVM tests and build actual APK
         run: |
           python3 scripts/validate_integration.py
@@ -68,7 +71,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-096-Emulator-Report
+          name: EnglishWords-097-Emulator-Report
           path: build/emulator-smoke/
           if-no-files-found: warn
           retention-days: 30
@@ -77,7 +80,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-096-Emulator-Tested-APK
+          name: EnglishWords-097-Emulator-Tested-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
