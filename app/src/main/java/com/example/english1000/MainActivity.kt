@@ -1592,12 +1592,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                 "No speech recognized. Tap the mic and repeat."
                             else "Не расслышала слово. Нажми микрофон и повтори."
                         } else {
-                            method = 1
-                            methodSpinner.setSelection(1)
-                            updateButtons()
+                            // Keep voice mode available after transient mic errors.
                             status.text = if (uiEnglish)
-                                "Offline Vosk unavailable: $reason. Use buttons."
-                            else "Vosk недоступен: $reason. Отвечай кнопками."
+                                "Vosk: $reason. Tap mic to retry, or use Know / Don't know."
+                            else "Vosk: $reason. Нажми микрофон для повтора или ответь кнопками."
                         }
                     }
                 },
