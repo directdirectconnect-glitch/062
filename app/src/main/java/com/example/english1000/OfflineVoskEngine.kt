@@ -142,7 +142,7 @@ class OfflineVoskEngine(private val activity: Activity) {
     fun listen(
         language: String,
         onStatus: (String) -> Unit,
-        onTranscript: (String) -> Unit,
+        onTranscript: (String) -> Unit = {},
         onError: (String) -> Unit,
         onCandidates: ((List<String>) -> Unit)? = null
     ) {
@@ -176,7 +176,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                     if (requested != generation || activity.isDestroyed || activity.isFinishing) {
                         localService.shutdown()
                         localRecognizer.close()
-                        if (newModel === selectedModel) selectedModel.close()
+                        if (reusable == null) selectedModel.close()
                         return@post
                     }
                     if (model !== selectedModel) {
