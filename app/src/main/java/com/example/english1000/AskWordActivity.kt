@@ -465,10 +465,29 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
                 onError = { reason ->
                     if (listeningEnabled) {
                         listening = false
-                        listeningEnabled = false
-                        micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
-                        status.text = if (uiEnglish) "Local voice unavailable: $reason. Type a word."
-                            else "Локальная речь недоступна: $reason. Введи слово вручную."
+                        if (reason == "Speech recognition timeout") {
+                            status.text = if (uiEnglish)
+                                "No speech heard. Listening again…"
+                            else "Слово не услышано. Слушаю снова…"
+                            resumeRecognitionSoon()
+                        } else {
+                            listeningEnabled = false
+                            micButton.text = if (uiEnglish) "🎤 Speak" else "🎤 Сказать"
+                            status.text = if (uiEnglish) "Local voice unavailable: $reason. Type a word."
+                                else "Локальная речь недоступна: $reason. Введи слово вручную."
+                        }
+                    }
+                },
+                onCandidates = { phrases ->
+                    if (listeningEnabled && listening) {
+                        listening = false
+                        retryCount = 0
+                        // Prefer a close-confidence Vosk hypothesis with a
+                        // verified offline dictionary entry over a misspelling.
+                        val chosen = phrases.firstOrNull { candidates(it).isNotEmpty() }
+                            ?: phrases.firstOrNull()
+                        if (chosen != null) lookup(chosen)
+                        else resumeRecognitionSoon()
                     }
                 }
             )
@@ -613,6 +632,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         listeningEnabled = false
         handler.removeCallbacksAndMessages(null)
         stopListening()
+        vosk.release()
         if (::tts.isInitialized) tts.shutdown()
         personalStore.close()
         super.onDestroy()
