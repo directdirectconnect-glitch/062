@@ -5,7 +5,7 @@ Environment branch: `test/0.9.5-emulator`, derived from immutable beta `beta/0.9
 ## How to run
 Push changes to `test/0.9.5-emulator` in `app/`, `scripts/`, or the emulator workflow. GitHub Actions **Android APK Emulator Smoke Test** starts automatically. For another identical run, open its existing GitHub Actions run and choose **Re-run jobs**.
 
-The workflow compiles the app's actual debug APK, validates local resources, runs JVM unit tests, then starts a hardware-accelerated Android 13 (API 33) x86_64 Google APIs emulator using ReactiveCircus's runner. It installs the APK and launches the app with Wi-Fi and mobile data disabled.
+The workflow compiles the app's actual debug APK, validates local resources, runs JVM unit tests, then starts a hardware-accelerated Android 13 (API 33) x86_64 AOSP Automated Test Device (ATD) emulator using ReactiveCircus's runner. It installs the APK and launches the app with Wi-Fi and mobile data disabled.
 
 ## Smoke checks
 - Compact phone-sized screen: main activity launches, three mode controls appear.
