@@ -227,12 +227,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
     }
     // Monochrome palettes only: no purple, green, red, or colorful accents.
-    private val navy: Int get() = if (isDarkTheme) Color.rgb(238, 240, 243) else Color.rgb(26, 31, 37)
-    private val muted: Int get() = if (isDarkTheme) Color.rgb(177, 182, 187) else Color.rgb(102, 110, 119)
-    private val blue: Int get() = if (isDarkTheme) Color.rgb(225, 228, 232) else Color.rgb(34, 43, 54)
-    private val bg: Int get() = if (isDarkTheme) Color.rgb(14, 16, 18) else Color.rgb(247, 248, 249)
-    private val white: Int get() = if (isDarkTheme) Color.rgb(31, 34, 38) else Color.WHITE
-    private val neutralSurface: Int get() = if (isDarkTheme) Color.rgb(48, 52, 57) else Color.rgb(233, 236, 239)
+    private val navy: Int get() = if (isDarkTheme) Color.rgb(241, 235, 225) else Color.rgb(27, 42, 57)
+    private val muted: Int get() = if (isDarkTheme) Color.rgb(191, 183, 171) else Color.rgb(102, 113, 125)
+    private val blue: Int get() = if (isDarkTheme) Color.rgb(210, 181, 138) else Color.rgb(34, 53, 72)
+    private val bg: Int get() = if (isDarkTheme) Color.rgb(11, 24, 39) else Color.rgb(241, 245, 249)
+    private val white: Int get() = if (isDarkTheme) Color.rgb(26, 43, 61) else Color.WHITE
+    private val neutralSurface: Int get() = if (isDarkTheme) Color.rgb(38, 55, 73) else Color.rgb(226, 233, 239)
     private val neutralInk: Int get() = if (isDarkTheme) Color.rgb(235, 238, 242) else Color.rgb(38, 45, 52)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
