@@ -43,7 +43,7 @@ function Invoke-Adb([string[]]$Arguments) {
 }
 function Get-State {
     try {
-        $xml = Invoke-Adb @("-s", $script:serial, "exec-out", "uiautomator", "dump", "/dev/tty")
+        $xml = Invoke-Adb -Arguments @("-s", $script:serial, "exec-out", "uiautomator", "dump", "/dev/tty")
         foreach($marker in @("VOICE_PROBE_PASS", "VOICE_PROBE_FAIL", "VOICE_PROBE_ERROR",
                             "VOICE_PROBE_READY", "VOICE_PROBE_LOADING")) {
             if ($xml.Contains($marker)) { return $marker }
@@ -78,7 +78,7 @@ try {
 
     $script:adbExe = Resolve-Adb
     if (-not $AndroidSerial) {
-        $deviceListing = Invoke-Adb @("devices")
+        $deviceListing = Invoke-Adb -Arguments @("devices")
         $devices = @($deviceListing -split "`r?`n" |
                      Where-Object { $_ -match "^\S+\s+device(\s|$)" } |
                      ForEach-Object { ($_ -split "\s+")[0] })
@@ -86,27 +86,27 @@ try {
         $script:serial = $devices[0]
     } else { $script:serial = $AndroidSerial }
 
-    $installed = Invoke-Adb @("-s", $script:serial, "shell", "pm", "path", $package)
+    $installed = Invoke-Adb -Arguments @("-s", $script:serial, "shell", "pm", "path", $package)
     Assert-Condition ($installed -match "package:") "Isolated S20 test package not installed"
-    [void](Invoke-Adb @("-s", $script:serial, "shell", "pm", "grant", $package,
+    [void](Invoke-Adb -Arguments @("-s", $script:serial, "shell", "pm", "grant", $package,
                          "android.permission.RECORD_AUDIO"))
 
     # Base64 ensures UTF-8 RU words survive Windows PowerShell 5.1 -> ADB quoting.
     $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Expected))
-    [void](Invoke-Adb @("-s", $script:serial, "shell", "am", "start",
+    [void](Invoke-Adb -Arguments @("-s", $script:serial, "shell", "am", "start",
          "-n", "$package/com.example.english1000.VoiceProbeActivity",
          "--es", "lang", $Language, "--es", "expected_b64", $encoded))
 
-    $ready = Wait-ForState @("VOICE_PROBE_READY", "VOICE_PROBE_ERROR") $ReadyTimeoutSeconds
+    $ready = Wait-ForState -StopAt @("VOICE_PROBE_READY", "VOICE_PROBE_ERROR") -TimeoutSec $ReadyTimeoutSeconds
     Assert-Condition ($ready -eq "VOICE_PROBE_READY") "Vosk did not become ready: $ready"
 
     Add-Type -AssemblyName System
-    $player = New-Object System.Media.SoundPlayer($wav)
+    $player = New-Object System.Media.SoundPlayer -ArgumentList $wav
     $player.Load()
     $player.PlaySync()
 
-    $result = Wait-ForState @("VOICE_PROBE_PASS", "VOICE_PROBE_FAIL",
-                               "VOICE_PROBE_ERROR") $ResultTimeoutSeconds
+    $result = Wait-ForState -StopAt @("VOICE_PROBE_PASS", "VOICE_PROBE_FAIL",
+                               "VOICE_PROBE_ERROR") -TimeoutSec $ResultTimeoutSeconds
     # Only emit fixed result markers. Transcript, device IDs and paths stay local.
     Write-Output $result
     if ($result -ne "VOICE_PROBE_PASS") { exit 1 }
