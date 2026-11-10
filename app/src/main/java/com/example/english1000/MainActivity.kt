@@ -533,7 +533,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 setPadding(dp(22), dp(20), dp(18), dp(20))
                 isClickable = true
                 isFocusable = true
-                contentDescription = title
+                // Preserve accessible aliases used by existing S20 device-test scripts,
+                // without changing the premium Russian titles visible to learners.
+                contentDescription = when (title) {
+                    "Перевести слово" -> "Спроси слово · $title"
+                    "Учить слова" -> "Изучать · $title"
+                    "Проверка знаний" -> "Проверять · $title"
+                    else -> title
+                }
                 setOnClickListener { action() }
                 elevation = dp(3).toFloat()
             }
