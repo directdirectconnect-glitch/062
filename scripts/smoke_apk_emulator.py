@@ -198,7 +198,8 @@ def main() -> None:
     tap_text("learn_start", "Изучать", "Learn words")
     expect_text("learn_options", "Добавлять примеры", "Include usage examples")
     tap_text("learn_confirm", "Начать", "Start", scroll=False)
-    expect_text("learn_active", "Пауза", "Pause listening")
+    # Premium home cards increase vertical content; the lesson pause control is below the fold.
+    expect_text_scroll("learn_active", "Пауза", "Pause listening")
     stage("03_listening_lessons")
     report("Learning mode launches from the same example options")
 
