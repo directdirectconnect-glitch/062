@@ -89,6 +89,16 @@ class VoiceProbeActivity : Activity() {
             },
             onError = { _ ->
                 if (!isFinishing && !isDestroyed) setState("VOICE_PROBE_ERROR")
+            },
+            onCandidates = { phrases ->
+                if (!isFinishing && !isDestroyed) {
+                    setState(if (VoiceAnswerMatcher.matchesAny(phrases, expected,
+                            if (language == "ru") 0 else 1)) {
+                        "VOICE_PROBE_PASS"
+                    } else {
+                        "VOICE_PROBE_FAIL"
+                    })
+                }
             }
         )
     }
@@ -104,7 +114,7 @@ class VoiceProbeActivity : Activity() {
     }
 
     override fun onDestroy() {
-        engine?.stop()
+        engine?.release()
         engine = null
         super.onDestroy()
     }
