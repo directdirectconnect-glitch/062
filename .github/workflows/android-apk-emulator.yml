@@ -2,10 +2,11 @@ name: English Words 0.9.8 Offline Premium Emulator Test
 
 on:
   push:
-    branches: ['develop/0.9.8-visual-vocabulary']
+    branches: ['develop/0.9.8-visual-vocabulary', 'develop/vocabulary-5000-stage1']
     paths:
       - 'app/**'
       - 'scripts/**'
+      - 'app/src/main/assets/words.json'
       - '.github/workflows/android-apk-emulator.yml'
   workflow_dispatch:
 
@@ -40,6 +41,12 @@ jobs:
 
       - name: Download and verify the bundled Vosk EN/RU models
         run: python3 scripts/prepare_vosk_models.py
+
+      - name: Audit original 5,000-word source data
+        if: github.ref == 'refs/heads/develop/vocabulary-5000-stage1'
+        run: |
+          python3 scripts/audit_vocabulary.py --require-5000-single-words
+          python3 scripts/review_vocabulary_quality.py
 
       - name: Check offline assets, run JVM tests and build actual APK
         run: |
@@ -83,7 +90,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-098-Premium-Emulator-Tested-APK
+          name: EnglishWords-098-Original-5000-Emulator-Tested-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
