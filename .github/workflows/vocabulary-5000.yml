@@ -9,6 +9,8 @@ on:
       - 'scripts/review_vocabulary_quality.py'
       - 'scripts/validate_visual_classification.py'
       - 'scripts/validate_editorial_visual_batch.py'
+      - 'scripts/validate_visual_image_provenance.py'
+      - 'visual/image_production_queue_2101_3100.json'
       - 'visual/editorial_batch_0001_0300.json'
       - 'visual/editorial_batch_0301_0800.json'
       - 'visual/editorial_batch_0801_1300.json'
@@ -22,6 +24,8 @@ on:
       - 'scripts/review_vocabulary_quality.py'
       - 'scripts/validate_visual_classification.py'
       - 'scripts/validate_editorial_visual_batch.py'
+      - 'scripts/validate_visual_image_provenance.py'
+      - 'visual/image_production_queue_2101_3100.json'
       - 'visual/editorial_batch_0001_0300.json'
       - 'visual/editorial_batch_0301_0800.json'
       - 'visual/editorial_batch_0801_1300.json'
@@ -42,6 +46,8 @@ jobs:
         run: python3 scripts/validate_visual_classification.py
       - name: Validate visual editorial planning for first 2100 words
         run: python3 scripts/validate_editorial_visual_batch.py
+      - name: Check next 1000 original visual image slots and provenance requirements
+        run: python3 scripts/validate_visual_image_provenance.py
       - name: Publish source dictionary report
         if: always()
         uses: actions/upload-artifact@v4
