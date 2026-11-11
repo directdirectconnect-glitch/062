@@ -6,11 +6,13 @@ on:
     paths:
       - 'app/src/main/assets/words.json'
       - 'scripts/audit_vocabulary.py'
+      - 'scripts/review_vocabulary_quality.py'
       - '.github/workflows/vocabulary-5000.yml'
   pull_request:
     paths:
       - 'app/src/main/assets/words.json'
       - 'scripts/audit_vocabulary.py'
+      - 'scripts/review_vocabulary_quality.py'
   workflow_dispatch:
 
 jobs:
@@ -20,10 +22,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Audit actual app vocabulary only
         run: python3 scripts/audit_vocabulary.py --require-5000-single-words --output build/vocabulary-audit.json
+      - name: Review linguistic QA flags for full source vocabulary
+        run: python3 scripts/review_vocabulary_quality.py --output build/vocabulary-quality-triage.json
       - name: Publish source dictionary report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: original-vocabulary-audit
-          path: build/vocabulary-audit.json
+          path: |
+            build/vocabulary-audit.json
+            build/vocabulary-quality-triage.json
           if-no-files-found: warn
