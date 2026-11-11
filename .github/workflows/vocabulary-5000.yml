@@ -12,6 +12,7 @@ on:
       - 'visual/editorial_batch_0001_0300.json'
       - 'visual/editorial_batch_0301_0800.json'
       - 'visual/editorial_batch_0801_1300.json'
+      - 'visual/editorial_batch_1301_2100.json'
       - 'visual/visual_classification_draft.json'
       - '.github/workflows/vocabulary-5000.yml'
   pull_request:
@@ -24,6 +25,7 @@ on:
       - 'visual/editorial_batch_0001_0300.json'
       - 'visual/editorial_batch_0301_0800.json'
       - 'visual/editorial_batch_0801_1300.json'
+      - 'visual/editorial_batch_1301_2100.json'
       - 'visual/visual_classification_draft.json'
   workflow_dispatch:
 
@@ -38,7 +40,7 @@ jobs:
         run: python3 scripts/review_vocabulary_quality.py --output build/vocabulary-quality-triage.json
       - name: Check all original word IDs have a visual plan
         run: python3 scripts/validate_visual_classification.py
-      - name: Validate visual editorial planning for first 1300 words
+      - name: Validate visual editorial planning for first 2100 words
         run: python3 scripts/validate_editorial_visual_batch.py
       - name: Publish source dictionary report
         if: always()
