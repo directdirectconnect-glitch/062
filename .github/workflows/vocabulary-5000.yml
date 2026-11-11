@@ -8,6 +8,8 @@ on:
       - 'scripts/audit_vocabulary.py'
       - 'scripts/review_vocabulary_quality.py'
       - 'scripts/validate_visual_classification.py'
+      - 'scripts/validate_editorial_visual_batch.py'
+      - 'visual/editorial_batch_0001_0300.json'
       - 'visual/visual_classification_draft.json'
       - '.github/workflows/vocabulary-5000.yml'
   pull_request:
@@ -16,6 +18,8 @@ on:
       - 'scripts/audit_vocabulary.py'
       - 'scripts/review_vocabulary_quality.py'
       - 'scripts/validate_visual_classification.py'
+      - 'scripts/validate_editorial_visual_batch.py'
+      - 'visual/editorial_batch_0001_0300.json'
       - 'visual/visual_classification_draft.json'
   workflow_dispatch:
 
@@ -30,6 +34,8 @@ jobs:
         run: python3 scripts/review_vocabulary_quality.py --output build/vocabulary-quality-triage.json
       - name: Check all original word IDs have a visual plan
         run: python3 scripts/validate_visual_classification.py
+      - name: Validate editorial photo planning for first 300 words
+        run: python3 scripts/validate_editorial_visual_batch.py
       - name: Publish source dictionary report
         if: always()
         uses: actions/upload-artifact@v4
