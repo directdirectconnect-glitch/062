@@ -9,6 +9,7 @@ WORDS = ROOT / "app/src/main/assets/words.json"
 BATCHES = (
     (ROOT / "visual/editorial_batch_0001_0300.json", 1, 300),
     (ROOT / "visual/editorial_batch_0301_0800.json", 301, 800),
+    (ROOT / "visual/editorial_batch_0801_1300.json", 801, 1300),
 )
 ALLOWED = {"grammar_card", "action_scene", "object_photo", "person_photo",
            "place_photo", "diagram", "concept_scene"}
@@ -43,8 +44,8 @@ def main():
         all_ids.extend(ids)
     if len(set(all_ids)) != len(all_ids):
         errors.append("Overlapping word IDs across batches")
-    if all_ids != list(range(1, 801)):
-        errors.append("Combined batches must cover IDs 1–800 without gaps")
+    if all_ids != list(range(1, 1301)):
+        errors.append("Combined batches must cover IDs 1–1300 without gaps")
     print(json.dumps({"first_pass_editorial_records": len(all_ids),
                       "visual_types": dict(totals),
                       "errors": errors}, ensure_ascii=False, indent=2))
