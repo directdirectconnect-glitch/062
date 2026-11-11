@@ -2,7 +2,7 @@ name: English Words 0.9.8 Offline Premium Emulator Test
 
 on:
   push:
-    branches: ['develop/0.9.8-visual-vocabulary']
+    branches: ['develop/0.9.8-visual-vocabulary', 'release/0.9.8-vocabulary-5000-apk']
     paths:
       - 'app/**'
       - 'scripts/**'
@@ -40,6 +40,9 @@ jobs:
 
       - name: Download and verify the bundled Vosk EN/RU models
         run: python3 scripts/prepare_vosk_models.py
+
+      - name: Verify bundled dictionary has 5000 unique single words
+        run: python3 scripts/audit_vocabulary.py --require-5000-single-words
 
       - name: Check offline assets, run JVM tests and build actual APK
         run: |
