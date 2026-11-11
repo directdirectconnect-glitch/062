@@ -2186,7 +2186,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         familyDialog?.dismiss()
         settingsDialog?.dismiss()
         pauseLearningAudio()
-        recognizer?.destroy(); vosk.stop(); tts.stop(); tts.shutdown()
+        recognizer?.destroy(); vosk.release(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
 }
