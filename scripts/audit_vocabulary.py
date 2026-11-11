@@ -47,8 +47,8 @@ def audit(path: Path) -> dict:
     return {
         "total_rows": len(words),
         "unique_english_spellings": len(set(english)),
-        "unique_single_token_spellings": len({w for w in english if not re.search(r"\\s", w)}),
-        "multiword_records": sum(bool(re.search(r"\\s", w)) for w in english),
+        "unique_single_token_spellings": len({w for w in english if not re.search(r"\s", w)}),
+        "multiword_records": sum(bool(re.search(r"\s", w)) for w in english),
         "bracketed_transcriptions": sum(isinstance(x, dict) and str(x.get("pron", "")).strip().startswith("[") for x in words),
         "target": 5000,
         "remaining": max(0, 5000 - len(words)),
