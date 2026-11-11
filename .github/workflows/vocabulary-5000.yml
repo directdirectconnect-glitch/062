@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Audit actual app vocabulary only
-        run: python3 scripts/audit_vocabulary.py --output build/vocabulary-audit.json
+        run: python3 scripts/audit_vocabulary.py --require-5000-single-words --output build/vocabulary-audit.json
       - name: Publish source dictionary report
         if: always()
         uses: actions/upload-artifact@v4
