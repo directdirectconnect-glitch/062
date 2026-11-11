@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "sequence": 2,
+  "sequence": 3,
   "target": "s20fe",
-  "operation": "smoke",
+  "operation": "full_regression",
   "expires_utc": "2026-11-17T23:59:00Z"
 }
