@@ -1584,13 +1584,32 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     }
                 },
                 onError = { reason ->
-                    if (running && !answering) {
-                        method = 1
-                        methodSpinner.setSelection(1)
-                        updateButtons()
-                        status.text = if (uiEnglish)
-                            "Offline Vosk unavailable: $reason. Use buttons."
-                        else "Vosk недоступен: $reason. Отвечай кнопками."
+                    if (running && !answering && current?.id == word.id) {
+                        if (reason == "Speech recognition timeout") {
+                            // Silence is not a fatal Vosk failure. Keep the
+                            // microphone mode available for another attempt.
+                            status.text = if (uiEnglish)
+                                "No speech recognized. Tap the mic and repeat."
+                            else "Не расслышала слово. Нажми микрофон и повтори."
+                        } else {
+                            // Keep voice mode available after transient mic errors.
+                            status.text = if (uiEnglish)
+                                "Vosk: $reason. Tap mic to retry, or use Know / Don't know."
+                            else "Vosk: $reason. Нажми микрофон для повтора или ответь кнопками."
+                        }
+                    }
+                },
+                onCandidates = { phrases ->
+                    if (running && !answering && current?.id == word.id) {
+                        val matching = phrases.firstOrNull { isCorrect(it, word) }
+                        if (matching != null) {
+                            grade(true, "Vosk: $matching", methodSource = "asr")
+                        } else {
+                            val heard = phrases.firstOrNull().orEmpty()
+                            status.text = if (uiEnglish)
+                                "Vosk heard '$heard'. Tap mic to retry or use Know / Don't know."
+                            else "Vosk услышал: «$heard». Нажми микрофон и повтори или ответь кнопками."
+                        }
                     }
                 })
             return
