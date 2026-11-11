@@ -6,11 +6,15 @@ on:
     paths:
       - 'app/src/main/assets/words.json'
       - 'scripts/audit_vocabulary.py'
+      - 'scripts/build_5000_test_fixture.py'
+      - 'testdata/**'
       - '.github/workflows/vocabulary-5000.yml'
   pull_request:
     paths:
       - 'app/src/main/assets/words.json'
       - 'scripts/audit_vocabulary.py'
+      - 'scripts/build_5000_test_fixture.py'
+      - 'testdata/**'
   workflow_dispatch:
 
 jobs:
@@ -20,10 +24,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Audit vocabulary
         run: python3 scripts/audit_vocabulary.py --output build/vocabulary-audit.json
+      - name: Generate isolated 5,000-entry load-test fixture
+        run: |
+          python3 scripts/build_5000_test_fixture.py
+          python3 -c 'import json; from pathlib import Path; p=Path("build/test-fixtures/words_5000_LOAD_TEST_ONLY.json"); d=json.loads(p.read_text()); assert len(d)==5000; assert [x["id"] for x in d]==list(range(1,5001)); print("5000-entry fixture OK")'
       - name: Publish vocabulary report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vocabulary-audit
-          path: build/vocabulary-audit.json
+          path: |
+            build/vocabulary-audit.json
+            build/test-fixtures/words_5000_LOAD_TEST_ONLY.json
           if-no-files-found: warn
