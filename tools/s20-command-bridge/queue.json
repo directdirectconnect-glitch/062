@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "sequence": 1,
+  "target": "s20fe",
+  "operation": "inventory",
+  "expires_utc": "2026-11-17T23:59:00Z"
+}
