@@ -1,0 +1,29 @@
+name: Vocabulary 5000 Quality Gate
+
+on:
+  push:
+    branches: ['develop/vocabulary-5000-stage1']
+    paths:
+      - 'app/src/main/assets/words.json'
+      - 'scripts/audit_vocabulary.py'
+      - '.github/workflows/vocabulary-5000.yml'
+  pull_request:
+    paths:
+      - 'app/src/main/assets/words.json'
+      - 'scripts/audit_vocabulary.py'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit vocabulary
+        run: python3 scripts/audit_vocabulary.py --output build/vocabulary-audit.json
+      - name: Publish vocabulary report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vocabulary-audit
+          path: build/vocabulary-audit.json
+          if-no-files-found: warn
