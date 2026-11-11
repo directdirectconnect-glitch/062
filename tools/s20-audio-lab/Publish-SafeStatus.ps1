@@ -55,7 +55,7 @@ function Map-Result([object]$Record) {
     'FAILED' { return 'FAIL' }
     'FAIL'   { return 'FAIL' }
     'ERROR'  { return 'FAIL' }
-    'SKIPPED'{ return 'SKIPPED' }
+    'SKIPPED' { return 'SKIPPED' }
     'RUNNING'{ return 'IN_PROGRESS' }
     default  { return 'UNCONFIRMED' }
   }
