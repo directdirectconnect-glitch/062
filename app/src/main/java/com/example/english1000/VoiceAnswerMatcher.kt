@@ -31,4 +31,8 @@ object VoiceAnswerMatcher {
             (questionDirection == 0 && heard == answer.removePrefix("быть "))
         }
     }
+
+    /** Conservative N-best grading: only complete, close-confidence Vosk phrases. */
+    fun matchesAny(candidates: List<String>, expected: String, questionDirection: Int): Boolean =
+        candidates.any { matches(it, expected, questionDirection) }
 }

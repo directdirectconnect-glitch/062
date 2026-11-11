@@ -7,6 +7,7 @@ The script refuses to claim coverage of microphone quality or a physical Fold hi
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -17,9 +18,9 @@ from xml.etree import ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "build" / "emulator-smoke"
 REPORT.mkdir(parents=True, exist_ok=True)
-PKG = "com.example.english1000"
+PKG = os.getenv("ENGLISHWORDS_TEST_PACKAGE", "com.example.english1000")
 ACTIVITY = PKG + "/com.example.english1000.MainActivity"
-APK = ROOT / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+APK = Path(os.environ["ENGLISHWORDS_TEST_APK"]) if "ENGLISHWORDS_TEST_APK" in os.environ else ROOT / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
 PASSED: list[str] = []
 TRACE: list[str] = []
 
