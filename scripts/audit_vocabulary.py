@@ -47,6 +47,9 @@ def audit(path: Path) -> dict:
     return {
         "total_rows": len(words),
         "unique_english_spellings": len(set(english)),
+        "unique_single_token_spellings": len({w for w in english if not re.search(r"\\s", w)}),
+        "multiword_records": sum(bool(re.search(r"\\s", w)) for w in english),
+        "bracketed_transcriptions": sum(isinstance(x, dict) and str(x.get("pron", "")).strip().startswith("[") for x in words),
         "target": 5000,
         "remaining": max(0, 5000 - len(words)),
         "issues": issues,
@@ -57,8 +60,11 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--vocabulary", type=Path, default=DEFAULT)
     p.add_argument("--output", type=Path)
+    p.add_argument("--require-5000-single-words", action="store_true", help="Fail unless there are at least 5000 distinct single-token English spellings")
     a = p.parse_args()
     result = audit(a.vocabulary)
+    if a.require_5000_single_words and result["unique_single_token_spellings"] < 5000:
+        result["issues"].append("Fewer than 5,000 unique single-token English spellings")
     report = json.dumps(result, ensure_ascii=False, indent=2)
     print(report)
     if a.output:
