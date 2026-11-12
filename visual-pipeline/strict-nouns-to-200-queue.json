@@ -13,9 +13,9 @@
       "en": "boy",
       "ru": "мальчик",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1KXllXs_N9KORgfqO0KncQAW1TSWNJEB2"
     },
     {
       "batch": 1,
@@ -24,9 +24,9 @@
       "en": "girl",
       "ru": "девочка",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1u6ZN8vj_cUIfXCO_u9OoDbMprTuBCo4D"
     },
     {
       "batch": 1,
@@ -35,9 +35,9 @@
       "en": "child",
       "ru": "ребёнок",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1GvTj9z5bPJD20pA-mrlmwOqCz91UHBS6"
     },
     {
       "batch": 1,
@@ -46,9 +46,9 @@
       "en": "woman",
       "ru": "женщина",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1EankgvhMC2Qn-9vnFQ7PzWj84u3xxYo0"
     },
     {
       "batch": 1,
@@ -57,9 +57,9 @@
       "en": "men",
       "ru": "мужчины",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1sj8ikQb0FxiTHsR_s0-vxWwsHSiWeqVk"
     },
     {
       "batch": 1,
@@ -68,9 +68,9 @@
       "en": "children",
       "ru": "дети",
       "strictNoun": true,
-      "reviewStatus": "PENDING_SEMANTIC_AND_IMAGE_QA",
-      "imageGenerated": false,
-      "driveFileId": null
+      "reviewStatus": "UPLOADED_AWAITING_FINAL_LIBRARY_QA",
+      "imageGenerated": true,
+      "driveFileId": "1alvfr0MBkpqkT4Xf8IT7MlLA8pCSY_1b"
     },
     {
       "batch": 1,
@@ -1623,5 +1623,7 @@
       "imageGenerated": false,
       "driveFileId": null
     }
-  ]
+  ],
+  "completedUploads": 6,
+  "lastUploadDate": "2026-11-12"
 }
