@@ -53,8 +53,8 @@ function Invoke-Adb([string[]]$Arguments) {
     return ($output -join [Environment]::NewLine)
 }
 function Ui-Document {
-    $null = Invoke-Adb @('shell', 'uiautomator', 'dump', '/sdcard/ew-s20qa-ui.xml')
-    $raw = Invoke-Adb @('exec-out','cat','/sdcard/ew-s20qa-ui.xml')
+    $null = Invoke-Adb -Arguments @('shell', 'uiautomator', 'dump', '/sdcard/ew-s20qa-ui.xml')
+    $raw = Invoke-Adb -Arguments @('exec-out','cat','/sdcard/ew-s20qa-ui.xml')
     try { return [xml]$raw } catch { throw 'ANDROID_UI_XML_INVALID' }
 }
 function Visible-Contains([string[]]$Needles) {
@@ -85,12 +85,12 @@ function Tap-Control([string[]]$Needles, [int]$MaxScroll=3) {
             $x = [int](([int]$b.Groups[1].Value + [int]$b.Groups[3].Value)/2)
             $y = [int](([int]$b.Groups[2].Value + [int]$b.Groups[4].Value)/2)
             if ($x -le 0 -or $y -le 20) { continue }
-            $null = Invoke-Adb @('shell','input','tap',[string]$x,[string]$y)
+            $null = Invoke-Adb -Arguments @('shell','input','tap',[string]$x,[string]$y)
             Start-Sleep -Milliseconds 900
             return
         }
         if ($attempt -lt $MaxScroll) {
-            $null = Invoke-Adb @('shell','input','swipe','500','1500','500','500','450')
+            $null = Invoke-Adb -Arguments @('shell','input','swipe','500','1500','500','500','450')
             Start-Sleep -Milliseconds 700
         }
     }
@@ -133,9 +133,9 @@ function Verify-WordAssets([string]$ApkPath) {
 }
 function Start-Qa {
     $component = $ExpectedPackage + '/' + $MainActivity
-    $null = Invoke-Adb @('shell','am','start','-W','-n',$component)
+    $null = Invoke-Adb -Arguments @('shell','am','start','-W','-n',$component)
     Start-Sleep -Seconds 3
-    $pid = Invoke-Adb @('shell','pidof',$ExpectedPackage)
+    $pid = Invoke-Adb -Arguments @('shell','pidof',$ExpectedPackage)
     Need ($pid.Trim().Length -gt 0) 'QA_PROCESS_NOT_RUNNING'
 }
 function Confirm-Device {
@@ -144,9 +144,9 @@ function Confirm-Device {
     $valid = @($devices | Where-Object { $_ -match '^\S+\s+device\s*$' })
     Need ($valid.Count -eq 1) 'NOT_EXACTLY_ONE_AUTHORIZED_DEVICE'
     $script:serial = (($valid[0] -split '\s+')[0]).Trim()
-    $model = Invoke-Adb @('shell','getprop','ro.product.model')
+    $model = Invoke-Adb -Arguments @('shell','getprop','ro.product.model')
     Need ($model.Trim() -ceq 'SM-G780G') 'PHONE_MODEL_NOT_S20FE'
-    $installed = Invoke-Adb @('shell','pm','path',$ExistingTestPackage')
+    $installed = Invoke-Adb -Arguments @('shell','pm','path',$ExistingTestPackage')
     Need ($installed -match 'package:') 'EXISTING_TEST_PACKAGE_MISSING'
 }
 function Get-Artifact {
@@ -166,7 +166,7 @@ function Get-Artifact {
 }
 function Install-QaSideBySide {
     # Refuse any destructive upgrade/replacement. New test app only.
-    $existing = Invoke-Adb @('shell','pm','path',$ExpectedPackage)
+    $existing = Invoke-Adb -Arguments @('shell','pm','path',$ExpectedPackage)
     Need ($existing -notmatch 'package:') 'QA_APP_ALREADY_INSTALLED_REFUSING_OVERWRITE'
     $res = @(& $script:adb -s $script:serial install $apk 2>&1)
     Need ($LASTEXITCODE -eq 0 -and ($res -join ' ') -match 'Success') 'QA_APK_INSTALL_FAILED'
@@ -186,32 +186,32 @@ try {
 
     Run-Case 'QA_LAUNCH' { Start-Qa } 'Isolated QA app opens on physical S20 FE.'
     Run-Case 'QA_HOME_MODES' {
-        Assert-Screen @('Изучать','Learn words') 'LEARN'
-        Assert-Screen @('Проверять','Check words') 'CHECK'
-        Assert-Screen @('Спроси слово','Ask a word') 'ASK'
+        Assert-Screen -Needles @('Изучать','Learn words') -Name 'LEARN'
+        Assert-Screen -Needles @('Проверять','Check words') -Name 'CHECK'
+        Assert-Screen -Needles @('Спроси слово','Ask a word') -Name 'ASK'
     } 'All three main menu modes visible.'
     Run-Case 'QA_ASK_WORD' {
-        Tap-Control @('Спроси слово','Ask a word')
-        Assert-Screen @('Добавлять примеры','Include usage examples') 'ASK_OPTIONS'
-        Tap-Control @('Начать','Start') 0
-        Assert-Screen @('СПРОСИ СЛОВО','ASK A WORD') 'ASK_STARTED'
-        $null = Invoke-Adb @('shell','input','keyevent','4')
+        Tap-Control -Needles @('Спроси слово','Ask a word')
+        Assert-Screen -Needles @('Добавлять примеры','Include usage examples') -Name 'ASK_OPTIONS'
+        Tap-Control -Needles @('Начать','Start') -MaxScroll 0
+        Assert-Screen -Needles @('СПРОСИ СЛОВО','ASK A WORD') -Name 'ASK_STARTED'
+        $null = Invoke-Adb -Arguments @('shell','input','keyevent','4')
         Start-Sleep -Seconds 1
     } 'Ask Word mode launches with examples options.'
     Run-Case 'QA_LEARNING_MODE' {
-        Tap-Control @('Изучать','Learn words')
-        Assert-Screen @('Добавлять примеры','Include usage examples') 'LEARN_OPTIONS'
-        Tap-Control @('Начать','Start') 0
-        Need (Visible-Contains @('Пауза','Pause listening')) 'LEARNING_PAUSE_MISSING'
+        Tap-Control -Needles @('Изучать','Learn words')
+        Assert-Screen -Needles @('Добавлять примеры','Include usage examples') -Name 'LEARN_OPTIONS'
+        Tap-Control -Needles @('Начать','Start') 0
+        Need (Visible-Contains -Needles @('Пауза','Pause listening')) 'LEARNING_PAUSE_MISSING'
     } 'Learning mode starts and exposes pause control.'
     Run-Case 'QA_CHECK_MODE' {
-        Tap-Control @('Проверять','Check words')
-        Need (Visible-Contains @('Не знаю',"Don't know")) 'CHECK_CONTROL_NOT_VISIBLE'
+        Tap-Control -Needles @('Проверять','Check words')
+        Need (Visible-Contains -Needles @('Не знаю',"Don't know")) 'CHECK_CONTROL_NOT_VISIBLE'
     } 'Manual answer control available.'
     Run-Case 'QA_FORCE_STOP_RECOVERY' {
-        $null = Invoke-Adb @('shell','am','force-stop',$ExpectedPackage)
+        $null = Invoke-Adb -Arguments @('shell','am','force-stop',$ExpectedPackage)
         Start-Qa
-        Need (Visible-Contains @('Не знаю',"Don't know")) 'CHECK_SESSION_NOT_RESTORED'
+        Need (Visible-Contains -Needles @('Не знаю',"Don't know")) 'CHECK_SESSION_NOT_RESTORED'
     } 'Current check session survives force-stop and restart.'
 } catch {
     Add-Result 'SETUP_OR_INSTALL' 'BLOCKED' 'Candidate verification, device, isolated install or prerequisite blocked.'
