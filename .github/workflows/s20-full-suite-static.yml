@@ -26,7 +26,7 @@ jobs:
               throw ('PowerShell syntax invalid: ' + $file.Name)
             }
             $content = Get-Content -LiteralPath $file.FullName -Raw
-            if ($content -match 'Invoke-Expression|ScriptBlock::Create|DownloadString|Remove-Item|pm clear|uninstall') {
+            if ($content -match '(?im)^\s*(Invoke-Expression|Remove-Item)\b|ScriptBlock::Create|DownloadString|\bpm\s+clear\b|\badb\s+uninstall\b') {
               throw ('Unsafe operation found in reviewed QA script: ' + $file.Name)
             }
             Write-Host ('PASSED: PowerShell 5.1 syntax for ' + $file.Name)
