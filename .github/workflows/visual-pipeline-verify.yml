@@ -1,0 +1,20 @@
+name: Verify Visual Pipeline 5000 Queue
+on:
+  push:
+    branches: ['develop/visual-pipeline-5000']
+    paths:
+      - 'visual-pipeline/**'
+      - 'app/src/main/assets/words.json'
+      - '.github/workflows/visual-pipeline-verify.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit ten production queue batches without paid calls
+        run: python3 visual-pipeline/scripts/check_queue.py
