@@ -1,0 +1,52 @@
+name: Select 3,781 noun-only candidates
+on:
+  workflow_dispatch:
+  push:
+    branches: ['develop/lexical-pos-5119']
+    paths:
+      - 'scripts/select_noun_candidates.py'
+      - 'app/src/main/assets/word_grammar_5119.json'
+      - 'app/src/main/assets/words.json'
+      - '.github/workflows/noun-candidates-5119.yml'
+permissions:
+  contents: write
+jobs:
+  noun-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate exactly noun POS candidates; no image approval
+        run: |
+          python scripts/select_noun_candidates.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("app/src/main/assets/noun_candidates_5119.json").read_text(encoding="utf-8"))
+          r=json.loads(Path("reports/noun_candidates_5119_report.json").read_text(encoding="utf-8"))
+          assert x["candidateCount"]==r["nounCandidates"]==3781
+          assert r["approvedForImages"]==0 and r["excludedFromNounQueue"]==1338
+          assert len({e["wordId"] for e in x["candidates"]})==3781
+          assert all(e["partOfSpeech"]=="noun" and e["imageStatus"]=="NOT_APPROVED" for e in x["candidates"])
+          print("PASS noun-only review queue: 3781 candidates, 1338 excluded, 0 automatic approvals")
+          PY
+      - name: Save generated noun-only index and report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/noun_candidates_5119.json reports/noun_candidates_5119_report.json
+          if ! git diff --cached --quiet; then
+            git commit -m "data(nouns): select 3781 candidate nouns only"
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-3781-noun-candidates
+          path: |
+            app/src/main/assets/noun_candidates_5119.json
+            reports/noun_candidates_5119_report.json
