@@ -21,6 +21,7 @@ import android.speech.tts.UtteranceProgressListener
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.widget.ImageView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.Normalizer
@@ -58,6 +59,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var translationText: TextView
     private lateinit var learningExamplePreview: TextView
     private lateinit var cardHeading: TextView
+    private lateinit var wordImage: ImageView
+    private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
     private var learningPaused = false
     private var includeExamplesDuringLearning = false
@@ -772,6 +775,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             if (lessonModeSpinner.selectedItemPosition == 0) showLearningOptions()
             else startSession(modeOverride = "check")
         }, 54, 12)
+        menu.addView(CheckBox(this).apply {
+            text = if (uiEnglish) "Show word illustrations" else "Показывать иллюстрации"
+            isChecked = prefs.getBoolean("show_illustrations", true)
+            setOnCheckedChangeListener { _, checked ->
+                prefs.edit().putBoolean("show_illustrations", checked).apply()
+                updateWordImage(current, learningMode || answering)
+            }
+        })
         // Settings live in a separate dialog reached from the standard three-dot menu.
         // No controls from this panel occupy the lesson screen.
         val settingsScroll = ScrollView(this).apply {
@@ -810,6 +821,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
         add(card, prompt)
+        wordImage = ImageView(this).apply {
+            visibility = View.GONE
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            adjustViewBounds = true
+            contentDescription = ""
+        }
+        card.addView(wordImage, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(170)
+        ).apply { topMargin = dp(8); bottomMargin = dp(8) })
         translationText = text("", 28f, navy, true).apply {
             gravity = Gravity.CENTER; visibility = View.GONE
             setPadding(dp(8), dp(3), dp(8), dp(6))
@@ -1104,6 +1124,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun answer(w: Word) = if (questionDirection == 0) w.ru else w.en
     private fun questionLocale() = if (questionDirection == 0) Locale.US else Locale("ru", "RU")
     private fun answerLocale() = if (questionDirection == 0) Locale("ru", "RU") else Locale.US
+    private fun updateWordImage(word: Word?, reveal: Boolean) {
+        if (!::wordImage.isInitialized) return
+        wordImage.setImageDrawable(null)
+        wordImage.visibility = View.GONE
+        if (word == null || !reveal || !prefs.getBoolean("show_illustrations", true)) return
+        val entry = visualCatalog.entryFor(word.id) ?: return
+        val bitmap = visualCatalog.loadImage(word.id) ?: return
+        wordImage.setImageBitmap(bitmap)
+        wordImage.contentDescription = entry.altEn
+        wordImage.visibility = View.VISIBLE
+    }
+
     private fun next(restoringAnswer: Boolean = false, savedDirection: Int? = null) {
         if (!running) return
         handler.removeCallbacks(advanceRunnable)
@@ -1131,6 +1163,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 }
             }
             running = false; current = null; answering = false
+            updateWordImage(null, false)
             pendingBlockErrors = emptyMap()
             prompt.text = if (learningMode) {
                 if (uiEnglish) "Listening finished!" else "Прослушивание завершено!"
@@ -1149,6 +1182,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val w = words.first { it.id == reviewIds[index] }
         current = w
+        updateWordImage(w, learningMode || restoringAnswer)
         assistedThisWord = false
         questionDirection = if (learningMode) 0 else
             (savedDirection ?: forcedReviewDirections[w.id] ?:
@@ -1682,6 +1716,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val w = current ?: return
         if (!running || answering) return
         answering = true
+        updateWordImage(w, true)
         recognizer?.cancel()
         vosk.stop()
         // A hinted "know" is practice, not an independently verified recall.
