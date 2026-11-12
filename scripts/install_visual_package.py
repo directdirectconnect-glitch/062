@@ -17,7 +17,7 @@ def main():
     if not args.archive.is_file():
         parser.error("Missing image archive. The APK must not be labeled visual-enabled.")
     words = json.loads((ASSETS / "words.json").read_text(encoding="utf-8"))
-    assert len(words) == 5119, f"Expected all 5119 dictionary records; got {len(words)}"
+    assert len(words) == 5121, f"Expected all 5121 dictionary records; got {len(words)}"
     known = {w["id"]: w for w in words}
     assert len(known) == len(words), "Duplicate dictionary IDs"
     with zipfile.ZipFile(args.archive) as archive:
