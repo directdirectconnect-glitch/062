@@ -67,6 +67,16 @@ function Visible-Contains([string[]]$Needles) {
     }
     return $false
 }
+function Visible-Contains-Scrolled([string[]]$Needles, [int]$MaxScroll=4) {
+    for ($attempt=0; $attempt -le $MaxScroll; $attempt++) {
+        if (Visible-Contains -Needles $Needles) { return $true }
+        if ($attempt -lt $MaxScroll) {
+            $null = Invoke-Adb -Arguments @('shell','input','swipe','500','1500','500','500','450')
+            Start-Sleep -Milliseconds 700
+        }
+    }
+    return $false
+}
 function Tap-Control([string[]]$Needles, [int]$MaxScroll=3) {
     for ($attempt=0; $attempt -le $MaxScroll; $attempt++) {
         $xml = Ui-Document
@@ -202,16 +212,16 @@ try {
         Tap-Control -Needles @('Изучать','Learn words')
         Assert-Screen -Needles @('Добавлять примеры','Include usage examples') -Name 'LEARN_OPTIONS'
         Tap-Control -Needles @('Начать','Start') 0
-        Need (Visible-Contains -Needles @('Пауза','Pause listening')) 'LEARNING_PAUSE_MISSING'
+        Need (Visible-Contains-Scrolled -Needles @('Пауза','Pause listening')) 'LEARNING_PAUSE_MISSING'
     } 'Learning mode starts and exposes pause control.'
     Run-Case 'QA_CHECK_MODE' {
         Tap-Control -Needles @('Проверять','Check words')
-        Need (Visible-Contains -Needles @('Не знаю',"Don't know")) 'CHECK_CONTROL_NOT_VISIBLE'
+        Need (Visible-Contains-Scrolled -Needles @('Не знаю',"Don't know")) 'CHECK_CONTROL_NOT_VISIBLE'
     } 'Manual answer control available.'
     Run-Case 'QA_FORCE_STOP_RECOVERY' {
         $null = Invoke-Adb -Arguments @('shell','am','force-stop',$ExpectedPackage)
         Start-Qa
-        Need (Visible-Contains -Needles @('Не знаю',"Don't know")) 'CHECK_SESSION_NOT_RESTORED'
+        Need (Visible-Contains-Scrolled -Needles @('Не знаю',"Don't know")) 'CHECK_SESSION_NOT_RESTORED'
     } 'Current check session survives force-stop and restart.'
 } catch {
     Add-Result 'SETUP_OR_INSTALL' 'BLOCKED' 'Candidate verification, device, isolated install or prerequisite blocked.'
