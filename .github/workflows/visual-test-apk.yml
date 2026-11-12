@@ -1,4 +1,4 @@
-name: English Words 5119 + 118 images visual test APK
+name: English Words 5121 + 118 images visual test APK
 on:
   workflow_dispatch:
   push:
@@ -23,7 +23,7 @@ jobs:
           gradle-version: '8.10.2'
       - name: Install audited visual package (fail if missing)
         run: python3 scripts/install_visual_package.py --archive integration/EnglishWords_118_images_APK_integration.zip --expected-images 118
-      - name: Validate 5119-word integration
+      - name: Validate 5121-word integration
         run: python3 scripts/validate_integration.py
       - name: Bundle offline speech models
         run: python3 scripts/prepare_vosk_models.py
@@ -34,6 +34,6 @@ jobs:
       - name: Upload visual test APK
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-5119-118-Visual-Test-APK
+          name: EnglishWords-5121-118-Visual-Test-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
