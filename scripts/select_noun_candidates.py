@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select only noun POS candidates from the full lexical index.
+"""Select STRICT noun-only lexical candidates from the full lexical index.
 
 Does NOT select sentence subjects; does NOT infer concreteness, image eligibility,
 or disambiguate Russian glosses. All candidates are review-gated.
@@ -19,11 +19,21 @@ def run(index_path: Path, dictionary_path: Path, output_path: Path, report_path:
     assert len(by_id)==5119
     selected=[]
     excluded=0
+    excluded_multi_pos=0
+    excluded_needs_review=0
     for row in index["entries"]:
         ident=row["wordId"]
         assert by_id[ident]["en"]==row["en"] and by_id[ident]["ru"]==row["ru"]
-        if "noun" not in row["possiblePartsOfSpeech"]:
+        # The candidate must have NO alternate possible POS, and no unresolved
+        # lexical/multiword review flag. This is still not human verification.
+        if row["possiblePartsOfSpeech"] != ["noun"]:
             excluded+=1
+            if "noun" in row["possiblePartsOfSpeech"]:
+                excluded_multi_pos+=1
+            continue
+        if row["needsHumanReview"]:
+            excluded+=1
+            excluded_needs_review+=1
             continue
         selected.append({
             "wordId":ident,"en":row["en"],"ru":row["ru"],
@@ -34,18 +44,24 @@ def run(index_path: Path, dictionary_path: Path, output_path: Path, report_path:
             "reviewStatus":"PENDING_HUMAN_REVIEW",
             "reason":"Noun candidate is not proof of a concrete, visually representable Russian sense"
         })
-    assert len(selected)==3781 and excluded==1338, (len(selected),excluded)
+    assert len(selected)+excluded==5119
+    assert len(selected) <= 1749
+    assert excluded_multi_pos==2032, excluded_multi_pos
     assert len({w["wordId"] for w in selected})==len(selected)
-    assert all(x["imageStatus"]=="NOT_APPROVED" for x in selected)
+    assert all(x["imageStatus"]=="NOT_APPROVED" and
+               not x["otherPossiblePartsOfSpeech"] and not x["senseNeedsReview"]
+               for x in selected)
     result={"schemaVersion":1,"sourceDictionary":"words.json",
             "sourceGrammarIndex":"word_grammar_5119.json",
             "sourceSha256":index["sourceSha256"],
-            "filter":"possiblePartsOfSpeech contains noun",
+            "filter":"possiblePartsOfSpeech == ['noun'] AND needsHumanReview == false",
             "candidateCount":len(selected),
-            "note":"Noun-only candidate queue; excludes all words not tagged noun. Subject/predicate and all other POS are not selected; each image requires sense and quality review.",
+            "note":"Strict lexical noun-only candidates; excludes polyfunctional words and unresolved/multiword entries. Human editorial verification is still needed before 100% certainty or image approval.",
             "candidates":selected}
     report={"schemaVersion":1,"dictionaryEntries":len(dictionary),
             "nounCandidates":len(selected),"excludedFromNounQueue":excluded,
+            "excludedMultiPosNouns":excluded_multi_pos,
+            "excludedReviewFlaggedSinglePosNouns":excluded_needs_review,
             "ambiguousNounCandidates":sum(bool(x["otherPossiblePartsOfSpeech"]) for x in selected),
             "reviewRequiredNounCandidates":sum(x["senseNeedsReview"] for x in selected),
             "approvedForImages":0,"requiresMeaningAndVisualReview":len(selected),
