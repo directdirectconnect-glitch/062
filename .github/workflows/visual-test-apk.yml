@@ -5,7 +5,7 @@ on:
     branches:
       - test/0.9.8-5119-118-images-s20fe-fold
     paths:
-      - integration/EnglishWords_5121_words_159_images_offline_assets.zip
+      - integration/parts/**
 jobs:
   build-visual-test:
     runs-on: ubuntu-latest
@@ -21,6 +21,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Restore approved image archive and verify SHA-256
+        run: |
+          cat integration/parts/part* > integration/EnglishWords_5121_words_159_images_offline_assets.zip
+          echo "04696787eaf851487773f8aea3f1cee52ce64aa7620e470d0d65cf9855826785  integration/EnglishWords_5121_words_159_images_offline_assets.zip" | sha256sum --check
       - name: Install audited visual package (fail if missing)
         run: python3 scripts/install_visual_package.py --archive integration/EnglishWords_5121_words_159_images_offline_assets.zip --expected-images 159
       - name: Validate 5121-word integration
