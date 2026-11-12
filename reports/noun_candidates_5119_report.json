@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "dictionaryEntries": 5119,
+  "nounCandidates": 3781,
+  "excludedFromNounQueue": 1338,
+  "ambiguousNounCandidates": 2032,
+  "reviewRequiredNounCandidates": 2106,
+  "approvedForImages": 0,
+  "requiresMeaningAndVisualReview": 3781,
+  "sourceSha256": "af60bd4bc9fa9b94e87b7a5fd71e177e89d1e8add63710cafc804e4952b1687d"
+}
