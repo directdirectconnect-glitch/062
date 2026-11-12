@@ -1,0 +1,33 @@
+name: Validate S20 physical QA PowerShell source
+
+on:
+  push:
+    branches: ['develop/s20-full-regression-suite-v1']
+    paths:
+      - 'tools/s20-full-suite/**'
+      - '.github/workflows/s20-full-suite-static.yml'
+  workflow_dispatch:
+
+jobs:
+  parse-windows-powershell-51:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check script syntax with Windows PowerShell 5.1 (do not execute)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($file in (Get-ChildItem 'tools/s20-full-suite/*.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              throw ('PowerShell syntax invalid: ' + $file.Name)
+            }
+            $content = Get-Content -LiteralPath $file.FullName -Raw
+            if ($content -match '(?im)^\s*(Invoke-Expression|Remove-Item)\b|ScriptBlock::Create|DownloadString|\bpm\s+clear\b|\badb\s+uninstall\b') {
+              throw ('Unsafe operation found in reviewed QA script: ' + $file.Name)
+            }
+            Write-Host ('PASSED: PowerShell 5.1 syntax for ' + $file.Name)
+          }
