@@ -54,7 +54,9 @@ jobs:
           git add app/src/main/assets/word_grammar_5119.json reports/word_grammar_5119_report.json
           if ! git diff --cached --quiet; then
             git commit -m "data(grammar): generate 5119 lexical POS candidate annotations"
-            git push
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
       - uses: actions/upload-artifact@v4
         with:
