@@ -1,4 +1,989 @@
 {
   "schemaVersion": 1,
-  "images": []
+  "images": [
+    {
+      "wordId": 82,
+      "asset": "images/word_0082.webp",
+      "altEn": "water",
+      "altRu": "вода"
+    },
+    {
+      "wordId": 138,
+      "asset": "images/word_0138.webp",
+      "altEn": "boy",
+      "altRu": "мальчик"
+    },
+    {
+      "wordId": 165,
+      "asset": "images/word_0165.webp",
+      "altEn": "men",
+      "altRu": "мужчины"
+    },
+    {
+      "wordId": 250,
+      "asset": "images/word_0250.webp",
+      "altEn": "children",
+      "altRu": "дети"
+    },
+    {
+      "wordId": 278,
+      "asset": "images/word_0278.webp",
+      "altEn": "watch",
+      "altRu": "смотреть; часы"
+    },
+    {
+      "wordId": 285,
+      "asset": "images/word_0285.webp",
+      "altEn": "girl",
+      "altRu": "девочка"
+    },
+    {
+      "wordId": 304,
+      "asset": "images/word_0304.webp",
+      "altEn": "fish",
+      "altRu": "рыба"
+    },
+    {
+      "wordId": 307,
+      "asset": "images/word_0307.webp",
+      "altEn": "dog",
+      "altRu": "собака"
+    },
+    {
+      "wordId": 308,
+      "asset": "images/word_0308.webp",
+      "altEn": "horse",
+      "altRu": "лошадь"
+    },
+    {
+      "wordId": 325,
+      "asset": "images/word_0325.webp",
+      "altEn": "door",
+      "altRu": "дверь"
+    },
+    {
+      "wordId": 329,
+      "asset": "images/word_0329.webp",
+      "altEn": "ship",
+      "altRu": "корабль"
+    },
+    {
+      "wordId": 368,
+      "asset": "images/word_0368.webp",
+      "altEn": "table",
+      "altRu": "стол; таблица"
+    },
+    {
+      "wordId": 372,
+      "asset": "images/word_0372.webp",
+      "altEn": "map",
+      "altRu": "карта"
+    },
+    {
+      "wordId": 396,
+      "asset": "images/word_0396.webp",
+      "altEn": "fire",
+      "altRu": "огонь"
+    },
+    {
+      "wordId": 448,
+      "asset": "images/word_0448.webp",
+      "altEn": "plane",
+      "altRu": "самолёт"
+    },
+    {
+      "wordId": 529,
+      "asset": "images/word_0529.webp",
+      "altEn": "train",
+      "altRu": "поезд; тренировать"
+    },
+    {
+      "wordId": 534,
+      "asset": "images/word_0534.webp",
+      "altEn": "window",
+      "altRu": "окно"
+    },
+    {
+      "wordId": 603,
+      "asset": "images/word_0603.webp",
+      "altEn": "village",
+      "altRu": "деревня"
+    },
+    {
+      "wordId": 623,
+      "asset": "images/word_0623.webp",
+      "altEn": "bed",
+      "altRu": "кровать"
+    },
+    {
+      "wordId": 640,
+      "asset": "images/word_0640.webp",
+      "altEn": "lake",
+      "altRu": "озеро"
+    },
+    {
+      "wordId": 666,
+      "asset": "images/word_0666.webp",
+      "altEn": "cat",
+      "altRu": "кошка"
+    },
+    {
+      "wordId": 670,
+      "asset": "images/word_0670.webp",
+      "altEn": "bear",
+      "altRu": "медведь; терпеть"
+    },
+    {
+      "wordId": 717,
+      "asset": "images/word_0717.webp",
+      "altEn": "key",
+      "altRu": "ключ"
+    },
+    {
+      "wordId": 754,
+      "asset": "images/word_0754.webp",
+      "altEn": "woman",
+      "altRu": "женщина"
+    },
+    {
+      "wordId": 774,
+      "asset": "images/word_0774.webp",
+      "altEn": "ring",
+      "altRu": "кольцо; звонить"
+    },
+    {
+      "wordId": 776,
+      "asset": "images/word_0776.webp",
+      "altEn": "child",
+      "altRu": "ребёнок"
+    },
+    {
+      "wordId": 847,
+      "asset": "images/word_0847.webp",
+      "altEn": "bell",
+      "altRu": "колокол"
+    },
+    {
+      "wordId": 876,
+      "asset": "images/word_0876.webp",
+      "altEn": "hat",
+      "altRu": "шляпа"
+    },
+    {
+      "wordId": 967,
+      "asset": "images/word_0967.webp",
+      "altEn": "success",
+      "altRu": "успех"
+    },
+    {
+      "wordId": 1204,
+      "asset": "images/word_1204.webp",
+      "altEn": "airport",
+      "altRu": "аэропорт"
+    },
+    {
+      "wordId": 1205,
+      "asset": "images/word_1205.webp",
+      "altEn": "coffee",
+      "altRu": "кофе"
+    },
+    {
+      "wordId": 1206,
+      "asset": "images/word_1206.webp",
+      "altEn": "hotel",
+      "altRu": "отель"
+    },
+    {
+      "wordId": 1207,
+      "asset": "images/word_1207.webp",
+      "altEn": "restaurant",
+      "altRu": "ресторан"
+    },
+    {
+      "wordId": 1208,
+      "asset": "images/word_1208.webp",
+      "altEn": "ticket",
+      "altRu": "билет"
+    },
+    {
+      "wordId": 1209,
+      "asset": "images/word_1209.webp",
+      "altEn": "passport",
+      "altRu": "паспорт"
+    },
+    {
+      "wordId": 1210,
+      "asset": "images/word_1210.webp",
+      "altEn": "bus",
+      "altRu": "автобус"
+    },
+    {
+      "wordId": 1211,
+      "asset": "images/word_1211.webp",
+      "altEn": "taxi",
+      "altRu": "такси"
+    },
+    {
+      "wordId": 1220,
+      "asset": "images/word_1220.webp",
+      "altEn": "flower",
+      "altRu": "цветок"
+    },
+    {
+      "wordId": 1231,
+      "asset": "images/word_1231.webp",
+      "altEn": "bicycle",
+      "altRu": "велосипед"
+    },
+    {
+      "wordId": 1235,
+      "asset": "images/word_1235.webp",
+      "altEn": "escalator",
+      "altRu": "эскалатор"
+    },
+    {
+      "wordId": 1236,
+      "asset": "images/word_1236.webp",
+      "altEn": "turnstile",
+      "altRu": "турникет"
+    },
+    {
+      "wordId": 1248,
+      "asset": "images/word_1248.webp",
+      "altEn": "suitcase",
+      "altRu": "чемодан"
+    },
+    {
+      "wordId": 1260,
+      "asset": "images/word_1260.webp",
+      "altEn": "wallet",
+      "altRu": "кошелёк"
+    },
+    {
+      "wordId": 1262,
+      "asset": "images/word_1262.webp",
+      "altEn": "menu",
+      "altRu": "меню"
+    },
+    {
+      "wordId": 1263,
+      "asset": "images/word_1263.webp",
+      "altEn": "dessert",
+      "altRu": "десерт"
+    },
+    {
+      "wordId": 1265,
+      "asset": "images/word_1265.webp",
+      "altEn": "napkin",
+      "altRu": "салфетка"
+    },
+    {
+      "wordId": 1266,
+      "asset": "images/word_1266.webp",
+      "altEn": "fork",
+      "altRu": "вилка"
+    },
+    {
+      "wordId": 1267,
+      "asset": "images/word_1267.webp",
+      "altEn": "spoon",
+      "altRu": "ложка"
+    },
+    {
+      "wordId": 1269,
+      "asset": "images/word_1269.webp",
+      "altEn": "plate",
+      "altRu": "тарелка"
+    },
+    {
+      "wordId": 1270,
+      "asset": "images/word_1270.webp",
+      "altEn": "bowl",
+      "altRu": "миска; глубокая тарелка"
+    },
+    {
+      "wordId": 1272,
+      "asset": "images/word_1272.webp",
+      "altEn": "towel",
+      "altRu": "полотенце"
+    },
+    {
+      "wordId": 1273,
+      "asset": "images/word_1273.webp",
+      "altEn": "blanket",
+      "altRu": "одеяло"
+    },
+    {
+      "wordId": 1274,
+      "asset": "images/word_1274.webp",
+      "altEn": "pillow",
+      "altRu": "подушка"
+    },
+    {
+      "wordId": 1278,
+      "asset": "images/word_1278.webp",
+      "altEn": "crosswalk",
+      "altRu": "пешеходный переход"
+    },
+    {
+      "wordId": 1304,
+      "asset": "images/word_1304.webp",
+      "altEn": "ambulance",
+      "altRu": "скорая помощь (машина)"
+    },
+    {
+      "wordId": 1320,
+      "asset": "images/word_1320.webp",
+      "altEn": "backpack",
+      "altRu": "рюкзак"
+    },
+    {
+      "wordId": 1322,
+      "asset": "images/word_1322.webp",
+      "altEn": "umbrella",
+      "altRu": "зонт"
+    },
+    {
+      "wordId": 1323,
+      "asset": "images/word_1323.webp",
+      "altEn": "raincoat",
+      "altRu": "дождевик; плащ"
+    },
+    {
+      "wordId": 1325,
+      "asset": "images/word_1325.webp",
+      "altEn": "sweater",
+      "altRu": "свитер"
+    },
+    {
+      "wordId": 1327,
+      "asset": "images/word_1327.webp",
+      "altEn": "glove",
+      "altRu": "перчатка"
+    },
+    {
+      "wordId": 1333,
+      "asset": "images/word_1333.webp",
+      "altEn": "toothbrush",
+      "altRu": "зубная щётка"
+    },
+    {
+      "wordId": 1334,
+      "asset": "images/word_1334.webp",
+      "altEn": "toothpaste",
+      "altRu": "зубная паста"
+    },
+    {
+      "wordId": 1335,
+      "asset": "images/word_1335.webp",
+      "altEn": "soap",
+      "altRu": "мыло"
+    },
+    {
+      "wordId": 1337,
+      "asset": "images/word_1337.webp",
+      "altEn": "comb",
+      "altRu": "расчёска; расчёсывать"
+    },
+    {
+      "wordId": 1340,
+      "asset": "images/word_1340.webp",
+      "altEn": "drawer",
+      "altRu": "выдвижной ящик"
+    },
+    {
+      "wordId": 1342,
+      "asset": "images/word_1342.webp",
+      "altEn": "wardrobe",
+      "altRu": "платяной шкаф; гардероб"
+    },
+    {
+      "wordId": 1352,
+      "asset": "images/word_1352.webp",
+      "altEn": "keyboard",
+      "altRu": "клавиатура"
+    },
+    {
+      "wordId": 1395,
+      "asset": "images/word_1395.webp",
+      "altEn": "carpet",
+      "altRu": "ковёр; ковровое покрытие"
+    },
+    {
+      "wordId": 1396,
+      "asset": "images/word_1396.webp",
+      "altEn": "curtain",
+      "altRu": "занавеска; штора"
+    },
+    {
+      "wordId": 1403,
+      "asset": "images/word_1403.webp",
+      "altEn": "bookshelf",
+      "altRu": "книжная полка"
+    },
+    {
+      "wordId": 1406,
+      "asset": "images/word_1406.webp",
+      "altEn": "lamp",
+      "altRu": "лампа"
+    },
+    {
+      "wordId": 1408,
+      "asset": "images/word_1408.webp",
+      "altEn": "flashlight",
+      "altRu": "фонарик"
+    },
+    {
+      "wordId": 1409,
+      "asset": "images/word_1409.webp",
+      "altEn": "candle",
+      "altRu": "свеча"
+    },
+    {
+      "wordId": 1415,
+      "asset": "images/word_1415.webp",
+      "altEn": "broom",
+      "altRu": "метла"
+    },
+    {
+      "wordId": 1417,
+      "asset": "images/word_1417.webp",
+      "altEn": "bucket",
+      "altRu": "ведро"
+    },
+    {
+      "wordId": 1544,
+      "asset": "images/word_1544.webp",
+      "altEn": "progress",
+      "altRu": "прогресс; продвижение"
+    },
+    {
+      "wordId": 1546,
+      "asset": "images/word_1546.webp",
+      "altEn": "choice",
+      "altRu": "выбор"
+    },
+    {
+      "wordId": 1547,
+      "asset": "images/word_1547.webp",
+      "altEn": "decision",
+      "altRu": "решение"
+    },
+    {
+      "wordId": 1554,
+      "asset": "images/word_1554.webp",
+      "altEn": "goal",
+      "altRu": "цель"
+    },
+    {
+      "wordId": 1577,
+      "asset": "images/word_1577.webp",
+      "altEn": "waterfall",
+      "altRu": "водопад"
+    },
+    {
+      "wordId": 1594,
+      "asset": "images/word_1594.webp",
+      "altEn": "mushroom",
+      "altRu": "гриб"
+    },
+    {
+      "wordId": 1599,
+      "asset": "images/word_1599.webp",
+      "altEn": "butterfly",
+      "altRu": "бабочка"
+    },
+    {
+      "wordId": 1600,
+      "asset": "images/word_1600.webp",
+      "altEn": "bee",
+      "altRu": "пчела"
+    },
+    {
+      "wordId": 1607,
+      "asset": "images/word_1607.webp",
+      "altEn": "frog",
+      "altRu": "лягушка"
+    },
+    {
+      "wordId": 1609,
+      "asset": "images/word_1609.webp",
+      "altEn": "turtle",
+      "altRu": "черепаха"
+    },
+    {
+      "wordId": 1610,
+      "asset": "images/word_1610.webp",
+      "altEn": "rabbit",
+      "altRu": "кролик"
+    },
+    {
+      "wordId": 1613,
+      "asset": "images/word_1613.webp",
+      "altEn": "fox",
+      "altRu": "лиса"
+    },
+    {
+      "wordId": 1614,
+      "asset": "images/word_1614.webp",
+      "altEn": "wolf",
+      "altRu": "волк"
+    },
+    {
+      "wordId": 1615,
+      "asset": "images/word_1615.webp",
+      "altEn": "deer",
+      "altRu": "олень"
+    },
+    {
+      "wordId": 1617,
+      "asset": "images/word_1617.webp",
+      "altEn": "owl",
+      "altRu": "сова"
+    },
+    {
+      "wordId": 1618,
+      "asset": "images/word_1618.webp",
+      "altEn": "eagle",
+      "altRu": "орёл"
+    },
+    {
+      "wordId": 1622,
+      "asset": "images/word_1622.webp",
+      "altEn": "duck",
+      "altRu": "утка"
+    },
+    {
+      "wordId": 1625,
+      "asset": "images/word_1625.webp",
+      "altEn": "feather",
+      "altRu": "перо"
+    },
+    {
+      "wordId": 1682,
+      "asset": "images/word_1682.webp",
+      "altEn": "helmet",
+      "altRu": "шлем"
+    },
+    {
+      "wordId": 1747,
+      "asset": "images/word_1747.webp",
+      "altEn": "responsibility",
+      "altRu": "ответственность; обязанность"
+    },
+    {
+      "wordId": 1781,
+      "asset": "images/word_1781.webp",
+      "altEn": "notebook",
+      "altRu": "тетрадь; ноутбук"
+    },
+    {
+      "wordId": 2101,
+      "asset": "images/word_2101.webp",
+      "altEn": "motivation",
+      "altRu": "мотивация"
+    },
+    {
+      "wordId": 2104,
+      "asset": "images/word_2104.webp",
+      "altEn": "patience",
+      "altRu": "терпение"
+    },
+    {
+      "wordId": 2108,
+      "asset": "images/word_2108.webp",
+      "altEn": "respect",
+      "altRu": "уважение; уважать"
+    },
+    {
+      "wordId": 2126,
+      "asset": "images/word_2126.webp",
+      "altEn": "confidence",
+      "altRu": "уверенность"
+    },
+    {
+      "wordId": 2190,
+      "asset": "images/word_2190.webp",
+      "altEn": "pepper",
+      "altRu": "перец"
+    },
+    {
+      "wordId": 2201,
+      "asset": "images/word_2201.webp",
+      "altEn": "onion",
+      "altRu": "лук"
+    },
+    {
+      "wordId": 2202,
+      "asset": "images/word_2202.webp",
+      "altEn": "carrot",
+      "altRu": "морковь"
+    },
+    {
+      "wordId": 2211,
+      "asset": "images/word_2211.webp",
+      "altEn": "pumpkin",
+      "altRu": "тыква"
+    },
+    {
+      "wordId": 2264,
+      "asset": "images/word_2264.webp",
+      "altEn": "strawberry",
+      "altRu": "клубника"
+    },
+    {
+      "wordId": 2269,
+      "asset": "images/word_2269.webp",
+      "altEn": "pineapple",
+      "altRu": "ананас"
+    },
+    {
+      "wordId": 2272,
+      "asset": "images/word_2272.webp",
+      "altEn": "coconut",
+      "altRu": "кокос"
+    },
+    {
+      "wordId": 2275,
+      "asset": "images/word_2275.webp",
+      "altEn": "lemon",
+      "altRu": "лимон"
+    },
+    {
+      "wordId": 2278,
+      "asset": "images/word_2278.webp",
+      "altEn": "watermelon",
+      "altRu": "арбуз"
+    },
+    {
+      "wordId": 2389,
+      "asset": "images/word_2389.webp",
+      "altEn": "refrigerator",
+      "altRu": "холодильник"
+    },
+    {
+      "wordId": 2391,
+      "asset": "images/word_2391.webp",
+      "altEn": "oven",
+      "altRu": "духовка"
+    },
+    {
+      "wordId": 2428,
+      "asset": "images/word_2428.webp",
+      "altEn": "teapot",
+      "altRu": "заварочный чайник"
+    },
+    {
+      "wordId": 2613,
+      "asset": "images/word_2613.webp",
+      "altEn": "hammer",
+      "altRu": "молоток"
+    },
+    {
+      "wordId": 2614,
+      "asset": "images/word_2614.webp",
+      "altEn": "screwdriver",
+      "altRu": "отвёртка"
+    },
+    {
+      "wordId": 2615,
+      "asset": "images/word_2615.webp",
+      "altEn": "wrench",
+      "altRu": "гаечный ключ"
+    },
+    {
+      "wordId": 2637,
+      "asset": "images/word_2637.webp",
+      "altEn": "ladder",
+      "altRu": "лестница приставная"
+    },
+    {
+      "wordId": 2738,
+      "asset": "images/word_2738.webp",
+      "altEn": "necklace",
+      "altRu": "ожерелье"
+    },
+    {
+      "wordId": 2744,
+      "asset": "images/word_2744.webp",
+      "altEn": "sunglasses",
+      "altRu": "солнцезащитные очки"
+    },
+    {
+      "wordId": 2778,
+      "asset": "images/word_2778.webp",
+      "altEn": "scissors",
+      "altRu": "ножницы"
+    },
+    {
+      "wordId": 3226,
+      "asset": "images/word_3226.webp",
+      "altEn": "telescope",
+      "altRu": "телескоп"
+    },
+    {
+      "wordId": 3241,
+      "asset": "images/word_3241.webp",
+      "altEn": "compass",
+      "altRu": "компас"
+    },
+    {
+      "wordId": 3252,
+      "asset": "images/word_3252.webp",
+      "altEn": "volcano",
+      "altRu": "вулкан"
+    },
+    {
+      "wordId": 3345,
+      "asset": "images/word_3345.webp",
+      "altEn": "lion",
+      "altRu": "лев"
+    },
+    {
+      "wordId": 3347,
+      "asset": "images/word_3347.webp",
+      "altEn": "elephant",
+      "altRu": "слон"
+    },
+    {
+      "wordId": 3349,
+      "asset": "images/word_3349.webp",
+      "altEn": "tiger",
+      "altRu": "тигр"
+    },
+    {
+      "wordId": 3350,
+      "asset": "images/word_3350.webp",
+      "altEn": "monkey",
+      "altRu": "обезьяна"
+    },
+    {
+      "wordId": 3353,
+      "asset": "images/word_3353.webp",
+      "altEn": "snake",
+      "altRu": "змея"
+    },
+    {
+      "wordId": 3358,
+      "asset": "images/word_3358.webp",
+      "altEn": "orange",
+      "altRu": "апельсин, оранжевый"
+    },
+    {
+      "wordId": 3360,
+      "asset": "images/word_3360.webp",
+      "altEn": "grapes",
+      "altRu": "виноград"
+    },
+    {
+      "wordId": 3363,
+      "asset": "images/word_3363.webp",
+      "altEn": "potato",
+      "altRu": "картофель"
+    },
+    {
+      "wordId": 3371,
+      "asset": "images/word_3371.webp",
+      "altEn": "cow",
+      "altRu": "корова"
+    },
+    {
+      "wordId": 3374,
+      "asset": "images/word_3374.webp",
+      "altEn": "pen",
+      "altRu": "ручка"
+    },
+    {
+      "wordId": 3376,
+      "asset": "images/word_3376.webp",
+      "altEn": "sheep",
+      "altRu": "овца, овцы"
+    },
+    {
+      "wordId": 3406,
+      "asset": "images/word_3406.webp",
+      "altEn": "parrot",
+      "altRu": "попугай"
+    },
+    {
+      "wordId": 3407,
+      "asset": "images/word_3407.webp",
+      "altEn": "peacock",
+      "altRu": "павлин"
+    },
+    {
+      "wordId": 3413,
+      "asset": "images/word_3413.webp",
+      "altEn": "lighthouse",
+      "altRu": "маяк"
+    },
+    {
+      "wordId": 3414,
+      "asset": "images/word_3414.webp",
+      "altEn": "shell",
+      "altRu": "раковина, скорлупа"
+    },
+    {
+      "wordId": 3423,
+      "asset": "images/word_3423.webp",
+      "altEn": "vase",
+      "altRu": "ваза"
+    },
+    {
+      "wordId": 3426,
+      "asset": "images/word_3426.webp",
+      "altEn": "sofa",
+      "altRu": "диван"
+    },
+    {
+      "wordId": 3438,
+      "asset": "images/word_3438.webp",
+      "altEn": "bridge",
+      "altRu": "мост"
+    },
+    {
+      "wordId": 3486,
+      "asset": "images/word_3486.webp",
+      "altEn": "whistle",
+      "altRu": "свисток; свистеть"
+    },
+    {
+      "wordId": 3491,
+      "asset": "images/word_3491.webp",
+      "altEn": "piano",
+      "altRu": "пианино"
+    },
+    {
+      "wordId": 3494,
+      "asset": "images/word_3494.webp",
+      "altEn": "drum",
+      "altRu": "барабан"
+    },
+    {
+      "wordId": 3495,
+      "asset": "images/word_3495.webp",
+      "altEn": "trumpet",
+      "altRu": "труба"
+    },
+    {
+      "wordId": 3545,
+      "asset": "images/word_3545.webp",
+      "altEn": "whale",
+      "altRu": "кит"
+    },
+    {
+      "wordId": 3561,
+      "asset": "images/word_3561.webp",
+      "altEn": "banana",
+      "altRu": "банан"
+    },
+    {
+      "wordId": 3568,
+      "asset": "images/word_3568.webp",
+      "altEn": "shark",
+      "altRu": "акула"
+    },
+    {
+      "wordId": 3679,
+      "asset": "images/word_3679.webp",
+      "altEn": "treasure",
+      "altRu": "сокровище"
+    },
+    {
+      "wordId": 3727,
+      "asset": "images/word_3727.webp",
+      "altEn": "bread",
+      "altRu": "хлеб"
+    },
+    {
+      "wordId": 3732,
+      "asset": "images/word_3732.webp",
+      "altEn": "sandwich",
+      "altRu": "бутерброд"
+    },
+    {
+      "wordId": 4168,
+      "asset": "images/word_4168.webp",
+      "altEn": "phone",
+      "altRu": "телефон"
+    },
+    {
+      "wordId": 4372,
+      "asset": "images/word_4372.webp",
+      "altEn": "camera",
+      "altRu": "фотоаппарат"
+    },
+    {
+      "wordId": 4424,
+      "asset": "images/word_4424.webp",
+      "altEn": "crown",
+      "altRu": "корона"
+    },
+    {
+      "wordId": 4523,
+      "asset": "images/word_4523.webp",
+      "altEn": "globe",
+      "altRu": "земной шар, глобус"
+    },
+    {
+      "wordId": 4710,
+      "asset": "images/word_4710.webp",
+      "altEn": "snowman",
+      "altRu": "снежная баба"
+    },
+    {
+      "wordId": 4737,
+      "asset": "images/word_4737.webp",
+      "altEn": "balloon",
+      "altRu": "воздушный шар"
+    },
+    {
+      "wordId": 4979,
+      "asset": "images/word_4979.webp",
+      "altEn": "lantern",
+      "altRu": "фонарь"
+    },
+    {
+      "wordId": 5120,
+      "asset": "images/word_5120.webp",
+      "altEn": "cactus",
+      "altRu": "кактус"
+    },
+    {
+      "wordId": 5121,
+      "asset": "images/word_5121.webp",
+      "altEn": "magnet",
+      "altRu": "магнит"
+    },
+    {
+      "wordId": 5122,
+      "asset": "images/word_5122.webp",
+      "altEn": "anchor",
+      "altRu": "якорь"
+    },
+    {
+      "wordId": 5123,
+      "asset": "images/word_5123.webp",
+      "altEn": "binoculars",
+      "altRu": "бинокль"
+    },
+    {
+      "wordId": 5124,
+      "asset": "images/word_5124.webp",
+      "altEn": "castle",
+      "altRu": "замок (крепость)"
+    },
+    {
+      "wordId": 5125,
+      "asset": "images/word_5125.webp",
+      "altEn": "cookie",
+      "altRu": "печенье"
+    },
+    {
+      "wordId": 5126,
+      "asset": "images/word_5126.webp",
+      "altEn": "rocket",
+      "altRu": "ракета"
+    }
+  ]
 }
