@@ -1228,6 +1228,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             answering = true
             updateFamilyControl(w)
             pronunciation.text = "${w.en}  •  ${w.pron}"
+            // Always restore the answer visibly, even when the offline TTS voice is missing.
+            translationText.text = answer(w)
+            translationText.visibility = View.VISIBLE
             status.text = (if (lastGradeOk) "Окей!" else "Не окей.") +
                 "\n$lastGradeDetail\nПравильно: ${answer(w)}"
             nextWordButton.visibility = View.VISIBLE
@@ -1744,6 +1747,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         val forms = if (formsCheck.isChecked) irregularForms[w.en.lowercase(Locale.ROOT)]?.let { "\nФормы: $it" } ?: "" else ""
         pronunciation.text = "${w.en}  •  ${w.pron}"
+        // Correction is visual-first: Android TTS warnings must not hide the translation.
+        translationText.text = answer(w)
+        translationText.visibility = View.VISIBLE
         status.text = (if (ok) "Окей!" else "Не окей.") +
             "\n$detail\nПравильно: ${answer(w)}$forms" +
             if (assistedThisWord) {
