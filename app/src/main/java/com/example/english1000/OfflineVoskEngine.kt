@@ -50,7 +50,7 @@ class OfflineVoskEngine(private val activity: Activity) {
             val storage = File(activity.filesDir, "vosk-models")
             val finalDir = File(storage, expectedRoot)
             synchronized(extractionLock) {
-                if (File(finalDir, ".ready").isFile) return finalDir
+                if (File(finalDir, ".ready").isFile && OfflineModelLayout.hasRequiredFiles(finalDir)) return finalDir
                 val temporary = File(storage, "$expectedRoot.partial")
                 temporary.deleteRecursively()
                 if (!temporary.mkdirs()) throw IllegalStateException("Cannot create speech model directory")
@@ -92,8 +92,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                             input.closeEntry()
                         }
                     }
-                    require(File(temporary, "am/final.mdl").isFile) { "Missing acoustic model" }
-                    require(File(temporary, "conf/model.conf").isFile) { "Missing speech configuration" }
+                    require(OfflineModelLayout.hasRequiredFiles(temporary)) { "Incomplete or empty offline Vosk model" }
                     finalDir.deleteRecursively()
                     require(temporary.renameTo(finalDir)) { "Failed to activate speech model" }
                     File(finalDir, ".ready").writeText("1")

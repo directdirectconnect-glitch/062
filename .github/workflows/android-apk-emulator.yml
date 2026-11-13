@@ -2,7 +2,7 @@ name: English Words 0.9.8 Offline Premium Emulator Test
 
 on:
   push:
-    branches: ['develop/0.9.8-visual-vocabulary']
+    branches: ['develop/0.9.8-visual-vocabulary', 'release/0.9.8-fold-candidate-prep']
     paths:
       - 'app/**'
       - 'scripts/**'
