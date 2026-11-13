@@ -38,6 +38,9 @@ jobs:
       - name: Verify local content and integrated activities
         run: python3 scripts/validate_integration.py
 
+      - name: Report bundled dictionary and visual content
+        run: python3 scripts/build_content_report.py
+
       - name: Bundle offline speech models when supported by branch
         run: |
           if [ -f scripts/prepare_vosk_models.py ]; then
@@ -55,5 +58,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: EnglishWords-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            build/apk-content-report.txt
           if-no-files-found: error
+          retention-days: 14
