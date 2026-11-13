@@ -1,0 +1,59 @@
+name: Vocabulary 5000 Source Dictionary Quality Gate
+
+on:
+  push:
+    branches: ['develop/vocabulary-5000-stage1']
+    paths:
+      - 'app/src/main/assets/words.json'
+      - 'scripts/audit_vocabulary.py'
+      - 'scripts/review_vocabulary_quality.py'
+      - 'scripts/validate_visual_classification.py'
+      - 'scripts/validate_editorial_visual_batch.py'
+      - 'scripts/validate_visual_image_provenance.py'
+      - 'visual/image_production_queue_2101_3100.json'
+      - 'visual/editorial_batch_0001_0300.json'
+      - 'visual/editorial_batch_0301_0800.json'
+      - 'visual/editorial_batch_0801_1300.json'
+      - 'visual/editorial_batch_1301_2100.json'
+      - 'visual/visual_classification_draft.json'
+      - '.github/workflows/vocabulary-5000.yml'
+  pull_request:
+    paths:
+      - 'app/src/main/assets/words.json'
+      - 'scripts/audit_vocabulary.py'
+      - 'scripts/review_vocabulary_quality.py'
+      - 'scripts/validate_visual_classification.py'
+      - 'scripts/validate_editorial_visual_batch.py'
+      - 'scripts/validate_visual_image_provenance.py'
+      - 'visual/image_production_queue_2101_3100.json'
+      - 'visual/editorial_batch_0001_0300.json'
+      - 'visual/editorial_batch_0301_0800.json'
+      - 'visual/editorial_batch_0801_1300.json'
+      - 'visual/editorial_batch_1301_2100.json'
+      - 'visual/visual_classification_draft.json'
+  workflow_dispatch:
+
+jobs:
+  audit-source-vocabulary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit actual app vocabulary only
+        run: python3 scripts/audit_vocabulary.py --require-5000-single-words --output build/vocabulary-audit.json
+      - name: Review linguistic QA flags for full source vocabulary
+        run: python3 scripts/review_vocabulary_quality.py --output build/vocabulary-quality-triage.json
+      - name: Check all original word IDs have a visual plan
+        run: python3 scripts/validate_visual_classification.py
+      - name: Validate visual editorial planning for first 2100 words
+        run: python3 scripts/validate_editorial_visual_batch.py
+      - name: Check next 1000 original visual image slots and provenance requirements
+        run: python3 scripts/validate_visual_image_provenance.py
+      - name: Publish source dictionary report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-vocabulary-audit
+          path: |
+            build/vocabulary-audit.json
+            build/vocabulary-quality-triage.json
+          if-no-files-found: warn
