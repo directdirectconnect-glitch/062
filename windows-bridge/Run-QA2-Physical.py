@@ -77,18 +77,28 @@ def start_block(configure=False):
     swipe(False)
     tap(ui(), '⚙')
     tap(ui(), 'Начать новый блок')
+    if configure:
+        for _ in range(3):
+            swipe(False)
     labels = {
         'Голосовая проверка': 'Кнопки: знаю / не знаю',
         'Из всего словаря': 'Ещё не проверенные',
     }
-    for _ in range(8):
+    configured = set()
+    for _ in range(12):
         screen = ui()
+        for old, new in labels.items():
+            if visible(screen, new):
+                configured.add(old)
         setting = next((old for old in labels if configure and visible(screen, old)), None)
         if setting:
             tap(screen, setting)
             tap(ui(), labels[setting])
+            configured.add(setting)
             continue
         if visible(screen, 'Начать новый блок'):
+            if configure and len(configured) != len(labels):
+                raise RuntimeError('Required block settings were not observed')
             tap(screen, 'Начать новый блок')
             return
         if configure:
@@ -136,6 +146,9 @@ def run():
         summary = json.loads(previous.read_text(encoding='utf-8'))
         completed = summary['completed']
         blocks = summary['blocks']
+        if completed == 20 and len(seen) == 1000:
+            print('Already complete', flush=True)
+            return
         if len(seen) < completed * 50 or len(seen) > (completed + 1) * 50:
             raise RuntimeError('Inconsistent saved progress')
         stamp = dt.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -144,6 +157,9 @@ def run():
     sh('wm', 'dismiss-keyguard')
     sh('am', 'start', '-W', '--user', '0', '-n', ACTIVITY)
     try:
+        current_screen = ui()
+        if visible(current_screen, 'ЗАКРЫТЬ') and visible(current_screen, 'Настройки'):
+            tap(current_screen, 'ЗАКРЫТЬ')
         with path.open('a', encoding='utf-8') as log:
             first = completed + 1
             for block in range(first, 21):
