@@ -1,5 +1,6 @@
 """GPU-independent worker. Backend is a callable(prompt, output_path)."""
 import hashlib
+import importlib.util
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,9 +11,17 @@ def prompt(word):
             "realistic lighting, natural colors, accurate proportions, sharp detail. "
             "No cartoons, illustrations, CGI, text, collage or watermarks.")
 
-def run_batch(db_path, output_dir, backend, limit=10, max_attempts=3, validator=None):
+def run_batch(db_path, output_dir, backend, limit=10, max_attempts=3, validator=None, perceptual_threshold=None):
     """Run bounded jobs; validator(path) must reject damaged/low-quality images."""
     if limit < 1 or max_attempts < 1: raise ValueError("Invalid limits")
+    if perceptual_threshold is not None and not 0 <= perceptual_threshold <= 64:
+        raise ValueError("Invalid perceptual threshold")
+    similarity = None
+    if perceptual_threshold is not None:
+        path = Path(__file__).with_name("similarity.py")
+        spec = importlib.util.spec_from_file_location("image_factory_similarity_worker", path)
+        similarity = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(similarity)
     if validator is None: raise ValueError("A real image validator is required")
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True)
     summary={"attempted":0,"generated":0,"failed":0}
@@ -32,6 +41,13 @@ def run_batch(db_path, output_dir, backend, limit=10, max_attempts=3, validator=
                 digest=hashlib.sha256(tmp.read_bytes()).hexdigest()
                 if db.execute("SELECT 1 FROM jobs WHERE image_sha256=? AND word_id<>?",(digest,wid)).fetchone():
                     raise ValueError("Exact duplicate image")
+                if similarity is not None:
+                    new_hash = similarity.dhash(tmp)
+                    for (existing_path,) in db.execute("SELECT image_path FROM jobs WHERE status IN ('generated','existing') AND image_path IS NOT NULL AND word_id<>?", (wid,)):
+                        if not Path(existing_path).is_file():
+                            raise ValueError("Cannot verify existing image: " + str(existing_path))
+                        if similarity.distance(new_hash, similarity.dhash(existing_path)) <= perceptual_threshold:
+                            raise ValueError("Perceptual duplicate image")
                 tmp.replace(dst)
                 db.execute("UPDATE jobs SET status='generated',image_path=?,image_sha256=?,error=NULL,updated_at=? WHERE word_id=?",(str(dst.resolve()),digest,now(),wid))
                 summary["generated"]+=1
