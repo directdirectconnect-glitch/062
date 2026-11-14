@@ -110,7 +110,7 @@ try {
                 } catch { $qaState = 'STATUS_READ_ERROR' }
             }
             $avText = ($av | ConvertTo-Json -Compress -Depth 4)
-            $healthBody = "$marker`n`nUTC=$timestamp | GitHub=PASS (reply via local gh) | ADB=$adbState | QA2=$qaState | Watchdog=$taskState | WatchdogLastResult=$taskLast | AV=$avState.`n`nPnP devices (NOT an acoustic capture test):`n```json`n$avText`n````n`nTTS/ASR acoustic=NOT_RUN. No phone or Windows device settings changed."
+            $healthBody = "$marker`n`nUTC=$timestamp | GitHub=PASS (reply via local gh) | ADB=$adbState | QA2=$qaState | Watchdog=$taskState | WatchdogLastResult=$taskLast | AV=$avState.`n`nPnP devices JSON (not an acoustic capture test):`n$avText`n`nTTS/ASR acoustic=NOT_RUN. No phone or Windows device settings changed."
             $healthFile = Join-Path $inbox "$id-response.md"
             [IO.File]::WriteAllText($healthFile, $healthBody, [Text.UTF8Encoding]::new($false))
             $posted = & $gh issue comment 19 -R $repo --body-file $healthFile
