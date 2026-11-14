@@ -64,57 +64,7 @@ try {
  }
  Assert ($null -ne $selected) 'No confirmed successful QA2 build for exact approved commit; nothing installed'
  $runId = [string]$selected.databaseId
- Assert ($runId -match '^[0-9]+
- $output = Join-Path $root ('run-' + $runId)
- New-Item -ItemType Directory -Force -Path $output | Out-Null
- & gh run download $runId -R $Repo --name 'EnglishWords-5126-164-Visual-Test-APK' --dir $output
- Assert ($LASTEXITCODE -eq 0) 'Cannot download approved APK'
- $apkFiles = @(Get-ChildItem -LiteralPath $output -File -Filter '*.apk')
- Assert ($apkFiles.Count -eq 1) ('Expected exactly 1 downloaded APK, got ' + $apkFiles.Count)
- $apk = $apkFiles[0].FullName
- $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash
- Say ('APK_SHA256=' + $hash)
- $sdkTools = @('C:\platform-tools\aapt.exe')
- if ($env:LOCALAPPDATA) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- if ($env:ANDROID_HOME) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:ANDROID_HOME 'build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- if ($env:ANDROID_SDK_ROOT) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- $aapt = @($sdkTools | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
- Assert ($aapt.Count -eq 1) 'aapt.exe unavailable: refuse installation until APK manifest is verified'
- $badging = (& $aapt[0] dump badging $apk | Select-Object -First 1)
- Assert ($LASTEXITCODE -eq 0) 'aapt inspection failed'
- Assert ($badging -match "^package:\s+name='([^']+)'") 'Could not parse package name'
- Assert ($Matches[1] -ceq $ExpectedPackage) ('Unexpected APK package: ' + $Matches[1])
- Say ('APK_PACKAGE=PASS; ' + $ExpectedPackage)
- $signerCandidates = @()
- if ($env:LOCALAPPDATA) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- if ($env:ANDROID_HOME) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:ANDROID_HOME 'build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- if ($env:ANDROID_SDK_ROOT) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
- $signer = @($signerCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
- Assert ($signer.Count -eq 1) 'apksigner.bat unavailable: refuse to install unsigned/unverified artifact'
- $signatureInfo = (& $signer[0] verify --print-certs $apk 2>&1 | Out-String)
- Assert ($LASTEXITCODE -eq 0) 'APK digital signature verification failed'
- $shaLine = @($signatureInfo -split "[\r\n]+" | Where-Object { $_ -match '(?i)certificate SHA-256 digest:' })
- Assert ($shaLine.Count -gt 0) 'Could not read signing certificate digest'
- Say ('APK_SIGNATURE=PASS; ' + $shaLine[0].Trim())
-
- $installed = ((& $Adb -s $serial shell pm path $ExpectedPackage) | Out-String).Trim()
- Assert ($LASTEXITCODE -eq 0) 'pm path failed'
- if ($installed -match '(?m)^package:') {
-  Say 'ALREADY_INSTALLED=YES; no overwrite attempted'
-  exit 0
- }
- Say 'INSTALL_START: new QA2 package only'
- $result = & $Adb -s $serial install $apk 2>&1 | Out-String
- Assert ($LASTEXITCODE -eq 0 -and $result -match '\bSuccess\b') ('Installation failed: ' + $result.Trim())
- $installedAfter = ((& $Adb -s $serial shell pm path $ExpectedPackage) | Out-String).Trim()
- Assert ($LASTEXITCODE -eq 0 -and $installedAfter -match '(?m)^package:') 'QA2 package not visible after installation'
- Say 'INSTALL=PASS; no existing package removed or overwritten; regression NOT_RUN'
- exit 0
-} catch {
- Say ('BLOCKED: ' + $_.Exception.Message)
- exit 2
-}
-) ('Expected one numeric run ID, got: ' + $runId)
+ Assert ($runId -match '^[0-9]+$') ('Expected one numeric run ID, got: ' + $runId)
  Say ('CI=PASS; run=' + $runId + '; sha=' + [string]$selected.headSha)
  $output = Join-Path $root ('run-' + $runId)
  New-Item -ItemType Directory -Force -Path $output | Out-Null
