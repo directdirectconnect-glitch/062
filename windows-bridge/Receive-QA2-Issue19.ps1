@@ -17,7 +17,8 @@ try {
 try {
     $raw = & $gh api --paginate "$endpoint" --jq '.[] | {id,body,user:.user.login,association:.author_association,created:.created_at}'
     if ($LASTEXITCODE -ne 0) { throw 'Cannot read issue #19 via GitHub CLI' }
-    $requests = @($raw | ForEach-Object { ConvertFrom-Json -InputObject $_ } | Where-Object {
+    $comments = @($raw | ForEach-Object { ConvertFrom-Json -InputObject $_ })
+    $requests = @($comments | Where-Object {
         $_.user -ceq $owner -and $_.association -in @('OWNER','MEMBER') -and
         ($_.body -ceq 'QA2 REQUEST STATUS V1' -or $_.body -ceq 'QA2 REQUEST RESUME V1') -and [long]$_.id -gt 6874222810
     })
@@ -36,7 +37,7 @@ try {
         if ($recoverable -and $active.Count -eq 0 -and !(Test-Path -LiteralPath $recoveryReceipt)) {
             $script = 'C:\EnglishWords-Windows-Lab\bridge\Run-QA2-Physical.py'
             $apk = 'C:\EnglishWords-Windows-Lab\results\s20fe-qa2\run-43572281441\app-debug.apk'
-            if ((Get-FileHash -LiteralPath $script).Hash -ceq '3D08DD8B4283D7BC9C9D1B229FB811D643A108698D3E5E9F5AD52044C17FCC06' -and
+            if ((Get-FileHash -LiteralPath $script).Hash -ceq 'ADBC01183A4C9FA0482BEDDCFECF8DFCE5DFE09B6FEA7E1E089C419AA00FABB0' -and
                 (Get-FileHash -LiteralPath $apk).Hash -ceq '8F87E5BDA23E7F861AF1306FE5D75105D413DF98A82AAB844E05097416FB9EB2') {
                 $python = (Get-Command python.exe -CommandType Application | Select-Object -First 1).Source
                 $spawn = Start-Process -FilePath $python -ArgumentList @('-u', $script, '1000', $run, $apk) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$recoveryReceipt.stdout" -RedirectStandardError "$recoveryReceipt.stderr"
@@ -47,7 +48,7 @@ try {
         if ($active.Count -gt 0) { return }
         $summary = Get-Content -LiteralPath $statusPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $marker = 'QA2 FINAL PHYSICAL V1 run=43572281441'
-        if ($raw | Select-String -SimpleMatch $marker -Quiet) {
+        if ($comments | Where-Object { $_.user -ceq $owner -and ($_.body -split "\r?\n", 2)[0] -ceq $marker } | Select-Object -First 1) {
             Set-Content -LiteralPath $finalReceipt -Value 'already published' -Encoding UTF8
         } else {
             $count = [int]$summary.unique
@@ -65,11 +66,11 @@ try {
     foreach ($request in $requests) {
         $id = ([long]$request.id).ToString()
         $receipt = Join-Path $inbox "$id.receipt"
-        if (Test-Path -LiteralPath $receipt) { continue }
+        if ((Test-Path -LiteralPath $receipt) -and (Get-Content -LiteralPath $receipt -Raw).Trim() -ne 'already published') { continue }
         $command = if ($request.body -ceq 'QA2 REQUEST RESUME V1') { 'RESUME' } else { 'STATUS' }
         $marker = "QA2 RESPONSE $command V1 request=$id"
-        if ($raw | Select-String -SimpleMatch $marker -Quiet) {
-            Set-Content -LiteralPath $receipt -Value 'already published' -Encoding UTF8
+        if ($comments | Where-Object { $_.user -ceq $owner -and ($_.body -split "\r?\n", 2)[0] -ceq $marker } | Select-Object -First 1) {
+            Set-Content -LiteralPath $receipt -Value 'verified existing response' -Encoding UTF8
             continue
         }
         $device = & $adb -s $serial shell getprop ro.product.model 2>$null
@@ -100,7 +101,7 @@ try {
         if ($command -eq 'RESUME') {
             $dispatch = ' Dispatch=BLOCKED.'
             $script = 'C:\EnglishWords-Windows-Lab\bridge\Run-QA2-Physical.py'
-            $approvedRunnerHash = '3D08DD8B4283D7BC9C9D1B229FB811D643A108698D3E5E9F5AD52044C17FCC06'
+            $approvedRunnerHash = 'ADBC01183A4C9FA0482BEDDCFECF8DFCE5DFE09B6FEA7E1E089C419AA00FABB0'
             $apk = 'C:\EnglishWords-Windows-Lab\results\s20fe-qa2\run-43572281441\app-debug.apk'
             $approvedApkHash = '8F87E5BDA23E7F861AF1306FE5D75105D413DF98A82AAB844E05097416FB9EB2'
             $active = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object CommandLine -Match 'Run-QA2-Physical\.py')
