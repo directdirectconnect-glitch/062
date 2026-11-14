@@ -50,7 +50,7 @@ try {
         $adbCandidates = @(
             'C:\platform-tools\adb.exe',
             (Join-Path $LabRoot 'platform-tools\adb.exe'),
-            (Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe')
+            $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe' })
         )
         $adbExe = $adbCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
         if ($adbExe) {
