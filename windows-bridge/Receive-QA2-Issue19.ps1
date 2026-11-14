@@ -36,9 +36,9 @@ try {
         if ($recoverable -and $active.Count -eq 0 -and !(Test-Path -LiteralPath $recoveryReceipt)) {
             $script = 'C:\EnglishWords-Windows-Lab\bridge\Run-QA2-Physical.py'
             $apk = 'C:\EnglishWords-Windows-Lab\results\s20fe-qa2\run-43572281441\app-debug.apk'
-            if ((Get-FileHash -LiteralPath $script).Hash -ceq 'F8E0910DED4C7992CDEEFC88516C41FA68B472ACDC18E8B0E503FBF348555020' -and
+            if ((Get-FileHash -LiteralPath $script).Hash -ceq '3D08DD8B4283D7BC9C9D1B229FB811D643A108698D3E5E9F5AD52044C17FCC06' -and
                 (Get-FileHash -LiteralPath $apk).Hash -ceq '8F87E5BDA23E7F861AF1306FE5D75105D413DF98A82AAB844E05097416FB9EB2') {
-                $python = (Get-Command python.exe -CommandType Application).Source
+                $python = (Get-Command python.exe -CommandType Application | Select-Object -First 1).Source
                 $spawn = Start-Process -FilePath $python -ArgumentList @('-u', $script, '1000', $run, $apk) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$recoveryReceipt.stdout" -RedirectStandardError "$recoveryReceipt.stderr"
                 Set-Content -LiteralPath $recoveryReceipt -Value $spawn.Id -Encoding UTF8
                 return
@@ -100,7 +100,7 @@ try {
         if ($command -eq 'RESUME') {
             $dispatch = ' Dispatch=BLOCKED.'
             $script = 'C:\EnglishWords-Windows-Lab\bridge\Run-QA2-Physical.py'
-            $approvedRunnerHash = 'F8E0910DED4C7992CDEEFC88516C41FA68B472ACDC18E8B0E503FBF348555020'
+            $approvedRunnerHash = '3D08DD8B4283D7BC9C9D1B229FB811D643A108698D3E5E9F5AD52044C17FCC06'
             $apk = 'C:\EnglishWords-Windows-Lab\results\s20fe-qa2\run-43572281441\app-debug.apk'
             $approvedApkHash = '8F87E5BDA23E7F861AF1306FE5D75105D413DF98A82AAB844E05097416FB9EB2'
             $active = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object CommandLine -Match 'Run-QA2-Physical\.py')
@@ -112,7 +112,7 @@ try {
                       $blocks -gt 0 -and $unique -ge ($blocks * 50) -and $unique -le (($blocks + 1) * 50) -and
                       (Get-FileHash -LiteralPath $script).Hash -ceq $approvedRunnerHash -and
                       (Get-FileHash -LiteralPath $apk).Hash -ceq $approvedApkHash) {
-                $python = (Get-Command python.exe -CommandType Application).Source
+                $python = (Get-Command python.exe -CommandType Application | Select-Object -First 1).Source
                 $spawn = Start-Process -FilePath $python -ArgumentList @('-u', $script, '1000', $run, $apk) -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $inbox "$id-runner.log") -RedirectStandardError (Join-Path $inbox "$id-runner-error.log")
                 $dispatch = " Dispatch=STARTED pid=$($spawn.Id)."
             }
