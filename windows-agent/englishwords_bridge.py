@@ -17,7 +17,8 @@ ROOT = Path(os.environ.get("ENGLISHWORDS_LAB", r"C:\EnglishWords-Windows-Lab"))
 DB = ROOT / "bridge" / "state.sqlite3"
 LOG = ROOT / "bridge" / "bridge.log"
 # Explicit command identifiers only; no arbitrary command execution.
-PREFIX = "EW_AGENT_JOB_V1 "\nAUTHORIZED_AUTHOR = "directdirectconnect-glitch"
+PREFIX = "EW_AGENT_JOB_V1 "
+AUTHORIZED_AUTHOR = "directdirectconnect-glitch"
 ALLOWLIST = {"dictionary_review_1100": ROOT / "bridge" / "jobs" / "dictionary_review_1100.py"}
 
 def now():
