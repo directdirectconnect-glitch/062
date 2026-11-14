@@ -36,8 +36,10 @@ class PerceptualWorkerTests(unittest.TestCase):
 
     def test_reencoded_duplicate_rejected(self):
         image = patterned_image()
+        calls = [0]
         def backend(_prompt, path):
-            image.save(path, format="PNG", compress_level=0 if "1" in _prompt else 9)
+            calls[0] += 1
+            image.save(path, format="PNG", compress_level=0 if calls[0] == 1 else 9)
         result = worker.run_batch(self.db, self.root / "images", backend, validator=validate,
                                   max_attempts=1, perceptual_threshold=0)
         self.assertEqual(result, {"attempted": 2, "generated": 1, "failed": 1})
