@@ -60,6 +60,7 @@ try {
  $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash
  Say ('APK_SHA256=' + $hash)
  $sdkTools = @('C:\platform-tools\aapt.exe')
+ if ($env:LOCALAPPDATA) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
  if ($env:ANDROID_HOME) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:ANDROID_HOME 'build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
  if ($env:ANDROID_SDK_ROOT) { $sdkTools += @(Get-ChildItem -Path (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Filter aapt.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
  $aapt = @($sdkTools | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
@@ -69,6 +70,18 @@ try {
  Assert ($badging -match "^package:\s+name='([^']+)'") 'Could not parse package name'
  Assert ($Matches[1] -ceq $ExpectedPackage) ('Unexpected APK package: ' + $Matches[1])
  Say ('APK_PACKAGE=PASS; ' + $ExpectedPackage)
+ $signerCandidates = @()
+ if ($env:LOCALAPPDATA) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
+ if ($env:ANDROID_HOME) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:ANDROID_HOME 'build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
+ if ($env:ANDROID_SDK_ROOT) { $signerCandidates += @(Get-ChildItem -Path (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName) }
+ $signer = @($signerCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
+ Assert ($signer.Count -eq 1) 'apksigner.bat unavailable: refuse to install unsigned/unverified artifact'
+ $signatureInfo = (& $signer[0] verify --print-certs $apk 2>&1 | Out-String)
+ Assert ($LASTEXITCODE -eq 0) 'APK digital signature verification failed'
+ $shaLine = @($signatureInfo -split "[\r\n]+" | Where-Object { $_ -match '(?i)certificate SHA-256 digest:' })
+ Assert ($shaLine.Count -gt 0) 'Could not read signing certificate digest'
+ Say ('APK_SIGNATURE=PASS; ' + $shaLine[0].Trim())
+
  $installed = ((& $Adb -s $serial shell pm path $ExpectedPackage) | Out-String).Trim()
  Assert ($LASTEXITCODE -eq 0) 'pm path failed'
  if ($installed -match '(?m)^package:') {
