@@ -256,7 +256,8 @@ def run():
                     records.append(row)
                     seen.add(word_id)
                     print(f'block={block} unique={len(seen)} id={word_id} repeat={is_repeat}', flush=True)
-                    if not is_repeat and len(seen) in (250, 500, 750, 1000):
+                    checkpoint = not is_repeat and len(seen) in (250, 500, 750, 1000)
+                    if checkpoint:
                         write_json(ROOT / f'checkpoint-{len(seen)}.json', restart())
                         answered = show_card()
                         if not visible(answered, answer):
@@ -264,7 +265,7 @@ def run():
                         (ROOT / f'checkpoint-{len(seen)}.xml').write_bytes(answered[1])
                     if len(seen) >= LIMIT and LIMIT < 1000:
                         return
-                    if label != 'Не знаю' and len(seen) not in (250, 500, 750, 1000):
+                    if label != 'Не знаю' and not checkpoint:
                         answered = ui()
                     if not visible(answered, 'Следующее слово →'):
                         swipe(True)
