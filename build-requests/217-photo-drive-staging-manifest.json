@@ -1,0 +1,495 @@
+{
+  "schemaVersion": 1,
+  "status": "ASSET_IMPORT_PENDING",
+  "baseBranch": "test/0.9.8-5119-118-images-s20fe-fold",
+  "baseWordRows": 5126,
+  "baseImageMappings": 164,
+  "sourceDriveFolder": "https://drive.google.com/drive/folders/1Ut1QRaeqdkviK2I_QjfgRMMiBjZFNm0w",
+  "newPhotos": 53,
+  "overlappingConcepts": 29,
+  "exactVocabMatches": 36,
+  "notes": [
+    "Drive references are NOT packaged binaries. Build must not claim 217 resources until downloaded, validated, converted and committed.",
+    "29 photos replace existing word-picture associations; 24 represent new distinct concepts. 17 compound labels do not exactly match words in vocabulary and require editorial mapping or other terms.",
+    "Do not require pending editorial re-review of original 5126-word vocabulary for this preview build. Preserve separate QA application ID."
+  ],
+  "images": [
+    {
+      "word": "airport_shuttle",
+      "driveId": "14QCqETHm0F3Bs9ykaTW0VS-zVZLK5l-O",
+      "driveUrl": "https://drive.google.com/file/d/14QCqETHm0F3Bs9ykaTW0VS-zVZLK5l-O/view?usp=drivesdk",
+      "sourceBytes": 2409013,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "ambulance",
+      "driveId": "1se7EVVrmNjV4qOe3nD_pD58uWLXtm7iU",
+      "driveUrl": "https://drive.google.com/file/d/1se7EVVrmNjV4qOe3nD_pD58uWLXtm7iU/view?usp=drivesdk",
+      "sourceBytes": 2883254,
+      "existingWordId": 1304,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "backpack",
+      "driveId": "1fnr1smA_rjytL9Zp-398qnL64eqQCSJB",
+      "driveUrl": "https://drive.google.com/file/d/1fnr1smA_rjytL9Zp-398qnL64eqQCSJB/view?usp=drivesdk",
+      "sourceBytes": 2951471,
+      "existingWordId": 1320,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "baggage_carousel",
+      "driveId": "1Yg9_qcJBSAUI1v2Ag7VGwWlnR-S2s4Vo",
+      "driveUrl": "https://drive.google.com/file/d/1Yg9_qcJBSAUI1v2Ag7VGwWlnR-S2s4Vo/view?usp=drivesdk",
+      "sourceBytes": 2420823,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "bicycle",
+      "driveId": "1Yku6qMFrHmTFbMWzKKfwCeVNfXWHiFn4",
+      "driveUrl": "https://drive.google.com/file/d/1Yku6qMFrHmTFbMWzKKfwCeVNfXWHiFn4/view?usp=drivesdk",
+      "sourceBytes": 2745248,
+      "existingWordId": 1231,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "boarding_pass",
+      "driveId": "1wIFhzLq-QJjS0IZ5CsE663n7ZFdX00wn",
+      "driveUrl": "https://drive.google.com/file/d/1wIFhzLq-QJjS0IZ5CsE663n7ZFdX00wn/view?usp=drivesdk",
+      "sourceBytes": 2212622,
+      "existingWordId": 1444,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "bridge",
+      "driveId": "1XqS_LvKNh3I5j69SW4_HhnX-bLYb5a1M",
+      "driveUrl": "https://drive.google.com/file/d/1XqS_LvKNh3I5j69SW4_HhnX-bLYb5a1M/view?usp=drivesdk",
+      "sourceBytes": 3679202,
+      "existingWordId": 3438,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "bus",
+      "driveId": "1lz07ZYWOnQIns4Qobs4XT7TmuMAza05J",
+      "driveUrl": "https://drive.google.com/file/d/1lz07ZYWOnQIns4Qobs4XT7TmuMAza05J/view?usp=drivesdk",
+      "sourceBytes": 2920511,
+      "existingWordId": 1210,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "check_in_counter",
+      "driveId": "1Mt0-r85Wh3DVWYnu9AHO1qRQz1BGm3sq",
+      "driveUrl": "https://drive.google.com/file/d/1Mt0-r85Wh3DVWYnu9AHO1qRQz1BGm3sq/view?usp=drivesdk",
+      "sourceBytes": 2185691,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "coffee",
+      "driveId": "13mN2uGB0a7Bo-i773LCNGpnJMnzOAb70",
+      "driveUrl": "https://drive.google.com/file/d/13mN2uGB0a7Bo-i773LCNGpnJMnzOAb70/view?usp=drivesdk",
+      "sourceBytes": 2129097,
+      "existingWordId": 1205,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "crosswalk",
+      "driveId": "1b5InUxKPMvmOnrGzlK7z80p6tGv-tuIR",
+      "driveUrl": "https://drive.google.com/file/d/1b5InUxKPMvmOnrGzlK7z80p6tGv-tuIR/view?usp=drivesdk",
+      "sourceBytes": 2949498,
+      "existingWordId": 1278,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "deer",
+      "driveId": "1VpJBMBENe_x4DQ5IULujdT0SUxsmML88",
+      "driveUrl": "https://drive.google.com/file/d/1VpJBMBENe_x4DQ5IULujdT0SUxsmML88/view?usp=drivesdk",
+      "sourceBytes": 2564838,
+      "existingWordId": 1615,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "departure_board",
+      "driveId": "1UorP99eFXzCcJb-FCTaEV5Y_bLn1Lt7U",
+      "driveUrl": "https://drive.google.com/file/d/1UorP99eFXzCcJb-FCTaEV5Y_bLn1Lt7U/view?usp=drivesdk",
+      "sourceBytes": 2476931,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "dessert",
+      "driveId": "1YKC3anKDbJc1SU-EaOUTGLddfStzP5Y0",
+      "driveUrl": "https://drive.google.com/file/d/1YKC3anKDbJc1SU-EaOUTGLddfStzP5Y0/view?usp=drivesdk",
+      "sourceBytes": 2328413,
+      "existingWordId": 1263,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "eagle",
+      "driveId": "1hdy7XZJrSvC01DaYB8A4D58936nYRNgs",
+      "driveUrl": "https://drive.google.com/file/d/1hdy7XZJrSvC01DaYB8A4D58936nYRNgs/view?usp=drivesdk",
+      "sourceBytes": 2493104,
+      "existingWordId": 1618,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "elevator",
+      "driveId": "1ppFcj__VnOoCcXlIjnFw9qeWvNDF2ga9",
+      "driveUrl": "https://drive.google.com/file/d/1ppFcj__VnOoCcXlIjnFw9qeWvNDF2ga9/view?usp=drivesdk",
+      "sourceBytes": 2369642,
+      "existingWordId": 1277,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "escalator",
+      "driveId": "1ez85b2eC9d5JS_ACqUSW25hGwQaf-da3",
+      "driveUrl": "https://drive.google.com/file/d/1ez85b2eC9d5JS_ACqUSW25hGwQaf-da3/view?usp=drivesdk",
+      "sourceBytes": 2516506,
+      "existingWordId": 1235,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "fire_extinguisher",
+      "driveId": "18PA5cidMIHWd57Cgq1rAX6VPOtC6B34C",
+      "driveUrl": "https://drive.google.com/file/d/18PA5cidMIHWd57Cgq1rAX6VPOtC6B34C/view?usp=drivesdk",
+      "sourceBytes": 2286618,
+      "existingWordId": 2805,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "fox",
+      "driveId": "1jd0ALUbC-PBgg-bigteXEwSklZntG1mZ",
+      "driveUrl": "https://drive.google.com/file/d/1jd0ALUbC-PBgg-bigteXEwSklZntG1mZ/view?usp=drivesdk",
+      "sourceBytes": 2776732,
+      "existingWordId": 1613,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "hotel_key_card",
+      "driveId": "11jTdX9kWBr8Ubr3SGwHjym6JiADqh6yg",
+      "driveUrl": "https://drive.google.com/file/d/11jTdX9kWBr8Ubr3SGwHjym6JiADqh6yg/view?usp=drivesdk",
+      "sourceBytes": 2381269,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "hotel_reception",
+      "driveId": "1cOXvx0To8iw1_ZRtFHXJRGfEy5jPrI95",
+      "driveUrl": "https://drive.google.com/file/d/1cOXvx0To8iw1_ZRtFHXJRGfEy5jPrI95/view?usp=drivesdk",
+      "sourceBytes": 2383055,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "hotel_room",
+      "driveId": "1f9monHAq3VBp7N_knQpO4V9qKFC8eusf",
+      "driveUrl": "https://drive.google.com/file/d/1f9monHAq3VBp7N_knQpO4V9qKFC8eusf/view?usp=drivesdk",
+      "sourceBytes": 2561445,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "information_desk",
+      "driveId": "1upLvAZLyykRNh1XlDcqbjT46YSVHoevn",
+      "driveUrl": "https://drive.google.com/file/d/1upLvAZLyykRNh1XlDcqbjT46YSVHoevn/view?usp=drivesdk",
+      "sourceBytes": 2231463,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "keyboard",
+      "driveId": "1ZORJojyNKGkbWAQrDPEYqESx0wgTHdIA",
+      "driveUrl": "https://drive.google.com/file/d/1ZORJojyNKGkbWAQrDPEYqESx0wgTHdIA/view?usp=drivesdk",
+      "sourceBytes": 2272184,
+      "existingWordId": 1352,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "lake",
+      "driveId": "1QWyAML7aHqwRK63yLfOSjDIkUb2nUhoM",
+      "driveUrl": "https://drive.google.com/file/d/1QWyAML7aHqwRK63yLfOSjDIkUb2nUhoM/view?usp=drivesdk",
+      "sourceBytes": 2948075,
+      "existingWordId": 640,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "luggage_trolley",
+      "driveId": "1oezECedPWRkVjV-B9q4rVBswAKBqTdAF",
+      "driveUrl": "https://drive.google.com/file/d/1oezECedPWRkVjV-B9q4rVBswAKBqTdAF/view?usp=drivesdk",
+      "sourceBytes": 2544085,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "menu",
+      "driveId": "1XYwpgEeT4bJGPgkXTlTP2QWeWPBzzQ4q",
+      "driveUrl": "https://drive.google.com/file/d/1XYwpgEeT4bJGPgkXTlTP2QWeWPBzzQ4q/view?usp=drivesdk",
+      "sourceBytes": 2456845,
+      "existingWordId": 1262,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "microwave",
+      "driveId": "18X0sxJrer4WSZJR_LgX0_327qEaioU2x",
+      "driveUrl": "https://drive.google.com/file/d/18X0sxJrer4WSZJR_LgX0_327qEaioU2x/view?usp=drivesdk",
+      "sourceBytes": 2588098,
+      "existingWordId": 2390,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "monkey",
+      "driveId": "1t_RzVUzb3yzcVm-XgpBdtA0F6PC6Mw7S",
+      "driveUrl": "https://drive.google.com/file/d/1t_RzVUzb3yzcVm-XgpBdtA0F6PC6Mw7S/view?usp=drivesdk",
+      "sourceBytes": 2740272,
+      "existingWordId": 3350,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "napkin",
+      "driveId": "1GlhgSmR7txbs49EEPX98Z8qGxAgxik_x",
+      "driveUrl": "https://drive.google.com/file/d/1GlhgSmR7txbs49EEPX98Z8qGxAgxik_x/view?usp=drivesdk",
+      "sourceBytes": 2790356,
+      "existingWordId": 1265,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "owl",
+      "driveId": "1SRmkFjmzU6CXeJViLNcNYZpnGdmb8Ugf",
+      "driveUrl": "https://drive.google.com/file/d/1SRmkFjmzU6CXeJViLNcNYZpnGdmb8Ugf/view?usp=drivesdk",
+      "sourceBytes": 2724262,
+      "existingWordId": 1617,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "parking_meter",
+      "driveId": "1IJonadZynch8Tgm3XyQ1Z7JREBmXnawL",
+      "driveUrl": "https://drive.google.com/file/d/1IJonadZynch8Tgm3XyQ1Z7JREBmXnawL/view?usp=drivesdk",
+      "sourceBytes": 2295049,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "passport",
+      "driveId": "1EYApkcVKeRQBTX8gzMs2rEJ9s9Lhhs6k",
+      "driveUrl": "https://drive.google.com/file/d/1EYApkcVKeRQBTX8gzMs2rEJ9s9Lhhs6k/view?usp=drivesdk",
+      "sourceBytes": 2907662,
+      "existingWordId": 1209,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "passport_control",
+      "driveId": "1-UzykD2UKWAU3mm5bCUq2nwRVYFuDTsw",
+      "driveUrl": "https://drive.google.com/file/d/1-UzykD2UKWAU3mm5bCUq2nwRVYFuDTsw/view?usp=drivesdk",
+      "sourceBytes": 2252801,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "pharmacy",
+      "driveId": "1fglaTTc1Vo4MyNLY1PfKyDZfGStBlcvd",
+      "driveUrl": "https://drive.google.com/file/d/1fglaTTc1Vo4MyNLY1PfKyDZfGStBlcvd/view?usp=drivesdk",
+      "sourceBytes": 2744769,
+      "existingWordId": 1294,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "receipt",
+      "driveId": "1mNfkYV2HgQQEfBUjCT8hPkqqaNTBN_ZX",
+      "driveUrl": "https://drive.google.com/file/d/1mNfkYV2HgQQEfBUjCT8hPkqqaNTBN_ZX/view?usp=drivesdk",
+      "sourceBytes": 2834535,
+      "existingWordId": 1243,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "security_checkpoint",
+      "driveId": "1bWowW3IxZdCiOC1yUjLIGcdfC0kc5I5-",
+      "driveUrl": "https://drive.google.com/file/d/1bWowW3IxZdCiOC1yUjLIGcdfC0kc5I5-/view?usp=drivesdk",
+      "sourceBytes": 2353351,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "shark",
+      "driveId": "1nG8NJDMsVlm1q-g0x0uWAK6ih7dhAmRZ",
+      "driveUrl": "https://drive.google.com/file/d/1nG8NJDMsVlm1q-g0x0uWAK6ih7dhAmRZ/view?usp=drivesdk",
+      "sourceBytes": 2119456,
+      "existingWordId": 3568,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "snake",
+      "driveId": "1WOp2aiyZbr9uToiyXSe7bYXK-SX3Kdta",
+      "driveUrl": "https://drive.google.com/file/d/1WOp2aiyZbr9uToiyXSe7bYXK-SX3Kdta/view?usp=drivesdk",
+      "sourceBytes": 2745811,
+      "existingWordId": 3353,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "suitcase",
+      "driveId": "1SFrYqJmZR1-Gt6sqkIFYnXkoEw5lJCgs",
+      "driveUrl": "https://drive.google.com/file/d/1SFrYqJmZR1-Gt6sqkIFYnXkoEw5lJCgs/view?usp=drivesdk",
+      "sourceBytes": 2602071,
+      "existingWordId": 1248,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "taxi_airport",
+      "driveId": "18SsEy0JZ96BvqXcR67AjDLfUngUU0hao",
+      "driveUrl": "https://drive.google.com/file/d/18SsEy0JZ96BvqXcR67AjDLfUngUU0hao/view?usp=drivesdk",
+      "sourceBytes": 2334652,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "ticket_machine",
+      "driveId": "1-9vaRkuWaVp6kZMzUW7JtYeZEDTXDlLJ",
+      "driveUrl": "https://drive.google.com/file/d/1-9vaRkuWaVp6kZMzUW7JtYeZEDTXDlLJ/view?usp=drivesdk",
+      "sourceBytes": 2207707,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "tiger",
+      "driveId": "17FJ68n1zalPf1GzNX7i50qdGwB3M8VBF",
+      "driveUrl": "https://drive.google.com/file/d/17FJ68n1zalPf1GzNX7i50qdGwB3M8VBF/view?usp=drivesdk",
+      "sourceBytes": 2870657,
+      "existingWordId": 3349,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "toothbrush",
+      "driveId": "1SzEybcHeGh-UJbEFFwKnZBz2MDAD1CUe",
+      "driveUrl": "https://drive.google.com/file/d/1SzEybcHeGh-UJbEFFwKnZBz2MDAD1CUe/view?usp=drivesdk",
+      "sourceBytes": 1705666,
+      "existingWordId": 1333,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "traffic_light",
+      "driveId": "1kkYSTBQmbY5mjQyiDKEWKs76qEXYRoMZ",
+      "driveUrl": "https://drive.google.com/file/d/1kkYSTBQmbY5mjQyiDKEWKs76qEXYRoMZ/view?usp=drivesdk",
+      "sourceBytes": 2329914,
+      "existingWordId": 1227,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "train_platform",
+      "driveId": "1yEsobXfm7VIexdvJOgu5UWLfGAeG9H1e",
+      "driveUrl": "https://drive.google.com/file/d/1yEsobXfm7VIexdvJOgu5UWLfGAeG9H1e/view?usp=drivesdk",
+      "sourceBytes": 2478456,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "turnstile",
+      "driveId": "1flmPsJyf80lhUG4yi5wgUGD3NirNuMkZ",
+      "driveUrl": "https://drive.google.com/file/d/1flmPsJyf80lhUG4yi5wgUGD3NirNuMkZ/view?usp=drivesdk",
+      "sourceBytes": 2339824,
+      "existingWordId": 1236,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "umbrella",
+      "driveId": "1TwGXzVRG465OlCbaAiwLPjkvSdUm0vVN",
+      "driveUrl": "https://drive.google.com/file/d/1TwGXzVRG465OlCbaAiwLPjkvSdUm0vVN/view?usp=drivesdk",
+      "sourceBytes": 2739420,
+      "existingWordId": 1322,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "vending_machine",
+      "driveId": "1GCtWWpFPLzyYVIle4cvNfuXzHd7rFe5T",
+      "driveUrl": "https://drive.google.com/file/d/1GCtWWpFPLzyYVIle4cvNfuXzHd7rFe5T/view?usp=drivesdk",
+      "sourceBytes": 2431791,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "village",
+      "driveId": "1hFx2yc2DFv5X4Eu4GkENQhgY72zRQ2fu",
+      "driveUrl": "https://drive.google.com/file/d/1hFx2yc2DFv5X4Eu4GkENQhgY72zRQ2fu/view?usp=drivesdk",
+      "sourceBytes": 3285159,
+      "existingWordId": 603,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "wallet",
+      "driveId": "1dppO--pWiltQjcarI9UR9Di6WmvkpgZO",
+      "driveUrl": "https://drive.google.com/file/d/1dppO--pWiltQjcarI9UR9Di6WmvkpgZO/view?usp=drivesdk",
+      "sourceBytes": 2662073,
+      "existingWordId": 1260,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    },
+    {
+      "word": "washing_machine",
+      "driveId": "10Xtj7NZKff_mPnVe-NMoip1thXzceHD-",
+      "driveUrl": "https://drive.google.com/file/d/10Xtj7NZKff_mPnVe-NMoip1thXzceHD-/view?usp=drivesdk",
+      "sourceBytes": 2642081,
+      "existingWordId": null,
+      "replacesExistingImage": false,
+      "assetStaged": false
+    },
+    {
+      "word": "whale",
+      "driveId": "1Cuu8UpGdNBo4jRKnYizkgHxlwTf-ZP6O",
+      "driveUrl": "https://drive.google.com/file/d/1Cuu8UpGdNBo4jRKnYizkgHxlwTf-ZP6O/view?usp=drivesdk",
+      "sourceBytes": 3075130,
+      "existingWordId": 3545,
+      "replacesExistingImage": true,
+      "assetStaged": false
+    }
+  ]
+}
