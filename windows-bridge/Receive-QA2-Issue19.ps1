@@ -20,7 +20,7 @@ try {
     $comments = @($raw | ForEach-Object { ConvertFrom-Json -InputObject $_ })
     $requests = @($comments | Where-Object {
         $_.user -ceq $owner -and $_.association -in @('OWNER','MEMBER') -and
-        ($_.body -ceq 'QA2 REQUEST STATUS V1' -or $_.body -ceq 'QA2 REQUEST RESUME V1') -and [long]$_.id -gt 6874222810
+        ($_.body -ceq 'QA2 REQUEST STATUS V1' -or $_.body -ceq 'QA2 REQUEST RESUME V1' -or $_.body -ceq 'QA2 REQUEST HEALTH V1') -and [long]$_.id -gt 6874222810
     })
     if ($CheckOnly) {
         Write-Output "Issue #19 read OK. Eligible requests: $($requests.Count)"
@@ -45,7 +45,8 @@ try {
                 return
             }
         }
-        if ($active.Count -gt 0) { return }
+        if ($active.Count -gt 0) { $skipFinalPosting = $true }
+        else {
         $summary = Get-Content -LiteralPath $statusPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $marker = 'QA2 FINAL PHYSICAL V1 run=43572281441'
         if ($comments | Where-Object { $_.user -ceq $owner -and ($_.body -split "\r?\n", 2)[0] -ceq $marker } | Select-Object -First 1) {
@@ -62,15 +63,59 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Could not publish final physical result' }
             Set-Content -LiteralPath $finalReceipt -Value $posted -Encoding UTF8
         }
+        } # do not abandon request processing when physical runner is active
     }
     foreach ($request in $requests) {
         $id = ([long]$request.id).ToString()
         $receipt = Join-Path $inbox "$id.receipt"
         if ((Test-Path -LiteralPath $receipt) -and (Get-Content -LiteralPath $receipt -Raw).Trim() -ne 'already published') { continue }
-        $command = if ($request.body -ceq 'QA2 REQUEST RESUME V1') { 'RESUME' } else { 'STATUS' }
+        $command = if ($request.body -ceq 'QA2 REQUEST RESUME V1') { 'RESUME' } elseif ($request.body -ceq 'QA2 REQUEST HEALTH V1') { 'HEALTH' } else { 'STATUS' }
         $marker = "QA2 RESPONSE $command V1 request=$id"
         if ($comments | Where-Object { $_.user -ceq $owner -and ($_.body -split "\r?\n", 2)[0] -ceq $marker } | Select-Object -First 1) {
             Set-Content -LiteralPath $receipt -Value 'verified existing response' -Encoding UTF8
+            continue
+        }
+        if ($command -eq 'HEALTH') {
+            # A read-only inventory: hardware presence does not constitute an acoustic/video PASS.
+            $timestamp = [DateTime]::UtcNow.ToString('o')
+            $av = @()
+            try {
+                $av = @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object {
+                    $_.Class -in @('Camera','Image','AudioEndpoint','MEDIA') -or $_.FriendlyName -match '(?i)webcamera|microphone|микрофон|realtek|speaker|динамик'
+                } | Select-Object -First 32 Class,FriendlyName,Status | ForEach-Object {
+                    [pscustomobject]@{ class = $_.Class; name = $_.FriendlyName; status = $_.Status }
+                })
+                $avState = 'INVENTORY_AVAILABLE'
+            } catch { $avState = 'INVENTORY_BLOCKED' }
+            $taskName = 'EnglishWords-WindowsHealth-1m'
+            $taskState = 'NOT_INSTALLED'
+            $taskLast = 'UNKNOWN'
+            try {
+                $scheduled = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                $taskState = [string]$scheduled.State
+                $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction Stop
+                $taskLast = [string]$taskInfo.LastTaskResult
+            } catch {}
+            $adbState = 'NOT_AVAILABLE'
+            try {
+                $model = & $adb -s $serial shell getprop ro.product.model 2>$null
+                if ($LASTEXITCODE -eq 0 -and ("$model").Trim() -eq 'SM-G780G') { $adbState = 'CONNECTED' }
+            } catch {}
+            $qaPath = Join-Path $root 'physical-43572281441\\status.json'
+            $qaState = 'NO_STATUS_FILE'
+            if (Test-Path -LiteralPath $qaPath) {
+                try {
+                    $q = Get-Content -LiteralPath $qaPath -Raw -Encoding UTF8 | ConvertFrom-Json
+                    $qaState = "$($q.unique)/1000 unique, $($q.completed)/20 blocks"
+                } catch { $qaState = 'STATUS_READ_ERROR' }
+            }
+            $avText = ($av | ConvertTo-Json -Compress -Depth 4)
+            $healthBody = "$marker`n`nUTC=$timestamp | GitHub=PASS (reply via local gh) | ADB=$adbState | QA2=$qaState | Watchdog=$taskState | WatchdogLastResult=$taskLast | AV=$avState.`n`nPnP devices JSON (not an acoustic capture test):`n$avText`n`nTTS/ASR acoustic=NOT_RUN. No phone or Windows device settings changed."
+            $healthFile = Join-Path $inbox "$id-response.md"
+            [IO.File]::WriteAllText($healthFile, $healthBody, [Text.UTF8Encoding]::new($false))
+            $posted = & $gh issue comment 19 -R $repo --body-file $healthFile
+            if ($LASTEXITCODE -ne 0) { throw 'Could not publish QA2 HEALTH response' }
+            Set-Content -LiteralPath $receipt -Value $posted -Encoding UTF8
             continue
         }
         $device = & $adb -s $serial shell getprop ro.product.model 2>$null
