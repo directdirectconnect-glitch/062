@@ -73,16 +73,29 @@ def show_card():
         swipe(True)
     raise RuntimeError('QA2 answer card unavailable')
 
-def start_block():
+def start_block(configure=False):
     swipe(False)
     tap(ui(), '⚙')
     tap(ui(), 'Начать новый блок')
-    for _ in range(5):
+    labels = {
+        'Голосовая проверка': 'Кнопки: знаю / не знаю',
+        'Из всего словаря': 'Ещё не проверенные',
+    }
+    for _ in range(8):
         screen = ui()
+        setting = next((old for old in labels if configure and visible(screen, old)), None)
+        if setting:
+            tap(screen, setting)
+            tap(ui(), labels[setting])
+            continue
         if visible(screen, 'Начать новый блок'):
             tap(screen, 'Начать новый блок')
             return
-        swipe(True)
+        if configure:
+            focus()
+            sh('input', 'swipe', '530', '1740', '530', '500', '650')
+        else:
+            swipe(True)
     raise RuntimeError('Start block button unavailable')
 
 def write_json(path, data):
@@ -108,6 +121,10 @@ def run():
     rendered = set()
     records = []
     blocks = []
+    lock_file = (ROOT / 'runner.lock').open('a+b')
+    import msvcrt
+    lock_file.seek(0)
+    msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
     path = ROOT / 'words.jsonl'
     if path.exists():
         records = [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines()]
@@ -119,9 +136,10 @@ def run():
         summary = json.loads(previous.read_text(encoding='utf-8'))
         completed = summary['completed']
         blocks = summary['blocks']
-        if len(seen) != completed * 50:
-            raise RuntimeError('Partial block requires explicit recovery')
-        previous.rename(ROOT / f'status-through-block-{completed}.json')
+        if len(seen) < completed * 50 or len(seen) > (completed + 1) * 50:
+            raise RuntimeError('Inconsistent saved progress')
+        stamp = dt.datetime.now().strftime('%Y%m%d-%H%M%S')
+        previous.rename(ROOT / f'status-through-block-{completed}-{stamp}.json')
     sh('input', 'keyevent', 'KEYCODE_WAKEUP')
     sh('wm', 'dismiss-keyguard')
     sh('am', 'start', '-W', '--user', '0', '-n', ACTIVITY)
@@ -130,10 +148,19 @@ def run():
             first = completed + 1
             for block in range(first, 21):
                 s = state()
-                if not s or s['selection'] != 2 or s['method'] != 1 or s['index'] != 0:
+                resume_block = bool(s and records and records[-1]['block'] == block and records[-1]['session_id'] == s['sessionId'])
+                if s and (s['selection'] != 2 or s['method'] != 1) and s['index'] == 0 and not s['answered']:
+                    start_block(configure=True)
+                    for attempt in range(25):
+                        updated = state()
+                        if updated and updated['sessionId'] != s['sessionId']:
+                            s = updated
+                            break
+                        time.sleep(.15)
+                if not s or s['selection'] != 2 or s['method'] != 1 or (s['index'] != 0 and not resume_block):
                     if s:
                         raise RuntimeError('Unexpected active session before new block')
-                    start_block()
+                    start_block(configure=block == first)
                     for attempt in range(25):
                         s = state()
                         if s:
@@ -142,10 +169,24 @@ def run():
                 if not s or s['method'] != 1 or s['selection'] != 2 or len(s['originalBlockIds']) != 50:
                     raise RuntimeError('Wrong block setup or confirmation pending')
                 block_ids = set(s['originalBlockIds'])
-                if len(block_ids) != 50 or block_ids & seen:
+                prior = {row['word_id'] for row in records if row['block'] < block}
+                if len(block_ids) != 50 or block_ids & prior:
                     raise RuntimeError('Duplicate ID in new block')
                 session = s['sessionId']
-                remediated = False
+                remediated = any(row['block'] == block and row['repeat'] for row in records)
+                if resume_block and s['answered']:
+                    current_id = s['ids'][s['index']]
+                    last = records[-1]
+                    if last['word_id'] != current_id or last['index'] != s['index']:
+                        raise RuntimeError('Unlogged answer requires explicit recovery')
+                    screen = ui()
+                    for _ in range(3):
+                        if visible(screen, 'Следующее слово →'):
+                            break
+                        swipe(True)
+                        screen = ui()
+                    tap(screen, 'Следующее слово →')
+                    time.sleep(.35)
                 for _ in range(105):
                     s = state()
                     if s is None:
@@ -161,7 +202,9 @@ def run():
                     screen = show_card()
                     if not visible(screen, question):
                         raise RuntimeError(f'Physical UI does not match word ID {word_id}')
-                    is_repeat = word_id in seen
+                    is_repeat = s['remediationRound'] > 0
+                    if (word_id in seen) != is_repeat:
+                        raise RuntimeError(f'ID {word_id} does not match expected remediation or resume state')
                     label = 'Не знаю' if not is_repeat and (s['index'] == 0 or word_id in images) else 'Знаю'
                     if label == 'Не знаю' and visible(screen, answer) and question != answer:
                         raise RuntimeError(f'Answer visible before response for ID {word_id}')
@@ -197,9 +240,15 @@ def run():
                     records.append(row)
                     seen.add(word_id)
                     print(f'block={block} unique={len(seen)} id={word_id} repeat={is_repeat}', flush=True)
+                    if not is_repeat and len(seen) in (250, 500, 750, 1000):
+                        write_json(ROOT / f'checkpoint-{len(seen)}.json', restart())
+                        answered = show_card()
+                        if not visible(answered, answer):
+                            raise RuntimeError(f'Correction failed to restore at {len(seen)} words')
+                        (ROOT / f'checkpoint-{len(seen)}.xml').write_bytes(answered[1])
                     if len(seen) >= LIMIT and LIMIT < 1000:
                         return
-                    if label != 'Не знаю':
+                    if label != 'Не знаю' and len(seen) not in (250, 500, 750, 1000):
                         answered = ui()
                     if not visible(answered, 'Следующее слово →'):
                         swipe(True)
@@ -219,16 +268,16 @@ def run():
                     raise RuntimeError('Excessive repetitions')
                 completed += 1
                 blocks.append(dict(block=block, unique_total=len(seen), verdict='PASS'))
-                if len(seen) in (250, 500, 750, 1000):
-                    write_json(ROOT / f'checkpoint-{len(seen)}.json', restart())
+                write_json(ROOT / f'block-{block:02d}.json', blocks[-1])
     finally:
+        stamp = dt.datetime.now().strftime('%Y%m%d-%H%M%S')
         try:
-            (ROOT / f'logcat-through-block-{completed}.txt').write_bytes(adb('logcat', '-d', '-t', '1200'))
+            (ROOT / f'logcat-through-block-{completed}-{stamp}.txt').write_bytes(adb('logcat', '-d', '-t', '1200'))
         finally:
             write_json(ROOT / 'status.json', dict(unique=len(seen), completed=completed,
                        images=sorted(rendered), blocks=blocks))
             if records:
-                with (ROOT / f'words-through-block-{completed}.csv').open('w', encoding='utf-8-sig', newline='') as f:
+                with (ROOT / f'words-through-block-{completed}-{stamp}.csv').open('w', encoding='utf-8-sig', newline='') as f:
                     writer = csv.DictWriter(f, fieldnames=records[0].keys())
                     writer.writeheader()
                     writer.writerows(records)
