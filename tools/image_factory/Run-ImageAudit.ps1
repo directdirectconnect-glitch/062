@@ -38,11 +38,21 @@ try {
   if ($files.Count -ne $ExpectedCuratedFiles) { throw "Curated file count mismatch; refusing incomplete audit" }
   $out = Join-Path $ResultsDirectory "image-audit-curated53-$runId.json"
   Run-Check "curated" @("tools/image_factory/audit.py",$CuratedDirectory,"--output",$out,"--threshold","5","--minimum","768") $out
+  $audit = Get-Content -LiteralPath $out -Raw | ConvertFrom-Json
+  if ($audit.summary.scanned -ne $ExpectedCuratedFiles -or $audit.summary.rejected -gt 0 -or $audit.summary.exact_duplicate_files -gt 0 -or $audit.summary.possible_duplicate_pairs -gt 0) {
+    $summary.curated = "BLOCKED"
+    throw "Curated archive failed quality gate; inspect $out"
+  }
   $summary.curated = "PASS"
   if ($FullArchiveDirectory) {
     if (-not (Test-Path -LiteralPath $FullArchiveDirectory -PathType Container)) { throw "Full archive directory missing" }
     $out = Join-Path $ResultsDirectory "image-audit-full-$runId.json"
     Run-Check "full" @("tools/image_factory/audit.py",$FullArchiveDirectory,"--output",$out,"--threshold","5","--minimum","768") $out
+    $fullAudit = Get-Content -LiteralPath $out -Raw | ConvertFrom-Json
+    if ($fullAudit.summary.rejected -gt 0 -or $fullAudit.summary.exact_duplicate_files -gt 0 -or $fullAudit.summary.possible_duplicate_pairs -gt 0) {
+      $summary.full = "BLOCKED"
+      throw "Full archive failed quality gate; inspect $out"
+    }
     $summary.full = "PASS"
   }
   if ($ManifestPath -and $AssetDirectory) {
@@ -50,6 +60,7 @@ try {
     Run-Check "manifest" @("tools/image_factory/verify_manifest.py",$ManifestPath,$AssetDirectory,"--output",$out) $out
     $verification = Get-Content -LiteralPath $out -Raw | ConvertFrom-Json
     $summary.manifest = [string]$verification.status
+    if ($summary.manifest -ne "PASS") { throw "Manifest verification BLOCKED; inspect $out" }
   }
 } catch {
   $summary.errors += "$_"
