@@ -44,6 +44,20 @@ function Post([string]$body) {
 }
 try {
     Emit "START issue=19 timestamp=$stamp"
+    # Use the already installed Android Platform Tools even in a fresh scheduled session.
+    # Changes only this process PATH, never the machine-wide environment.
+    if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
+        $adbCandidates = @(
+            'C:\platform-tools\adb.exe',
+            (Join-Path $LabRoot 'platform-tools\adb.exe'),
+            (Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe')
+        )
+        $adbExe = $adbCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+        if ($adbExe) {
+            $env:PATH = (Split-Path -Parent $adbExe) + [System.IO.Path]::PathSeparator + $env:PATH
+            Emit ('ADB resolved at ' + $adbExe)
+        }
+    }
     foreach ($command in @('gh','adb')) {
         if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
             Emit "BLOCKED: missing $command in PATH."
