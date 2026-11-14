@@ -2,6 +2,8 @@
 import hashlib
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -61,6 +63,28 @@ class ManifestVerificationTests(unittest.TestCase):
         self.manifest.write_text(json.dumps({"count": 2, "items": [self.item("a.webp")]}))
         with self.assertRaises(ValueError):
             mod.verify(self.manifest, self.assets)
+
+    def test_cli_blocked_returns_nonzero_and_report(self):
+        (self.assets / "a.webp").write_bytes(b"tampered")
+        self.make_manifest([self.item("a.webp")])
+        report = self.root / "blocked.json"
+        completed = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("verify_manifest.py")),
+             str(self.manifest), str(self.assets), "--output", str(report)],
+            capture_output=True, text=True, check=False)
+        self.assertEqual(completed.returncode, 2)
+        self.assertEqual(json.loads(report.read_text(encoding="utf-8"))["status"], "BLOCKED")
+
+    def test_cli_pass_returns_zero(self):
+        (self.assets / "a.webp").write_bytes(b"image")
+        self.make_manifest([self.item("a.webp")])
+        report = self.root / "passed.json"
+        completed = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("verify_manifest.py")),
+             str(self.manifest), str(self.assets), "--output", str(report)],
+            capture_output=True, text=True, check=False)
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual(json.loads(report.read_text(encoding="utf-8"))["status"], "PASS")
 
 if __name__ == "__main__":
     unittest.main()
