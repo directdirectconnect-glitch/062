@@ -183,7 +183,7 @@
     },
     {
       "wordId": 1205,
-      "asset": "images/word_1205.webp",
+      "asset": "additional_photos/coffee.png",
       "altEn": "coffee",
       "altRu": "кофе"
     },
@@ -207,13 +207,13 @@
     },
     {
       "wordId": 1209,
-      "asset": "images/word_1209.webp",
+      "asset": "additional_photos/passport.png",
       "altEn": "passport",
       "altRu": "паспорт"
     },
     {
       "wordId": 1210,
-      "asset": "images/word_1210.webp",
+      "asset": "additional_photos/bus.png",
       "altEn": "bus",
       "altRu": "автобус"
     },
@@ -230,50 +230,56 @@
       "altRu": "цветок"
     },
     {
+      "wordId": 1227,
+      "asset": "additional_photos/traffic_light.png",
+      "altEn": "traffic light",
+      "altRu": ""
+    },
+    {
       "wordId": 1231,
-      "asset": "images/word_1231.webp",
+      "asset": "additional_photos/bicycle.png",
       "altEn": "bicycle",
       "altRu": "велосипед"
     },
     {
       "wordId": 1235,
-      "asset": "images/word_1235.webp",
+      "asset": "additional_photos/escalator.png",
       "altEn": "escalator",
       "altRu": "эскалатор"
     },
     {
       "wordId": 1236,
-      "asset": "images/word_1236.webp",
+      "asset": "additional_photos/turnstile.png",
       "altEn": "turnstile",
       "altRu": "турникет"
     },
     {
       "wordId": 1248,
-      "asset": "images/word_1248.webp",
+      "asset": "additional_photos/suitcase.png",
       "altEn": "suitcase",
       "altRu": "чемодан"
     },
     {
       "wordId": 1260,
-      "asset": "images/word_1260.webp",
+      "asset": "additional_photos/wallet.png",
       "altEn": "wallet",
       "altRu": "кошелёк"
     },
     {
       "wordId": 1262,
-      "asset": "images/word_1262.webp",
+      "asset": "additional_photos/menu.png",
       "altEn": "menu",
       "altRu": "меню"
     },
     {
       "wordId": 1263,
-      "asset": "images/word_1263.webp",
+      "asset": "additional_photos/dessert.png",
       "altEn": "dessert",
       "altRu": "десерт"
     },
     {
       "wordId": 1265,
-      "asset": "images/word_1265.webp",
+      "asset": "additional_photos/napkin.png",
       "altEn": "napkin",
       "altRu": "салфетка"
     },
@@ -320,26 +326,38 @@
       "altRu": "подушка"
     },
     {
+      "wordId": 1277,
+      "asset": "additional_photos/elevator.png",
+      "altEn": "elevator",
+      "altRu": ""
+    },
+    {
       "wordId": 1278,
-      "asset": "images/word_1278.webp",
+      "asset": "additional_photos/crosswalk.png",
       "altEn": "crosswalk",
       "altRu": "пешеходный переход"
     },
     {
+      "wordId": 1294,
+      "asset": "additional_photos/pharmacy.png",
+      "altEn": "pharmacy",
+      "altRu": ""
+    },
+    {
       "wordId": 1304,
-      "asset": "images/word_1304.webp",
+      "asset": "additional_photos/ambulance.png",
       "altEn": "ambulance",
       "altRu": "скорая помощь (машина)"
     },
     {
       "wordId": 1320,
-      "asset": "images/word_1320.webp",
+      "asset": "additional_photos/backpack.png",
       "altEn": "backpack",
       "altRu": "рюкзак"
     },
     {
       "wordId": 1322,
-      "asset": "images/word_1322.webp",
+      "asset": "additional_photos/umbrella.png",
       "altEn": "umbrella",
       "altRu": "зонт"
     },
@@ -363,7 +381,7 @@
     },
     {
       "wordId": 1333,
-      "asset": "images/word_1333.webp",
+      "asset": "additional_photos/toothbrush.png",
       "altEn": "toothbrush",
       "altRu": "зубная щётка"
     },
@@ -399,7 +417,7 @@
     },
     {
       "wordId": 1352,
-      "asset": "images/word_1352.webp",
+      "asset": "additional_photos/keyboard.png",
       "altEn": "keyboard",
       "altRu": "клавиатура"
     },
@@ -450,6 +468,12 @@
       "asset": "images/word_1417.webp",
       "altEn": "bucket",
       "altRu": "ведро"
+    },
+    {
+      "wordId": 1444,
+      "asset": "additional_photos/boarding_pass.png",
+      "altEn": "boarding pass",
+      "altRu": ""
     },
     {
       "wordId": 1544,
@@ -531,19 +555,19 @@
     },
     {
       "wordId": 1615,
-      "asset": "images/word_1615.webp",
+      "asset": "additional_photos/deer.png",
       "altEn": "deer",
       "altRu": "олень"
     },
     {
       "wordId": 1617,
-      "asset": "images/word_1617.webp",
+      "asset": "additional_photos/owl.png",
       "altEn": "owl",
       "altRu": "сова"
     },
     {
       "wordId": 1618,
-      "asset": "images/word_1618.webp",
+      "asset": "additional_photos/eagle.png",
       "altEn": "eagle",
       "altRu": "орёл"
     },
@@ -662,6 +686,12 @@
       "altRu": "холодильник"
     },
     {
+      "wordId": 2390,
+      "asset": "additional_photos/microwave.png",
+      "altEn": "microwave",
+      "altRu": ""
+    },
+    {
       "wordId": 2391,
       "asset": "images/word_2391.webp",
       "altEn": "oven",
@@ -716,6 +746,12 @@
       "altRu": "ножницы"
     },
     {
+      "wordId": 2805,
+      "asset": "additional_photos/fire_extinguisher.png",
+      "altEn": "fire extinguisher",
+      "altRu": ""
+    },
+    {
       "wordId": 3226,
       "asset": "images/word_3226.webp",
       "altEn": "telescope",
@@ -753,13 +789,13 @@
     },
     {
       "wordId": 3350,
-      "asset": "images/word_3350.webp",
+      "asset": "additional_photos/monkey.png",
       "altEn": "monkey",
       "altRu": "обезьяна"
     },
     {
       "wordId": 3353,
-      "asset": "images/word_3353.webp",
+      "asset": "additional_photos/snake.png",
       "altEn": "snake",
       "altRu": "змея"
     },
@@ -879,7 +915,7 @@
     },
     {
       "wordId": 3568,
-      "asset": "images/word_3568.webp",
+      "asset": "additional_photos/shark.png",
       "altEn": "shark",
       "altRu": "акула"
     },
