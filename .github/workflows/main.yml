@@ -44,6 +44,10 @@ jobs:
             python3 scripts/prepare_vosk_models.py
           fi
 
+      - name: Install WebP image decoder for strict release validation
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 -m pip install --disable-pip-version-check Pillow==11.3.0
+
       - name: Verify 217 photo file gate for November release
         id: release_assets
         if: startsWith(github.ref, 'refs/heads/release/')
