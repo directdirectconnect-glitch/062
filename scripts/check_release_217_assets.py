@@ -41,11 +41,13 @@ def audit_png(file):
 def main():
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     entries = manifest["images"]
-    original = sorted((ASSETS / "images").glob("*.png"))
+    original = sorted(p for p in (ASSETS / "images").iterdir() if p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"})
     additional = sorted((ASSETS / "additional_photos").glob("*.png"))
     all_files = original + additional
     errors = []
     for file in all_files:
+        if file.suffix.lower() != ".png":
+            continue  # prior images can be JPEG/WebP; new 53 must be valid PNG
         reason = audit_png(file)
         if reason:
             errors.append(f"{file.relative_to(ROOT)}: {reason}")
