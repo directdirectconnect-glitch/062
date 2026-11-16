@@ -41,3 +41,6 @@ Date: 2026-11-16. Source of truth: currently approved Google Drive PNGs (not his
 1. Implement P01/P02/P03/P04/P05/P06 from the six approved Drive designs; explicitly compare new code with old `MainActivity.kt` and `ExampleModeSetup` flow.
 2. Windows agent: download 53 image binaries from approved folder, stage in repo and update mapping, verifying SHA/size.
 3. Run Android CI and inspect artifact, then physical S20 FE smoke tests. Preserve installed app data and separate QA package.
+
+## Build attempt — 2026-11-16
+User requested immediate build. Triggering CI by commit to release branch. The strict asset validation is intentionally fail-closed: it must report missing 15 PNGs and missing image mappings until actually fixed. This is a build/diagnostic attempt, NOT a release artifact or evidence that P01–P06 were implemented. Never label an old 164-image artifact as the final APK. The run's actual outcome must be checked independently.
