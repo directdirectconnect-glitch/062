@@ -4,6 +4,7 @@ The backend deliberately creates deterministic synthetic photographs-like raster
 patterns via Pillow; this proves file production and pipeline integration, NOT AI
 image generation, realism or subject correctness.
 """
+from contextlib import closing
 import hashlib
 import importlib.util
 import random
@@ -33,7 +34,7 @@ class RasterPipelineEndToEndTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.db = self.root / "queue.sqlite"
         self.out = self.root / "images"
-        with queue.connect(self.db) as conn:
+        with closing(queue.connect(self.db)) as conn, conn:
             for wid, word in [("1", "apple"), ("2", "bridge")]:
                 conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES(?,?,?)", (wid, word, "now"))
             conn.commit()
@@ -59,7 +60,7 @@ class RasterPipelineEndToEndTests(unittest.TestCase):
         self.assertEqual(report["summary"]["valid"], 2)
         self.assertEqual(report["summary"]["rejected"], 0)
         self.assertEqual(report["summary"]["exact_duplicate_files"], 0)
-        with sqlite3.connect(self.db) as conn:
+        with closing(sqlite3.connect(self.db)) as conn, conn:
             self.assertEqual(conn.execute("SELECT count(*) FROM jobs WHERE status='generated'").fetchone()[0], 2)
         self.assertEqual(worker.run_batch(self.db, self.out, self.raster_backend,
                                           validator=validate.validate_image)["attempted"], 0)

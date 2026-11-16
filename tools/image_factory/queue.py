@@ -1,4 +1,5 @@
 """English Words Image Factory: durable local image production queue (stdlib only)."""
+from contextlib import closing
 import argparse
 import csv
 import hashlib
@@ -57,7 +58,7 @@ def main():
     a=sub.add_parser("register-existing");a.add_argument("manifest")
     a=sub.add_parser("export-pending");a.add_argument("output")
     args=p.parse_args()
-    with connect(args.db) as conn:
+    with closing(connect(args.db)) as conn, conn:
         if args.command=="import-nouns":
             print("Imported:",ingest(conn,args.csv))
         elif args.command=="register-existing":

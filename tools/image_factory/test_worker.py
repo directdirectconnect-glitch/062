@@ -1,4 +1,5 @@
 """Image Factory worker tests with a deterministic fake backend."""
+from contextlib import closing
 import importlib.util
 import sqlite3
 import tempfile
@@ -20,7 +21,7 @@ class WorkerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name)
         self.db=self.root/"jobs.sqlite"
-        with queue.connect(self.db) as conn:
+        with closing(queue.connect(self.db)) as conn, conn:
             conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES('1','apple','now')")
             conn.commit()
 
@@ -39,11 +40,11 @@ class WorkerTests(unittest.TestCase):
         for i in range(3):
             result=worker.run_batch(self.db,self.root/"images",backend,validator=lambda p:None,max_attempts=3)
             self.assertEqual(result["failed"],1)
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             self.assertEqual(db.execute("SELECT status,attempts FROM jobs").fetchone(),("failed",3))
 
     def test_recover_interrupted(self):
-        with sqlite3.connect(self.db) as db:
+        with closing(sqlite3.connect(self.db)) as db, db:
             db.execute("UPDATE jobs SET status='running'")
             db.commit()
         self.assertEqual(worker.recover_interrupted(self.db),1)

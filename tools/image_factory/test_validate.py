@@ -1,4 +1,5 @@
 """Raster integrity and duplicate detection regression tests."""
+from contextlib import closing
 import importlib.util
 import io
 import sqlite3
@@ -71,7 +72,7 @@ class ImageValidationTests(unittest.TestCase):
 
     def test_duplicate_image_rejected_by_worker(self):
         db = self.root / "jobs.sqlite"
-        with queue.connect(db) as conn:
+        with closing(queue.connect(db)) as conn, conn:
             for wid, word in (("1", "apple"), ("2", "bridge")):
                 conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES(?,?,?)", (wid, word, "now"))
             conn.commit()
@@ -82,7 +83,7 @@ class ImageValidationTests(unittest.TestCase):
         result = worker.run_batch(db, self.root / "output", backend, limit=2,
                                   max_attempts=1, validator=validate_image)
         self.assertEqual(result, {"attempted": 2, "generated": 1, "failed": 1})
-        with sqlite3.connect(db) as conn:
+        with closing(sqlite3.connect(db)) as conn, conn:
             rows = conn.execute("SELECT status,error FROM jobs ORDER BY word_id").fetchall()
         self.assertEqual(rows[0][0], "generated")
         self.assertEqual(rows[1][0], "failed")
@@ -91,7 +92,7 @@ class ImageValidationTests(unittest.TestCase):
 
     def test_corrupt_backend_output_not_accepted(self):
         db = self.root / "jobs.sqlite"
-        with queue.connect(db) as conn:
+        with closing(queue.connect(db)) as conn, conn:
             conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES('1','apple','now')")
             conn.commit()
 

@@ -1,3 +1,4 @@
+from contextlib import closing
 import importlib.util
 import tempfile
 import unittest
@@ -17,7 +18,7 @@ class QueueTests(unittest.TestCase):
             image=root/"apple.png";image.write_bytes(b"test-image-bytes")
             manifest=root/"existing.csv"
             manifest.write_text(f"word_id,image_path\n1,{image}\n",encoding="utf-8")
-            with connect(root/"test.sqlite") as db:
+            with closing(connect(root/"test.sqlite")) as db, db:
                 self.assertEqual(ingest(db,words),2)
                 self.assertEqual(ingest(db,words),0)
                 self.assertEqual(register(db,manifest),1)

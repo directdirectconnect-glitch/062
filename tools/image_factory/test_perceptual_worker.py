@@ -1,4 +1,5 @@
 """End-to-end perceptual duplicate guard tests with real PNG files."""
+from contextlib import closing
 import importlib.util
 import sqlite3
 import tempfile
@@ -29,7 +30,7 @@ class PerceptualWorkerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.db = self.root / "jobs.sqlite"
-        with queue.connect(self.db) as conn:
+        with closing(queue.connect(self.db)) as conn, conn:
             conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES('1','apple','now')")
             conn.execute("INSERT INTO jobs(word_id,word,updated_at) VALUES('2','bridge','now')")
             conn.commit()
@@ -43,7 +44,7 @@ class PerceptualWorkerTests(unittest.TestCase):
         result = worker.run_batch(self.db, self.root / "images", backend, validator=validate,
                                   max_attempts=1, perceptual_threshold=0)
         self.assertEqual(result, {"attempted": 2, "generated": 1, "failed": 1})
-        with sqlite3.connect(self.db) as conn:
+        with closing(sqlite3.connect(self.db)) as conn, conn:
             statuses = conn.execute("SELECT status,error FROM jobs ORDER BY word_id").fetchall()
         self.assertEqual(statuses[0][0], "generated")
         self.assertEqual(statuses[1][0], "failed")
@@ -55,7 +56,7 @@ class PerceptualWorkerTests(unittest.TestCase):
                              validator=validate, perceptual_threshold=65)
 
     def test_missing_existing_file_fails_closed(self):
-        with queue.connect(self.db) as conn:
+        with closing(queue.connect(self.db)) as conn, conn:
             conn.execute("UPDATE jobs SET status='existing',image_path=? WHERE word_id='1'",
                          (str(self.root / "missing.png"),))
             conn.commit()
@@ -64,7 +65,7 @@ class PerceptualWorkerTests(unittest.TestCase):
         result = worker.run_batch(self.db, self.root / "images", backend, validator=validate,
                                   max_attempts=1, perceptual_threshold=5)
         self.assertEqual(result["failed"], 1)
-        with sqlite3.connect(self.db) as conn:
+        with closing(sqlite3.connect(self.db)) as conn, conn:
             error = conn.execute("SELECT error FROM jobs WHERE word_id='2'").fetchone()[0]
         self.assertIn("Cannot verify existing image", error)
 

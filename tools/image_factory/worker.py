@@ -1,4 +1,5 @@
 """GPU-independent worker. Backend is a callable(prompt, output_path)."""
+from contextlib import closing
 import hashlib
 import importlib.util
 import sqlite3
@@ -25,7 +26,7 @@ def run_batch(db_path, output_dir, backend, limit=10, max_attempts=3, validator=
     if validator is None: raise ValueError("A real image validator is required")
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True)
     summary={"attempted":0,"generated":0,"failed":0}
-    with sqlite3.connect(db_path) as db:
+    with closing(sqlite3.connect(db_path)) as db, db:
         jobs=db.execute("SELECT word_id,word FROM jobs WHERE status='pending' AND attempts<? ORDER BY word_id LIMIT ?",(max_attempts,limit)).fetchall()
         for wid,word in jobs:
             now=lambda:datetime.now(timezone.utc).isoformat()
@@ -61,6 +62,6 @@ def run_batch(db_path, output_dir, backend, limit=10, max_attempts=3, validator=
     return summary
 
 def recover_interrupted(db_path):
-    with sqlite3.connect(db_path) as db:
+    with closing(sqlite3.connect(db_path)) as db, db:
         cur=db.execute("UPDATE jobs SET status='pending' WHERE status='running'")
         db.commit();return cur.rowcount
