@@ -48,6 +48,14 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/release/')
         run: python3 scripts/check_release_217_assets.py
 
+      - name: Upload release asset audit
+        if: always() && startsWith(github.ref, 'refs/heads/release/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-217-Release-Asset-Audit
+          path: results/release-217-audit.json
+          if-no-files-found: warn
+
       - name: Run unit tests and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
