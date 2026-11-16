@@ -44,6 +44,20 @@ jobs:
             python3 scripts/prepare_vosk_models.py
           fi
 
+      - name: Restore immutable 217-WebP media bundle from versioned Git blobs
+        if: startsWith(github.ref, 'refs/heads/release/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat release-media/webp-217-parts/part-*.bin > /tmp/english-words-217-webp.zip
+          echo "19030d89a8f0cfee844be04f67bab3ce7b7d76f641358ef71941269249eb3c72  /tmp/english-words-217-webp.zip" | sha256sum -c -
+          unzip -tq /tmp/english-words-217-webp.zip
+          rm -rf app/src/main/assets/images app/src/main/assets/additional_photos
+          unzip -oq /tmp/english-words-217-webp.zip
+          test "$(find app/src/main/assets/images -type f -name '*.webp' | wc -l)" -eq 164
+          test "$(find app/src/main/assets/additional_photos -type f -name '*.webp' | wc -l)" -eq 53
+          echo "Restored exactly 217 WebP assets; source ZIP SHA-256 verified."
+
       - name: Install WebP image decoder for strict release validation
         if: startsWith(github.ref, 'refs/heads/release/')
         run: python3 -m pip install --disable-pip-version-check Pillow==11.3.0
@@ -68,6 +82,83 @@ jobs:
       - name: Verify offline models and native libraries are in APK
         if: hashFiles('scripts/verify_vosk_apk.py') != ''
         run: python3 scripts/verify_vosk_apk.py
+
+      - name: Verify 217 WebP in the compiled APK
+        if: startsWith(github.ref, 'refs/heads/release/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          APK=$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          unzip -Z1 "$APK" | grep -E '^assets/(images|additional_photos)/.*\.(webp|png|jpg|jpeg)        if: success()
+        run: |
+          mkdir -p results
+          sha256sum app/build/outputs/apk/debug/*.apk | tee results/apk-sha256.txt
+          echo "Source commit: ${GITHUB_SHA}" > results/apk-provenance.txt
+          echo "Asset gate outcome: ${{ steps.release_assets.outcome }}" >> results/apk-provenance.txt
+          echo "Asset gate is mandatory; S20 FE physical installation is tracked separately." >> results/apk-provenance.txt
+
+      - name: Upload build provenance
+        if: always() && startsWith(github.ref, 'refs/heads/release/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-Release-Provenance
+          path: |
+            results/apk-sha256.txt
+            results/apk-provenance.txt
+            results/apk-image-inventory.txt
+            results/apk-image-proof.txt
+          if-no-files-found: warn
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Enforce 217-photo release gate after preview APK upload
+        if: always() && startsWith(github.ref, 'refs/heads/release/') && steps.release_assets.outcome == 'failure'
+        run: |
+          echo "::error::217-photo asset gate failed. Any uploaded APK is TEST-ONLY and NOT a complete release. See EnglishWords-217-Release-Asset-Audit."
+          exit 1
+ > results/apk-image-inventory.txt
+          WEBP=$(grep -c '\.webp        if: success()
+        run: |
+          mkdir -p results
+          sha256sum app/build/outputs/apk/debug/*.apk | tee results/apk-sha256.txt
+          echo "Source commit: ${GITHUB_SHA}" > results/apk-provenance.txt
+          echo "Asset gate outcome: ${{ steps.release_assets.outcome }}" >> results/apk-provenance.txt
+          echo "This is a test APK, not approved for the 217-photo release unless asset gate PASS." >> results/apk-provenance.txt
+
+      - name: Upload build provenance
+        if: always() && startsWith(github.ref, 'refs/heads/release/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-Release-Provenance
+          path: |
+            results/apk-sha256.txt
+            results/apk-provenance.txt
+          if-no-files-found: warn
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Enforce 217-photo release gate after preview APK upload
+        if: always() && startsWith(github.ref, 'refs/heads/release/') && steps.release_assets.outcome == 'failure'
+        run: |
+          echo "::error::217-photo asset gate failed. Any uploaded APK is TEST-ONLY and NOT a complete release. See EnglishWords-217-Release-Asset-Audit."
+          exit 1
+ results/apk-image-inventory.txt)
+          test "$WEBP" -eq 217
+          test "$(wc -l < results/apk-image-inventory.txt)" -eq 217
+          echo "APK content verification PASS: exactly 217 images, all WebP" > results/apk-image-proof.txt
+          sha256sum "$APK" >> results/apk-image-proof.txt
 
       - name: Generate APK provenance and SHA-256
         if: success()
