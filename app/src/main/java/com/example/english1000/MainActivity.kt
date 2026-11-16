@@ -522,6 +522,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
         add(root, header)
 
+        // Approved P01 visual baseline, 2026-11-16 v1.0 CURRENT:
+        // Greeting and primary navigation belong on the home screen.
+        val homeGreeting = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        add(homeGreeting, text("Welcome!", 27f, navy).apply {
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        })
+        add(homeGreeting, text("Что вы хотите делать сегодня?", 18f, navy).apply {
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        }, top = 10)
+        add(root, homeGreeting, top = 10)
+
         fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
