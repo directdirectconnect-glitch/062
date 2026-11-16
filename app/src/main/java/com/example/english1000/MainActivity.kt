@@ -528,13 +528,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-        add(homeGreeting, text("Welcome!", 27f, navy).apply {
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        add(homeGreeting, text("Welcome!", 38f, Color.rgb(255, 211, 92), bold = true).apply {
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity = Gravity.CENTER
         })
-        add(homeGreeting, text("Что вы хотите делать сегодня?", 18f, navy).apply {
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-        }, top = 10)
-        add(root, homeGreeting, top = 10)
+        add(homeGreeting, text("Что вы хотите делать сегодня?", 22f,
+            if (isDarkTheme) Color.WHITE else navy, bold = true).apply {
+            gravity = Gravity.CENTER
+            maxLines = 3
+        }, top = 12)
+        add(root, homeGreeting, top = 16)
 
         fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
             val card = LinearLayout(this).apply {
@@ -545,7 +548,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     intArrayOf(Color.rgb(34, 53, 72), Color.rgb(15, 28, 43))
                 ).apply {
                     cornerRadius = dp(22).toFloat()
-                    setStroke(dp(1), Color.rgb(156, 135, 103))
+                    setStroke(dp(3), Color.rgb(255, 195, 62))
                 }
                 setPadding(dp(22), dp(20), dp(18), dp(20))
                 isClickable = true
@@ -561,10 +564,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 setOnClickListener { action() }
                 elevation = dp(3).toFloat()
             }
-            card.addView(text(symbol, 29f, Color.rgb(214, 187, 146)).apply {
+            card.addView(text(symbol, 29f, Color.rgb(255, 203, 75)).apply {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(dp(62), dp(64)))
-            card.addView(text(title, 20f, Color.WHITE).apply {
+            card.addView(text(title, 23f, Color.WHITE, bold = true).apply {
                 typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
                 gravity = Gravity.CENTER_VERTICAL
             }, LinearLayout.LayoutParams(0, dp(70), 1f).apply { leftMargin = dp(12) })
@@ -576,7 +579,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val modeActions = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        add(modeActions, premiumAction("Перевести слово", "А ⇄ Я") {
+        add(modeActions, premiumAction("Перевести слово", "A ⇄ a") {
             showAskWordOptions()
         }, top = 10)
         add(modeActions, premiumAction("Учить слова", "▤") {
@@ -585,7 +588,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(modeActions, premiumAction("Проверка знаний", "✓") {
             startSession(modeOverride = "check")
         }, top = 14)
-        add(root, modeActions, top = 12)
+        add(root, modeActions, top = 20)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
