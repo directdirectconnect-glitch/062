@@ -233,7 +233,7 @@
       "wordId": 1227,
       "asset": "additional_photos/traffic_light.png",
       "altEn": "traffic light",
-      "altRu": ""
+      "altRu": "светофор"
     },
     {
       "wordId": 1231,
@@ -329,7 +329,7 @@
       "wordId": 1277,
       "asset": "additional_photos/elevator.png",
       "altEn": "elevator",
-      "altRu": ""
+      "altRu": "лифт"
     },
     {
       "wordId": 1278,
@@ -341,7 +341,7 @@
       "wordId": 1294,
       "asset": "additional_photos/pharmacy.png",
       "altEn": "pharmacy",
-      "altRu": ""
+      "altRu": "аптека"
     },
     {
       "wordId": 1304,
@@ -473,7 +473,7 @@
       "wordId": 1444,
       "asset": "additional_photos/boarding_pass.png",
       "altEn": "boarding pass",
-      "altRu": ""
+      "altRu": "посадочный талон"
     },
     {
       "wordId": 1544,
@@ -689,7 +689,7 @@
       "wordId": 2390,
       "asset": "additional_photos/microwave.png",
       "altEn": "microwave",
-      "altRu": ""
+      "altRu": "микроволновая печь"
     },
     {
       "wordId": 2391,
@@ -749,7 +749,7 @@
       "wordId": 2805,
       "asset": "additional_photos/fire_extinguisher.png",
       "altEn": "fire extinguisher",
-      "altRu": ""
+      "altRu": "огнетушитель"
     },
     {
       "wordId": 3226,
