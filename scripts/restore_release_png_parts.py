@@ -35,7 +35,7 @@ def main():
             raise RuntimeError("Bad chunk sequence for " + name)
         raw = "".join(chunk.read_text(encoding="ascii").strip() for chunk in chunks)
         data = base64.b64decode(raw, validate=True)
-        if len(data) != entry["sourceBytes"] or not data.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        if len(data) != entry["sourceBytes"] or not data.startswith(bytes.fromhex("89504e470d0a1a0a")):
             raise RuntimeError("PNG size/signature mismatch for " + name)
         dest.write_bytes(data)
         restored.append(name)
