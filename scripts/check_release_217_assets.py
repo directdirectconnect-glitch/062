@@ -128,6 +128,9 @@ def main():
         "errors": errors,
         "status": "PASS" if not errors else "BLOCKED"
     }
+    output = ROOT / "results" / "release-217-audit.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if errors:
         print(f"RELEASE BLOCKED: {len(errors)} integrity or linkage violations", file=sys.stderr)
