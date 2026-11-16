@@ -1,141 +1,142 @@
 #!/usr/bin/env python3
-"""Strict inventory and linkage validation for the 2026-11-16 photo release.
+"""Strict 217-WebP release gate: real Android assets, not Drive references.
 
-This is a release *gate*, not a claim of semantic or visual editorial approval.
-Checks original 164 + new 53 binaries, 53 inventory names, PNG chunk boundaries and
-CRCs, duplicate hashes and whether every new asset is reachable from UI mappings.
+Do not bypass this gate when building a production release. All images must
+be present in the checked-out repository, decodable, unique and reachable.
 """
 import hashlib
 import json
 import pathlib
-import struct
 import sys
-import zlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "app/src/main/assets"
 MANIFEST = ROOT / "build-requests/217-photo-drive-staging-manifest.json"
 MAPPINGS = ASSETS / "visual_vocabulary.json"
 WORDS = ASSETS / "words.json"
-SUPPORTED = {".png", ".jpg", ".jpeg", ".webp"}
+SUPPLEMENTAL = ASSETS / "supplemental_photo_catalog.json"
+REPORT = ROOT / "results/release-217-audit.json"
+VALID_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 
-
-def check_png(file):
-    data = file.read_bytes()
-    if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
-        return "invalid PNG signature/size"
-    pos, size_bytes, has_ihdr, has_idat, has_iend = 8, len(data), False, False, False
-    while pos + 12 <= size_bytes:
-        length = struct.unpack_from(">I", data, pos)[0]
-        chunk = data[pos + 4:pos + 8]
-        end = pos + length + 12
-        if end > size_bytes:
-            return "truncated PNG chunk"
-        stored_crc = struct.unpack_from(">I", data, end - 4)[0]
-        actual_crc = zlib.crc32(data[pos + 4:end - 4]) & 0xFFFFFFFF
-        if stored_crc != actual_crc:
-            return "invalid PNG chunk CRC"
-        if not has_ihdr:
-            if chunk != b"IHDR" or length != 13:
-                return "invalid/missing PNG IHDR"
-            width, height = struct.unpack_from(">II", data, pos + 8)
-            if not (width and height):
-                return "zero PNG dimensions"
-            has_ihdr = True
-        if chunk == b"IDAT":
-            has_idat = True
-        if chunk == b"IEND":
-            has_iend = True
-            if end != size_bytes:
-                return "trailing bytes after PNG IEND"
-            break
-        pos = end
-    if not (has_ihdr and has_idat and has_iend):
-        return "incomplete PNG structure"
-    return None
-
+def valid_webp(path):
+    data = path.read_bytes()
+    if len(data) < 20 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+        return False, "invalid WebP RIFF signature"
+    if int.from_bytes(data[4:8], "little") + 8 != len(data):
+        return False, "WebP RIFF file length mismatch"
+    chunk = data[12:16]
+    if chunk not in (b"VP8 ", b"VP8L", b"VP8X"):
+        return False, "missing WebP image chunk"
+    try:
+        from PIL import Image
+        with Image.open(path) as image:
+            image.load()
+            if image.format != "WEBP" or image.width < 1 or image.height < 1:
+                return False, "WebP decode or dimensions invalid"
+    except ImportError:
+        return False, "Pillow decoder unavailable: cannot certify WebP images"
+    except Exception as exc:
+        return False, "WebP decoding failed: " + str(exc)
+    return True, ""
 
 def main():
     errors = []
+    details = {"expected": {"words": 5126, "baseline_webp": 164,
+                            "new_webp": 53, "total_webp": 217}}
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    entries = manifest["images"]
-    original_dir = ASSETS / "images"
-    photos_dir = ASSETS / "additional_photos"
-    original = sorted(p for p in original_dir.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED)
-    additional = sorted(p for p in photos_dir.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED)
-    names = [entry["word"] for entry in entries]
-    if len(entries) != 53 or len(set(names)) != 53:
-        errors.append(f"manifest must have 53 unique photo names, got {len(entries)} rows / {len(set(names))} names")
-    if len(original) != 164:
-        errors.append(f"expected 164 baseline image files, found {len(original)}")
+    items = manifest["images"]
+    expected_new = {x["word"] + ".webp" for x in items}
+    if len(items) != 53 or len(expected_new) != 53:
+        errors.append("manifest must list exactly 53 unique photo concepts")
+    baseline = ASSETS / "images"
+    newdir = ASSETS / "additional_photos"
+    originals = sorted(p for p in baseline.glob("*") if p.suffix.lower() in VALID_EXT)
+    additional = sorted(p for p in newdir.glob("*") if p.suffix.lower() in VALID_EXT)
+    images = originals + additional
+    if len(originals) != 164:
+        errors.append(f"expected 164 baseline images, found {len(originals)}")
     if len(additional) != 53:
-        errors.append(f"expected 53 additional image files, found {len(additional)}")
-    expected = {f"{word}.png" for word in names}
-    actual = {p.name for p in additional}
-    for name in sorted(expected - actual):
-        errors.append(f"MISSING PHOTO additional_photos/{name}")
-    for name in sorted(actual - expected):
-        errors.append(f"UNEXPECTED PHOTO additional_photos/{name}")
-
-    hashes = {}
-    for file in original + additional:
-        if file.stat().st_size <= 0:
-            errors.append(f"EMPTY {file.relative_to(ASSETS)}")
+        errors.append(f"expected 53 additional images, found {len(additional)}")
+    for path in images:
+        if path.suffix.lower() != ".webp":
+            errors.append(f"NON-WEBP FILE: {path.relative_to(ASSETS)}")
+    actual_names = {p.name for p in additional}
+    for name in sorted(expected_new - actual_names):
+        errors.append("MISSING WEBP: additional_photos/" + name)
+    for name in sorted(actual_names - expected_new):
+        errors.append("UNEXPECTED IMAGE: additional_photos/" + name)
+    digest_paths = {}
+    for path in images:
+        if path.suffix.lower() != ".webp":
             continue
-        if file.suffix.lower() == ".png":
-            reason = check_png(file)
-            if reason:
-                errors.append(f"BROKEN PNG {file.relative_to(ASSETS)}: {reason}")
-        digest = hashlib.sha256(file.read_bytes()).hexdigest()
-        hashes.setdefault(digest, []).append(file.relative_to(ASSETS).as_posix())
-    duplicates = [v for v in hashes.values() if len(v) > 1]
+        valid, reason = valid_webp(path)
+        if not valid:
+            errors.append(f"BROKEN WEBP {path.relative_to(ASSETS)}: {reason}")
+            continue
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest_paths.setdefault(digest, []).append(path.relative_to(ASSETS).as_posix())
+    duplicates = [paths for paths in digest_paths.values() if len(paths) > 1]
     for paths in duplicates:
-        errors.append(f"DUPLICATE CONTENT: {', '.join(paths)}")
-
-    mapping_doc = json.loads(MAPPINGS.read_text(encoding="utf-8"))
-    mappings = mapping_doc["images"]
-    ids = [item["wordId"] for item in mappings]
-    if len(ids) != len(set(ids)):
-        errors.append("DUPLICATE wordId in visual_vocabulary.json: resolve replacement policy")
-    word_rows = json.loads(WORDS.read_text(encoding="utf-8"))
-    word_ids = {row["id"] for row in word_rows}
-    if len(word_rows) != 5126 or len(word_ids) != 5126:
-        errors.append(f"words.json: expected 5126 rows and unique IDs, got {len(word_rows)} / {len(word_ids)}")
-    referenced_assets = set()
-    for item in mappings:
-        asset = item["asset"]
-        if asset.startswith("/") or ".." in pathlib.PurePosixPath(asset).parts:
-            errors.append(f"unsafe asset path {asset}")
+        errors.append("DUPLICATE WEBP: " + ", ".join(paths))
+    words = json.loads(WORDS.read_text(encoding="utf-8"))
+    word_ids = {w["id"] for w in words}
+    if len(words) != 5126 or len(word_ids) != 5126:
+        errors.append(f"dictionary must have 5126 unique IDs, got {len(words)}/{len(word_ids)}")
+    mapping = json.loads(MAPPINGS.read_text(encoding="utf-8"))["images"]
+    mapped_ids = [item["wordId"] for item in mapping]
+    if len(mapped_ids) != len(set(mapped_ids)):
+        errors.append("duplicated wordId in visual vocabulary")
+    referenced = set()
+    for item in mapping:
+        rel = item.get("asset", "")
+        if not rel or rel.startswith("/") or ".." in pathlib.PurePosixPath(rel).parts:
+            errors.append("unsafe mapped asset path: " + rel)
             continue
-        file = ASSETS / asset
-        if not file.is_file():
-            errors.append(f"missing referenced asset {asset} for wordId {item['wordId']}")
+        if not rel.endswith(".webp"):
+            errors.append("mapped asset is not WebP: " + rel)
         if item["wordId"] not in word_ids:
-            errors.append(f"unknown word ID {item['wordId']} in mapping")
-        referenced_assets.add(asset)
-
-    for word in names:
-        asset = f"additional_photos/{word}.png"
-        if asset not in referenced_assets:
-            errors.append(f"UNLINKED PHOTO {asset}: add a valid wordId mapping or resolve overlapping concept")
-
-    report = {
-        "expected": {"words": 5126, "baseline_images": 164, "new_photos": 53},
-        "actual": {"words": len(word_rows), "baseline_images": len(original),
-                   "new_photos": len(additional), "unique_mapped_words": len(set(ids)),
-                   "linked_new_photos": len(expected & {x.removeprefix("additional_photos/") for x in referenced_assets if x.startswith("additional_photos/")})},
-        "duplicate_binary_groups": duplicates,
-        "errors": errors,
-        "status": "PASS" if not errors else "BLOCKED"
-    }
-    output = ROOT / "results" / "release-217-audit.json"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    if errors:
-        print(f"RELEASE BLOCKED: {len(errors)} integrity or linkage violations", file=sys.stderr)
+            errors.append("unknown mapped word ID: " + str(item["wordId"]))
+        if not (ASSETS / rel).is_file():
+            errors.append("missing mapped asset: " + rel)
+        referenced.add(rel)
+    # Compound words may live outside the 5126-word deck only when the user
+    # can reach them in a separately implemented supplemental media screen.
+    supplemental = []
+    if SUPPLEMENTAL.exists():
+        doc = json.loads(SUPPLEMENTAL.read_text(encoding="utf-8"))
+        supplemental = doc.get("images", [])
+        for item in supplemental:
+            asset = item.get("asset", "")
+            if item.get("titleEn", "").strip() == "" or not asset.startswith("additional_photos/") or not asset.endswith(".webp"):
+                errors.append("invalid supplemental image metadata: " + asset)
+            if not (ASSETS / asset).is_file():
+                errors.append("missing supplemental WebP: " + asset)
+            referenced.add(asset)
+        # Presence of metadata alone is not evidence that an Android user can
+        # navigate to these resources. This screen must be implemented too.
+        if supplemental and not (ROOT / "app/src/main/java/com/example/english1000/SupplementalPhotosActivity.kt").is_file():
+            errors.append("supplemental media screen not implemented")
+    unlinked = [f"additional_photos/{x['word']}.webp" for x in items
+                if f"additional_photos/{x['word']}.webp" not in referenced]
+    for path in unlinked:
+        errors.append("UNREACHABLE PHOTO: " + path)
+    if len(images) != 217:
+        errors.append(f"expected 217 total images, found {len(images)}")
+    details["actual"] = {"dictionary_rows": len(words),
+                         "baseline_images": len(originals),
+                         "additional_images": len(additional),
+                         "total_images": len(images),
+                         "decoded_unique_webp": len(digest_paths),
+                         "mapped_word_ids": len(set(mapped_ids)),
+                         "supplemental_entries": len(supplemental),
+                         "unlinked_photos": len(unlinked)}
+    details["duplicate_content_groups"] = duplicates
+    details["errors"] = errors
+    details["status"] = "PASS" if not errors else "BLOCKED"
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(details, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(details, ensure_ascii=False, indent=2))
     return 1 if errors else 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
