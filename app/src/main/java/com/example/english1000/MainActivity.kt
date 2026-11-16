@@ -760,6 +760,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(menu, historyCheck, top = 12)
         add(menu, button(if (uiEnglish) "Learning history" else "История ответов",
             white, blue) { showLearningHistory() }, 50, 8)
+        add(menu, button(if (uiEnglish) "My dictionary and history" else "Мой словарь и история",
+            neutralSurface, neutralInk) {
+            startActivity(Intent(this, VocabularyHistoryActivity::class.java))
+        }, 50, 8)
         add(menu, button(if (uiEnglish) "Review due words" else "Что повторить",
             neutralSurface, neutralInk) { showReviewRecommendations() }, 50, 8)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
@@ -967,7 +971,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         popup.menu.add(0, 1, 0, if (uiEnglish) "Appearance and settings" else "Оформление и настройки")
         popup.menu.add(0, 2, 1, if (uiEnglish) "Start new block" else "Начать новый блок")
         popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
-        popup.menu.add(0, 4, 3, if (uiEnglish) "Learning history" else "История ответов")
+        popup.menu.add(0, 4, 3, if (uiEnglish) "My dictionary and history" else "Мой словарь и история")
         popup.menu.add(0, 5, 4, if (uiEnglish) "Review due words" else "Что повторить")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -982,7 +986,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                         .setPositiveButton("OK", null).show()
                     true
                 }
-                4 -> { showLearningHistory(); true }
+                4 -> { startActivity(Intent(this, VocabularyHistoryActivity::class.java)); true }
                 5 -> { showReviewRecommendations(); true }
                 else -> false
             }
