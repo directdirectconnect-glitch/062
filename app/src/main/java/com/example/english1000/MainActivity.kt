@@ -973,6 +973,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
         popup.menu.add(0, 4, 3, if (uiEnglish) "My dictionary and history" else "Мой словарь и история")
         popup.menu.add(0, 5, 4, if (uiEnglish) "Review due words" else "Что повторить")
+        popup.menu.add(0, 6, 5, if (uiEnglish) "Extra photo phrases" else "Дополнительные фотографии")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> { openSettingsDialog(); true }
@@ -988,6 +989,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 }
                 4 -> { startActivity(Intent(this, VocabularyHistoryActivity::class.java)); true }
                 5 -> { showReviewRecommendations(); true }
+                6 -> { startActivity(Intent(this, SupplementalPhotosActivity::class.java)); true }
                 else -> false
             }
         }
