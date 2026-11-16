@@ -135,7 +135,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         GradientDrawable().apply {
             setColor(color)
             cornerRadius = px(if (corners == 12) 20 else corners).toFloat()
-            setStroke(px(1), Color.rgb(166, 143, 108))
+            setStroke(px(2), Color.rgb(255, 195, 62))
         }
 
     private fun text(value: String, size: Float, color: Int = ink, bold: Boolean = false) =
@@ -144,7 +144,7 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             textSize = size
             setTextColor(color)
             gravity = Gravity.CENTER
-            typeface = Typeface.create("sans-serif-light", if (bold) Typeface.NORMAL else Typeface.NORMAL)
+            typeface = Typeface.create("sans-serif-light", if (bold) Typeface.BOLD else Typeface.NORMAL)
             letterSpacing = 0.015f
         }
 
@@ -155,8 +155,8 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
             letterSpacing = 0.015f
             isAllCaps = false
-            setTextColor(if (prominent) opposite else ink)
-            background = shape(if (prominent) ink else secondary)
+            setTextColor(if (prominent) Color.rgb(7, 28, 50) else if (dark) Color.WHITE else ink)
+            background = shape(if (prominent) Color.rgb(255, 199, 67) else secondary)
             setOnClickListener { onClick() }
         }
 
@@ -178,11 +178,23 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
         scroll.addView(root)
         setContentView(scroll)
 
-        add(root, text(if (uiEnglish) "Translate a word" else "Перевести слово",
-            29f, ink, true).apply {
-            gravity = Gravity.START
-            contentDescription = if (uiEnglish) "ASK A WORD" else "СПРОСИ СЛОВО"
+        add(root, text("English Words", 27f, ink, true).apply {
+            gravity = Gravity.CENTER
         })
+        add(root, text("L A N G U A G E   L E A R N I N G", 10f,
+            Color.rgb(255, 199, 67)).apply { gravity = Gravity.CENTER }, 3)
+        val titleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        titleRow.addView(action("‹") { finish() },
+            LinearLayout.LayoutParams(px(52), px(50)))
+        titleRow.addView(text(if (uiEnglish) "Translate a word" else "Перевести слово",
+            25f, ink, true).apply {
+            gravity = Gravity.CENTER
+            contentDescription = if (uiEnglish) "ASK A WORD" else "СПРОСИ СЛОВО"
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        add(root, titleRow, 14)
         add(root, text(
             if (uiEnglish) "Say a Russian word. I'll pronounce its English translation."
             else "Назови русское слово — услышишь английский перевод.",
@@ -256,6 +268,9 @@ class AskWordActivity : Activity(), TextToSpeech.OnInitListener {
             showPersonalWords()
         }
         add(root, historyButton, 10)
+        add(root, action(if (uiEnglish) "Dictionary and history" else "Мой словарь и история") {
+            startActivity(Intent(this, VocabularyHistoryActivity::class.java))
+        }, 8)
         examplesPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(px(12), px(12), px(12), px(12))
