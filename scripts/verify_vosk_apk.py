@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
-APK = ROOT / "app/build/outputs/apk/debug/app-debug.apk"
+APK = Path(os.environ["ENGLISHWORDS_TEST_APK"]) if "ENGLISHWORDS_TEST_APK" in os.environ else ROOT / "app/build/outputs/apk/debug/app-debug.apk"
 EXPECTED = ("assets/speech/en.zip", "assets/speech/ru.zip")
 
 

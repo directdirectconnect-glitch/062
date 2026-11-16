@@ -40,4 +40,16 @@ class VoiceAnswerMatcherTest {
     @Test fun emptyTranscriptNotCredited() {
         assertFalse(VoiceAnswerMatcher.matches("...", "run", 1))
     }
+
+    @Test fun nBestCandidateCanConfirmCorrectSpeech() {
+        assertTrue(VoiceAnswerMatcher.matchesAny(listOf("rain", "run"), "run", 1))
+    }
+
+    @Test fun nBestCandidatesDoNotAcceptWrongAnswer() {
+        assertFalse(VoiceAnswerMatcher.matchesAny(listOf("rain", "ran"), "run", 1))
+    }
+
+    @Test fun emptyCandidateListCannotPass() {
+        assertFalse(VoiceAnswerMatcher.matchesAny(emptyList(), "house", 1))
+    }
 }
