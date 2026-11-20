@@ -21,7 +21,7 @@ internal class VisualVocabularyCatalog(private val context: Context) {
                 val item = items.optJSONObject(i) ?: continue
                 val id = item.optInt("wordId", -1)
                 val file = item.optString("asset", "")
-                if (id < 0 || !file.matches(Regex("(images|additional_photos)/[a-zA-Z0-9_/-]+\\.(png|webp|jpg|jpeg)"))) continue
+                if (id < 0 || !file.matches(Regex("(images|additional_photos|extra_photos)/[a-zA-Z0-9_/-]+\\.(png|webp|jpg|jpeg)"))) continue
                 if (".." in file) continue
                 put(id, Entry(id, file, item.optString("altEn"), item.optString("altRu")))
             }
