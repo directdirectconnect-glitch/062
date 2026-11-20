@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strict 217-WebP release gate: real Android assets, not Drive references.
+"""Strict 267-WebP release gate: real Android assets, not Drive references.
 
 Do not bypass this gate when building a production release. All images must
 be present in the checked-out repository, decodable, unique and reachable.
@@ -15,7 +15,7 @@ MANIFEST = ROOT / "build-requests/217-photo-drive-staging-manifest.json"
 MAPPINGS = ASSETS / "visual_vocabulary.json"
 WORDS = ASSETS / "words.json"
 SUPPLEMENTAL = ASSETS / "supplemental_photo_catalog.json"
-REPORT = ROOT / "results/release-217-audit.json"
+REPORT = ROOT / "results/release-267-audit.json"
 VALID_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 
 def valid_webp(path):
@@ -42,7 +42,7 @@ def valid_webp(path):
 def main():
     errors = []
     details = {"expected": {"words": 5126, "baseline_webp": 164,
-                            "new_webp": 53, "total_webp": 217}}
+                            "new_webp": 53, "extra_webp": 50, "total_webp": 267}}
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     items = manifest["images"]
     expected_new = {x["word"] + ".webp" for x in items}
@@ -52,7 +52,11 @@ def main():
     newdir = ASSETS / "additional_photos"
     originals = sorted(p for p in baseline.glob("*") if p.suffix.lower() in VALID_EXT)
     additional = sorted(p for p in newdir.glob("*") if p.suffix.lower() in VALID_EXT)
-    images = originals + additional
+    extra_dir = ASSETS / "extra_photos"
+    extra = sorted(p for p in extra_dir.glob("*") if p.suffix.lower() in VALID_EXT)
+    images = originals + additional + extra
+    if len(extra) != 50:
+        errors.append(f"expected 50 November photos, found {len(extra)}")
     if len(originals) != 164:
         errors.append(f"expected 164 baseline images, found {len(originals)}")
     if len(additional) != 53:
@@ -120,11 +124,16 @@ def main():
                 if f"additional_photos/{x['word']}.webp" not in referenced]
     for path in unlinked:
         errors.append("UNREACHABLE PHOTO: " + path)
-    if len(images) != 217:
-        errors.append(f"expected 217 total images, found {len(images)}")
+    unlinked_extra = [p.relative_to(ASSETS).as_posix() for p in extra
+                      if p.relative_to(ASSETS).as_posix() not in referenced]
+    for path in unlinked_extra:
+        errors.append("UNREACHABLE NOVEMBER PHOTO: " + path)
+    if len(images) != 267:
+        errors.append(f"expected 267 total images, found {len(images)}")
     details["actual"] = {"dictionary_rows": len(words),
                          "baseline_images": len(originals),
                          "additional_images": len(additional),
+                         "extra_images": len(extra),
                          "total_images": len(images),
                          "decoded_unique_webp": len(digest_paths),
                          "mapped_word_ids": len(set(mapped_ids)),
