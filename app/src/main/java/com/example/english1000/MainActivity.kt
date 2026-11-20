@@ -136,6 +136,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var weightChoice = 1
     private var writingChoice = 0
     private var appearanceRoot: View? = null
+    private lateinit var homeScreen: ScrollView
+    private lateinit var lessonScreen: ScrollView
+    private var onLessonScreen = false
+    private lateinit var lessonHeaderTitle: TextView
+
     private lateinit var languageSpinner: Spinner
     private lateinit var fontSpinner: Spinner
     private lateinit var weightSpinner: Spinner
@@ -496,8 +501,24 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(dp(if (wide) 24 else 14), dp(16), dp(if (wide) 24 else 14), dp(24))
         }
         scroll.addView(root)
-        setContentView(scroll)
-        appearanceRoot = root
+        lessonScreen = scroll
+        homeScreen = ScrollView(this).apply {
+            isFillViewport = true
+            setBackgroundColor(bg)
+        }
+        val homeRoot = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(16))
+        }
+        homeScreen.addView(homeRoot)
+        val screenHost = android.widget.FrameLayout(this)
+        screenHost.addView(homeScreen)
+        screenHost.addView(lessonScreen)
+        setContentView(screenHost)
+        onLessonScreen = false
+        lessonScreen.visibility = View.GONE
+        homeScreen.visibility = View.VISIBLE
+        appearanceRoot = screenHost
 
         // Premium home navigation: exactly three primary actions, no separate offline mode.
         val header = LinearLayout(this).apply {
@@ -520,7 +541,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             contentDescription = if (uiEnglish) "Settings" else "Настройки"
         }
         header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
-        add(root, header)
+        add(homeRoot, header)
 
         // Approved P01 visual baseline, 2026-11-16 v1.0 CURRENT:
         // Greeting and primary navigation belong on the home screen.
@@ -537,7 +558,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             gravity = Gravity.CENTER
             maxLines = 3
         }, top = 12)
-        add(root, homeGreeting, top = 16)
+        add(homeRoot, homeGreeting, top = 16)
 
         fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
             val card = LinearLayout(this).apply {
@@ -580,15 +601,17 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             orientation = LinearLayout.VERTICAL
         }
         add(modeActions, premiumAction("Перевести слово", "A ⇄ a") {
-            showAskWordOptions()
+            startActivity(Intent(this, AskWordActivity::class.java).apply {
+                putExtra(AskWordActivity.EXTRA_INCLUDE_EXAMPLES, ExampleModeSetup.selected(this@MainActivity))
+            })
         }, top = 10)
         add(modeActions, premiumAction("Учить слова", "▤") {
-            showLearningOptions()
+            openLessonScreen("learn")
         }, top = 14)
         add(modeActions, premiumAction("Проверка знаний", "✓") {
-            startSession(modeOverride = "check")
+            openLessonScreen("check")
         }, top = 14)
-        add(root, modeActions, top = 20)
+        add(homeRoot, modeActions, top = 20)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -822,6 +845,23 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 }
             }
 
+        val lessonTop = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        lessonTop.addView(button("⌂", neutralSurface, neutralInk) {
+            returnHomeScreen()
+        }.apply {
+            contentDescription = if (uiEnglish) "Home" else "На главный экран"
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        lessonHeaderTitle = text("", 20f, navy, true)
+        lessonTop.addView(lessonHeaderTitle, LinearLayout.LayoutParams(0, dp(54), 1f))
+        lessonTop.addView(button("⚙", neutralSurface, neutralInk) {
+            openSettingsDialog()
+        }.apply {
+            contentDescription = if (uiEnglish) "Settings" else "Настройки"
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        add(root, lessonTop, top = 8)
         counter = text("Выбери блок в меню", 16f, navy, true)
         add(root, counter, top = 24)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
@@ -951,6 +991,40 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
         applyTypography(root)
+    }
+
+    private fun showLessonScreen() {
+        onLessonScreen = true
+        homeScreen.visibility = View.GONE
+        lessonScreen.visibility = View.VISIBLE
+        lessonHeaderTitle.text = if (learningMode) {
+            if (uiEnglish) "Learn words" else "Учить слова"
+        } else if (uiEnglish) "Knowledge test" else "Проверка знаний"
+        lessonScreen.scrollTo(0, 0)
+    }
+
+    private fun returnHomeScreen() {
+        handler.removeCallbacks(advanceRunnable)
+        pauseLearningAudio()
+        if (::tts.isInitialized) tts.stop()
+        persistActiveSession(commitNow = true)
+        onLessonScreen = false
+        lessonScreen.visibility = View.GONE
+        homeScreen.visibility = View.VISIBLE
+    }
+
+    private fun openLessonScreen(mode: String) {
+        if (running && ((mode == "learn") == learningMode)) {
+            showLessonScreen()
+            if (learningMode && !learningPaused) resumeLearningWord()
+            return
+        }
+        startSession(modeOverride = mode)
+    }
+
+    override fun onBackPressed() {
+        if (onLessonScreen) returnHomeScreen()
+        else super.onBackPressed()
     }
 
     private fun updateDeviceCapabilities() {
@@ -1140,6 +1214,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         index = 0; running = true; answering = false
         settingsDialog?.dismiss()
         menu.visibility = View.GONE
+        showLessonScreen()
         next()
     }
     private fun key(w: Word) = "${questionDirection}_${w.id}"
