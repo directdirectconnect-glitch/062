@@ -881,7 +881,29 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             "Открой ⋮ и начни урок", 37f, navy, true).apply {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
-        add(card, prompt)
+        val wordRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        wordRow.addView(prompt, LinearLayout.LayoutParams(0, -2, 1f))
+        repeat = button("🔊", white, blue) {
+            current?.let { word ->
+                if (learningMode) {
+                    pauseLearningAudio()
+                    narrateLearningWord()
+                } else {
+                    handler.removeCallbacks(advanceRunnable)
+                    say(question(word), questionLocale()) {
+                        if (running && current?.id == word.id && answering) scheduleAdvance()
+                    }
+                }
+            }
+        }.apply {
+            textSize = 22f
+            contentDescription = if (uiEnglish) "Speak current word" else "Озвучить слово"
+        }
+        wordRow.addView(repeat, LinearLayout.LayoutParams(dp(54), dp(54)))
+        add(card, wordRow)
         wordImage = ImageView(this).apply {
             visibility = View.GONE
             scaleType = ImageView.ScaleType.FIT_CENTER
@@ -928,21 +950,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
         listen = button("Говори перевод", navy) { listenNow() }
         add(root, listen, 64, 8)
-        repeat = button("Слушать слово", white, blue) {
-            current?.let { word ->
-                if (learningMode) {
-                    learningPaused = false
-                    narrateLearningWord()
-                    updateButtons()
-                } else {
-                    handler.removeCallbacks(advanceRunnable)
-                    say(question(word), questionLocale()) {
-                        if (running && current?.id == word.id && answering) scheduleAdvance()
-                    }
-                }
-            }
-        }
-        add(root, repeat, 56, 12)
         learningPauseButton = button(if (uiEnglish) "Pause listening" else "Пауза",
             neutralSurface, neutralInk) {
             if (running && learningMode) {
@@ -956,7 +963,26 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 updateButtons()
             }
         }.apply { visibility = View.GONE }
-        add(root, learningPauseButton, 52, 8)
+        val navigationIcons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        val previousWord = button("‹", neutralSurface, neutralInk) {
+            if (running && index > 0) {
+                handler.removeCallbacks(advanceRunnable)
+                pauseLearningAudio()
+                index--
+                next()
+            }
+        }.apply {
+            textSize = 28f
+            contentDescription = if (uiEnglish) "Previous word" else "Предыдущее слово"
+        }
+        navigationIcons.addView(previousWord, LinearLayout.LayoutParams(0, dp(54), 1f))
+        learningPauseButton.text = "⏸"
+        learningPauseButton.textSize = 24f
+        learningPauseButton.contentDescription = if (uiEnglish) "Pause or resume" else "Пауза или продолжить"
+        navigationIcons.addView(learningPauseButton, LinearLayout.LayoutParams(0, dp(54), 1f))
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         ratingRow = rating
         correct = button("Знаю", blue) { grade(true, "Отмечено: знаю") }
@@ -975,7 +1001,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 next()
             } else if (running && answering) advanceToNext()
         }.apply { visibility = View.GONE }
-        add(root, nextWordButton, 54, 12)
+        nextWordButton.text = "›"
+        nextWordButton.textSize = 28f
+        nextWordButton.contentDescription = if (uiEnglish) "Next word" else "Следующее слово"
+        navigationIcons.addView(nextWordButton, LinearLayout.LayoutParams(0, dp(54), 1f))
+        add(root, navigationIcons, top = 12)
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
@@ -1109,20 +1139,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         incorrect.isEnabled = running && testing && !answering
         listen.isEnabled = running && testing && !answering
         repeat.isEnabled = running && (learningMode || !answering)
-        repeat.text = if (learningMode) {
-            if (uiEnglish) "Repeat English + translation" else "Повторить слово и перевод"
-        } else if (uiEnglish) "Listen to word" else "Слушать слово"
+        repeat.text = "🔊"
         learningPauseButton.visibility = if (running && learningMode)
             View.VISIBLE else View.GONE
-        learningPauseButton.text = if (learningPaused) {
-            if (uiEnglish) "Resume listening" else "Продолжить"
-        } else {
-            if (uiEnglish) "Pause listening" else "Пауза"
-        }
+        learningPauseButton.text = if (learningPaused) "▶" else "⏸"
         skip.visibility = if (testing) View.VISIBLE else View.GONE
         skip.isEnabled = running && testing && !answering
-        nextWordButton.visibility = if (running && (learningMode || answering))
-            View.VISIBLE else View.GONE
+        nextWordButton.visibility = if (running) View.VISIBLE else View.INVISIBLE
     }
 
     private fun startSession(
@@ -1536,8 +1559,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
         if (!ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
-            status.text = if (uiEnglish) "Install both offline TTS voices in Android settings."
-                else "Для прослушивания нужны офлайн-голоса английского и русского языка Android."
+            // No offline TTS voice must not freeze learning on the first card.
+            pauseLearningAudio()
+            status.text = if (uiEnglish)
+                "Offline voice unavailable; next word in $learningPauseSeconds seconds"
+            else "Озвучивание недоступно; следующее слово через $learningPauseSeconds с"
+            handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
             return
         }
         pauseLearningAudio()
@@ -2200,11 +2227,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onResume() {
         super.onResume()
-        if (resumeLearningAfterForeground) {
+        if (resumeLearningAfterForeground && onLessonScreen) {
             resumeLearningAfterForeground = false
             handler.post { if (running && learningMode && !learningPaused) resumeLearningWord() }
         }
-        if (resumeAnswerTimerAfterForeground) {
+        if (resumeAnswerTimerAfterForeground && onLessonScreen) {
             resumeAnswerTimerAfterForeground = false
             handler.post { if (running && !learningMode && answering) scheduleAdvance() }
         }
