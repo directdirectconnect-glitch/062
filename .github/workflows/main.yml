@@ -27,9 +27,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Verify integrated Android source
+      - name: Verify integrated Android sources
         run: python3 scripts/validate_integration.py
-      - name: Restore SHA-256-locked 217 WebP source bundle
+      - name: Restore 217 WebP base media with SHA-256
         if: startsWith(github.ref, 'refs/heads/release/')
         shell: bash
         run: |
@@ -46,36 +46,30 @@ jobs:
           if [ -f scripts/prepare_vosk_models.py ]; then
             python3 scripts/prepare_vosk_models.py
           fi
-      - name: Install WebP decoding validator
+      - name: Install WebP decoder
         if: startsWith(github.ref, 'refs/heads/release/')
         run: python3 -m pip install --disable-pip-version-check Pillow==11.3.0
-      - name: Verify all 217 WebP images and dictionary mappings
-        id: release_assets
+      - name: Validate original 217 WebP media
         if: startsWith(github.ref, 'refs/heads/release/')
         run: python3 scripts/check_release_217_assets.py
-      - name: Upload release asset audit
-        if: always() && startsWith(github.ref, 'refs/heads/release/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: EnglishWords-217-Release-Asset-Audit
-          path: results/release-217-audit.json
-          if-no-files-found: warn
-      - name: Import 50 approved November WebP images into dictionary
+      - name: Import and validate extra 50 WebP plus word mappings
         if: startsWith(github.ref, 'refs/heads/release/')
         run: python3 scripts/import_50_webp_267.py
-      - name: Upload 267-photo image audit
+      - name: Upload media audit
         if: always() && startsWith(github.ref, 'refs/heads/release/')
         uses: actions/upload-artifact@v4
         with:
           name: EnglishWords-267-Release-Asset-Audit
-          path: results/267-webp-audit.json
+          path: |
+            results/release-217-audit.json
+            results/267-webp-audit.json
           if-no-files-found: warn
       - name: Run unit tests and assemble APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
-      - name: Verify offline voice models and native libraries
+      - name: Verify offline voice models and libraries
         if: hashFiles('scripts/verify_vosk_apk.py') != ''
         run: python3 scripts/verify_vosk_apk.py
-      - name: Verify compiled APK contains exactly 267 WebP
+      - name: Verify compiled APK includes exactly 267 WebP
         if: startsWith(github.ref, 'refs/heads/release/')
         shell: bash
         run: |
@@ -85,47 +79,20 @@ jobs:
           test -n "$APK"
           unzip -Z1 "$APK" | grep -E '^assets/(images|additional_photos)/.*\.(webp|png|jpg|jpeg)$' > results/apk-image-inventory.txt
           test "$(wc -l < results/apk-image-inventory.txt)" -eq 267
-          test "$(grep -c '\.webp
-          echo "PASS: 267 WebP in APK; 0 PNG/JPEG in the vocabulary media asset paths" > results/apk-image-proof.txt
+          test "$(grep -c '\.webp$' results/apk-image-inventory.txt)" -eq 267
+          echo "PASS: exactly 267 vocabulary images, all WebP" > results/apk-image-proof.txt
           sha256sum "$APK" >> results/apk-image-proof.txt
-      - name: Record APK SHA-256 and provenance
+      - name: Record APK provenance and SHA-256
         run: |
           mkdir -p results
           sha256sum app/build/outputs/apk/debug/*.apk | tee results/apk-sha256.txt
           echo "Commit: ${GITHUB_SHA}" > results/apk-provenance.txt
-          echo "App integration and release image gate completed; physical S20 FE installation is separately required." >> results/apk-provenance.txt
-      - name: Upload build provenance
+          echo "Release media gate verifies 267 WebP; physical device QA and production signing separate." >> results/apk-provenance.txt
+      - name: Upload build proof
         if: always() && startsWith(github.ref, 'refs/heads/release/')
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-Release-Provenance
-          path: |
-            results/apk-sha256.txt
-            results/apk-provenance.txt
-            results/apk-image-inventory.txt
-            results/apk-image-proof.txt
-            results/267-webp-audit.json
-          if-no-files-found: warn
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: EnglishWords-APK
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
- results/apk-image-inventory.txt)" -eq 267
-          echo "PASS: 217 WebP in APK; 0 PNG/JPEG in the vocabulary media asset paths" > results/apk-image-proof.txt
-          sha256sum "$APK" >> results/apk-image-proof.txt
-      - name: Record APK SHA-256 and provenance
-        run: |
-          mkdir -p results
-          sha256sum app/build/outputs/apk/debug/*.apk | tee results/apk-sha256.txt
-          echo "Commit: ${GITHUB_SHA}" > results/apk-provenance.txt
-          echo "App integration and release image gate completed; physical S20 FE installation is separately required." >> results/apk-provenance.txt
-      - name: Upload build provenance
-        if: always() && startsWith(github.ref, 'refs/heads/release/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: EnglishWords-Release-Provenance
+          name: EnglishWords-267-Release-Provenance
           path: |
             results/apk-sha256.txt
             results/apk-provenance.txt
@@ -135,6 +102,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-APK
+          name: EnglishWords-267-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
