@@ -27,6 +27,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Restore all 5126 translated Excel entries and lexical phrases
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 scripts/import_excel_5126_examples.py
       - name: Verify integrated Android source
         run: python3 scripts/validate_integration.py
       - name: Restore immutable 217 WebP base pack
@@ -63,6 +66,7 @@ jobs:
           path: |
             results/release-50-import.json
             results/release-267-audit.json
+            results/excel-5126-content-audit.json
           if-no-files-found: warn
       - name: Run unit tests and assemble Android APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
