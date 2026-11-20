@@ -139,6 +139,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var homeScreen: ScrollView
     private lateinit var lessonScreen: ScrollView
     private var onLessonScreen = false
+    private var checkPaused = false
     private lateinit var lessonHeaderTitle: TextView
 
     private lateinit var languageSpinner: Spinner
@@ -952,7 +953,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(root, listen, 64, 8)
         learningPauseButton = button(if (uiEnglish) "Pause listening" else "Пауза",
             neutralSurface, neutralInk) {
-            if (running && learningMode) {
+            if (running && !learningMode) {
+                checkPaused = !checkPaused
+                if (checkPaused) {
+                    handler.removeCallbacks(advanceRunnable)
+                    if (::tts.isInitialized) tts.stop()
+                } else if (answering) {
+                    scheduleAdvance()
+                }
+                updateButtons()
+            } else if (running && learningMode) {
                 learningPaused = !learningPaused
                 if (learningPaused) {
                     pauseLearningAudio()
@@ -1034,6 +1044,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun returnHomeScreen() {
+        resumeLearningAfterForeground = false
+        resumeAnswerTimerAfterForeground = false
         handler.removeCallbacks(advanceRunnable)
         pauseLearningAudio()
         if (::tts.isInitialized) tts.stop()
@@ -1047,6 +1059,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (running && ((mode == "learn") == learningMode)) {
             showLessonScreen()
             if (learningMode && !learningPaused) resumeLearningWord()
+            else if (!learningMode && answering && !checkPaused) scheduleAdvance()
             return
         }
         startSession(modeOverride = mode)
@@ -1105,10 +1118,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (learningMode) pauseLearningAudio()
         menu.visibility = View.VISIBLE
         settingsDialog?.show()
-        settingsDialog?.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.92f).toInt().coerceAtMost(dp(560)),
-            -2
-        )
+        settingsDialog?.window?.apply {
+            setGravity(Gravity.BOTTOM)
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.96f).toInt().coerceAtMost(dp(620)),
+                (resources.displayMetrics.heightPixels * 0.75f).toInt()
+            )
+        }
         applyTypography(menu)
     }
 
@@ -1140,9 +1156,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         listen.isEnabled = running && testing && !answering
         repeat.isEnabled = running && (learningMode || !answering)
         repeat.text = "🔊"
-        learningPauseButton.visibility = if (running && learningMode)
-            View.VISIBLE else View.GONE
-        learningPauseButton.text = if (learningPaused) "▶" else "⏸"
+        learningPauseButton.visibility = if (running) View.VISIBLE else View.INVISIBLE
+        learningPauseButton.text = if ((learningMode && learningPaused) ||
+            (!learningMode && checkPaused)) "▶" else "⏸"
         skip.visibility = if (testing) View.VISIBLE else View.GONE
         skip.isEnabled = running && testing && !answering
         nextWordButton.visibility = if (running) View.VISIBLE else View.INVISIBLE
@@ -1186,6 +1202,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
         includeExamplesDuringLearning = includeExamplesOverride ?: ExampleModeSetup.selected(this)
         learningPaused = false
+        checkPaused = false
         assistedThisWord = false
         sessionId = UUID.randomUUID().toString()
         forcedReviewDirections = emptyMap()
@@ -1616,7 +1633,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun scheduleAdvance() {
         handler.removeCallbacks(advanceRunnable)
-        if (!running || !answering || examplesExpanded || familyExpanded ||
+        if (!running || !answering || checkPaused || examplesExpanded || familyExpanded ||
             menu.visibility == View.VISIBLE || nextDelaySeconds == 0) return
         handler.postDelayed(advanceRunnable, nextDelaySeconds * 1000L)
     }
