@@ -1,6 +1,6 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android { namespace = "com.example.english1000"; compileSdk = 35
- defaultConfig { applicationId = "com.example.english1000"; minSdk = 26; targetSdk = 35; versionCode = 124; versionName = "1.0.24"; ndk { abiFilters += listOf("arm64-v8a") } }
+ defaultConfig { applicationId = "com.example.english1000"; minSdk = 26; targetSdk = 35; versionCode = 124; versionName = "1.0.24"; ndk { abiFilters += listOf(providers.gradleProperty("englishWordsAbi").getOrElse("arm64-v8a")) } }
  buildTypes { getByName("debug") { applicationIdSuffix = ".offlinevoskqa"; versionNameSuffix = "-offline-vosk-qa" } }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
