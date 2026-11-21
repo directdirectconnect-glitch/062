@@ -32,6 +32,10 @@ internal class SherpaOfflineSpeech(private val context: Context) {
                 return@execute
             }
             try {
+                en?.release()
+                ru?.release()
+                en = null
+                ru = null
                 en = create("en")
                 ru = create("ru")
                 done(true, "Bundled EN/RU voices initialized")
