@@ -84,6 +84,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var automaticAudioCheckRunning = false
     private var automaticAudioRepairAttempted = false
     private var speechPlaybackRepairAttempted = false
+    private var audioWatchdogToken = 0
     private lateinit var wordImage: ImageView
     private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
@@ -1445,6 +1446,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             runOnUiThread {
                 automaticAudioCheckRunning = false
                 automaticAudioCheckDone = true
+                audioWatchdogToken++
                 if (!result.passed) {
                     status.text = "Проверка звука: ${result.code}. Восстановление голоса…"
                     if (!automaticAudioRepairAttempted &&
@@ -2092,10 +2094,28 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun pauseLearningAudio() {
+        audioWatchdogToken++
         learningSequenceId++
         handler.removeCallbacks(learningAdvanceRunnable)
         if (::tts.isInitialized) tts.stop()
         bundledSpeech.stop()
+    }
+
+    private fun scheduleAudioFailOpenTimeout(wordId: Int, seconds: Long = 15L) {
+        val token = ++audioWatchdogToken
+        handler.postDelayed({
+            if (token != audioWatchdogToken || !running || !learningMode ||
+                learningPaused || page != Page.LEARN || current?.id != wordId) return@postDelayed
+            automaticAudioCheckDone = true
+            automaticAudioCheckRunning = false
+            audioWatchdogToken++
+            bundledSpeech.stop()
+            status.text = "Звук недоступен: обучение продолжается без озвучивания"
+            if (!manualLearning) {
+                handler.removeCallbacks(learningAdvanceRunnable)
+                handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
+            }
+        }, seconds * 1000L)
     }
 
     private fun resumeLearningWord() {
@@ -2109,6 +2129,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
         if (lessonSound && !automaticAudioCheckDone) {
             if (automaticAudioCheckRunning) return
+            scheduleAudioFailOpenTimeout(word.id, 8L)
             automaticAudioCheckRunning = true
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequestCode)
@@ -2119,6 +2140,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         pauseLearningAudio()
         if (lessonSound && bundledSpeechReady) {
+            scheduleAudioFailOpenTimeout(word.id)
             val playbackId = learningSequenceId
             val wordId = word.id
             status.text = if (uiEnglish) "Speaking with bundled offline voices"
@@ -2142,6 +2164,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                         runOnUiThread {
                                             if (running && learningMode && !learningPaused &&
                                                 current?.id == wordId && playbackId == learningSequenceId) {
+                                                audioWatchdogToken++
                                                 status.text = if (retried) "Голос восстановлен"
                                                     else "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
                                                 if (!manualLearning) handler.postDelayed(
@@ -2150,6 +2173,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                         }
                                     }
                                 } else {
+                                    audioWatchdogToken++
                                     status.text = "Восстановление не удалось: $detail"
                                     if (!manualLearning) handler.postDelayed(
                                         learningAdvanceRunnable, learningPauseSeconds * 1000L)
@@ -2158,6 +2182,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                         }
                         return@runOnUiThread
                     }
+                    audioWatchdogToken++
                     if (!success) status.text = "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
                     if (!manualLearning) handler.postDelayed(
                         learningAdvanceRunnable, learningPauseSeconds * 1000L)
