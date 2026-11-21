@@ -2123,12 +2123,42 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 else "Озвучивание встроенными офлайн-голосами"
             bundledSpeech.speakPair(word.en, word.ru) { success ->
                 runOnUiThread {
-                    if (running && learningMode && !learningPaused && current?.id == wordId &&
-                        playbackId == learningSequenceId && !manualLearning) {
-                        if (!success) status.text = if (uiEnglish) "Bundled TTS playback failed"
-                            else "Ошибка воспроизведения встроенного синтезатора"
-                        handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
+                    if (!running || !learningMode || learningPaused || current?.id != wordId ||
+                        playbackId != learningSequenceId) return@runOnUiThread
+                    if (!success && !automaticAudioRepairAttempted) {
+                        automaticAudioRepairAttempted = true
+                        status.text = "Сбой озвучивания: восстановление офлайн-голоса…"
+                        bundledSpeech.prepare { ready, detail ->
+                            bundledSpeechReady = ready
+                            runOnUiThread {
+                                if (!running || !learningMode || learningPaused ||
+                                    current?.id != wordId || playbackId != learningSequenceId) {
+                                    return@runOnUiThread
+                                }
+                                if (ready) {
+                                    bundledSpeech.speakPair(word.en, word.ru) { retried ->
+                                        runOnUiThread {
+                                            if (running && learningMode && !learningPaused &&
+                                                current?.id == wordId && playbackId == learningSequenceId) {
+                                                status.text = if (retried) "Голос восстановлен"
+                                                    else "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
+                                                if (!manualLearning) handler.postDelayed(
+                                                    learningAdvanceRunnable, learningPauseSeconds * 1000L)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    status.text = "Восстановление не удалось: $detail"
+                                    if (!manualLearning) handler.postDelayed(
+                                        learningAdvanceRunnable, learningPauseSeconds * 1000L)
+                                }
+                            }
+                        }
+                        return@runOnUiThread
                     }
+                    if (!success) status.text = "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
+                    if (!manualLearning) handler.postDelayed(
+                        learningAdvanceRunnable, learningPauseSeconds * 1000L)
                 }
             }
             return
