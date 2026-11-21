@@ -998,6 +998,21 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         setting(menu, "Скорость произношения", speedSpinner)
         voiceInfo = text("Загрузка списка установленных голосов...", 13f, muted)
         add(menu, voiceInfo, top = 7)
+        add(menu, button("Установить офлайн-голоса EN / RU", neutralSurface, blue) {
+            runCatching {
+                startActivity(Intent("com.android.settings.TTS_SETTINGS"))
+            }.onFailure {
+                runCatching { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) }
+            }
+        }, top = 8)
+        add(menu, button("Обновить список офлайн-голосов", neutralSurface, blue) {
+            if (::tts.isInitialized && ttsReady) {
+                englishOfflineVoices = offlineVoicesFor(Locale.US)
+                russianOfflineVoices = offlineVoicesFor(Locale("ru", "RU"))
+                updateOfflineVoiceControls()
+                Toast.makeText(this, "EN: ${englishOfflineVoices.size}; RU: ${russianOfflineVoices.size}", Toast.LENGTH_LONG).show()
+            }
+        }, top = 8)
         add(menu, button("▶ Прослушать английский голос", white, navy) {
             say("Hello! Welcome to English Words.", Locale.US)
         }, 50, 8)
