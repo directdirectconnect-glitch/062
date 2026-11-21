@@ -6,8 +6,8 @@ $ErrorActionPreference='Stop'
 $repo='directdirectconnect-glitch/062'
 $owner='directdirectconnect-glitch'
 $approvedRun=44902725944
-$approvedSha=''       # REQUIRED: verified app-debug.apk SHA256 (not ZIP artifact digest)
-$approvedPackage=''   # REQUIRED: verified APK package from aapt
+$approvedSha='584bcb248ff0526d512836d825b29cc330724bcc6d51715fcb2d60ac0ff87850' # SHA256 from successful CI APK build log
+$approvedPackage='com.example.english1000.offlinevoskqa' # Expected from exact-commit Gradle; helper still verifies actual APK via aapt
 $helper='C:\EnglishWords-Windows-Lab\bridge\Invoke-SafeS20Apk.ps1'
 $gh='C:\Program Files\GitHub CLI\gh.exe'
 if ($approvedSha -notmatch '^[0-9a-fA-F]{64}$' -or $approvedPackage -notmatch '^com\.example\.english1000(\.[A-Za-z0-9_]+)*$') {
