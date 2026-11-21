@@ -79,6 +79,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var exerciseOptions: LinearLayout
     private lateinit var embeddedOptionsButton: Button
     private var embeddedOptionsExpanded = false
+    private val acousticPermissionRequestCode = 741
     private lateinit var wordImage: ImageView
     private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
@@ -530,6 +531,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == acousticPermissionRequestCode) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) runAcousticCheck()
+            else Toast.makeText(this, "Проверка недоступна без разрешения на микрофон", Toast.LENGTH_LONG).show()
+        }
         if (requestCode == 12) {
             status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
                 if (uiEnglish) "Tap the microphone to answer" else "Нажмите микрофон для ответа"
@@ -1082,6 +1087,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(card, embeddedOptionsButton)
         exerciseOptions.visibility = View.GONE
         add(card, exerciseOptions, top = 2)
+        add(exerciseOptions, button(
+            if (uiEnglish) "Test speaker and microphone (offline)" else "Проверить динамик и микрофон (офлайн)",
+            neutralSurface, neutralInk
+        ) { requestAcousticCheck() }, top = 6)
         buildLessonToolbar(card)
         cardHeading = text(if (uiEnglish) "TRANSLATE" else "ПЕРЕВОД", 12f, muted, true)
         add(card, cardHeading)
@@ -1423,6 +1432,26 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             scheduleAdvance()
         }
         updateButtons()
+    }
+
+    private fun requestAcousticCheck() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequestCode)
+        } else runAcousticCheck()
+    }
+
+    private fun runAcousticCheck() {
+        // Only invoked by an explicit tap on the diagnostic control.
+        AcousticLoopbackCheck.run(this) { result ->
+            runOnUiThread {
+                val message = if (result.passed) "PASS" else "НЕ ПРОЙДЕНО"
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("Акустическая проверка: $message")
+                    .setMessage("${result.code}: ${result.detail}")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
     }
 
     private fun openSettings() {
