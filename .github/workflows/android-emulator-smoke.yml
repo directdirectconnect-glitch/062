@@ -27,6 +27,16 @@ jobs:
       - run: python scripts/install_sherpa_tts_models.py
       - name: Build x86_64 emulator APK
         run: gradle --no-daemon -PenglishWordsAbi=x86_64 :app:assembleDebug
+      # Linux hosted runners need explicit access to /dev/kvm for accelerated x86_64 emulation.
+      # Fail early with a clear infrastructure error instead of waiting 600s for adb.
+      - name: Enable KVM for Android emulator
+        run: |
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::KVM_DEVICE_MISSING: /dev/kvm is unavailable on this runner; emulator cold-start test NOT_RUN"
+            exit 1
+          fi
+          sudo chmod 666 /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
       - name: Boot emulator, launch and monitor for 20 seconds
         uses: reactivecircus/android-emulator-runner@v2
         with:
