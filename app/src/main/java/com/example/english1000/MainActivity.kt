@@ -2032,14 +2032,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun narrateLearningWord() {
         val word = current ?: return
-        if (page != Page.LEARN || !lessonSound || !running || !learningMode || learningPaused ||
+        if (page != Page.LEARN || !running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
-        if (!ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
-            status.text = if (uiEnglish) "Install both offline TTS voices in Android settings."
-                else "Для прослушивания нужны офлайн-голоса английского и русского языка Android."
+        pauseLearningAudio()
+        if (!lessonSound || !ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
+            status.text = if (uiEnglish)
+                "Offline EN/RU speech unavailable; automatic cards continue. Install both offline voices."
+            else "Офлайн-озвучивание EN/RU недоступно; автоматическое перелистывание продолжается. Установите оба голоса."
+            if (!manualLearning) handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
             return
         }
-        pauseLearningAudio()
         val playbackId = learningSequenceId
         val wordId = word.id
         fun stillCurrent() = running && learningMode && !learningPaused &&
