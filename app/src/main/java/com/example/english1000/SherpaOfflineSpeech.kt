@@ -113,7 +113,9 @@ internal class SherpaOfflineSpeech(private val context: Context) {
     }
 
     private fun play(tts: OfflineTts, text: String, id: Int): Boolean {
+        android.util.Log.i("EnglishWordsVoice", "VITS_GENERATE_BEGIN sampleTextLength=${text.length}")
         val audio = tts.generate(text)
+        android.util.Log.i("EnglishWordsVoice", "VITS_GENERATE_OK samples=${audio.samples.size} rate=${audio.sampleRate}")
         if (audio.samples.isEmpty() || id != generation) {
             lastDiagnostic = "EMPTY_OR_CANCELLED_AUDIO"
             return false
@@ -128,6 +130,7 @@ internal class SherpaOfflineSpeech(private val context: Context) {
             bytes[index * 2] = (pcm and 255).toByte()
             bytes[index * 2 + 1] = ((pcm ushr 8) and 255).toByte()
         }
+        android.util.Log.i("EnglishWordsVoice", "AUDIOTRACK_CREATE_BEGIN bytes=${bytes.size}")
         val track = AudioTrack.Builder()
             .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
@@ -143,6 +146,7 @@ internal class SherpaOfflineSpeech(private val context: Context) {
                     lastDiagnostic = "AUDIOTRACK_SHORT_WRITE: $written/${bytes.size}"
                     return false
                 }
+                android.util.Log.i("EnglishWordsVoice", "AUDIOTRACK_WRITE_OK bytes=$written")
                 track.play()
                 while (track.playState == AudioTrack.PLAYSTATE_PLAYING &&
                     track.playbackHeadPosition < audio.samples.size && id == generation) {
@@ -151,8 +155,14 @@ internal class SherpaOfflineSpeech(private val context: Context) {
                 id == generation
             }
         } finally {
-            track.stop()
-            track.release()
+            try {
+                if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
+            } catch (e: IllegalStateException) {
+                android.util.Log.w("EnglishWordsVoice", "AUDIOTRACK_STOP_FAILED", e)
+            } finally {
+                track.release()
+                android.util.Log.i("EnglishWordsVoice", "AUDIOTRACK_RELEASED")
+            }
         }
     }
 
