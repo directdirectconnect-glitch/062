@@ -119,6 +119,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var ttsReady = false
     private val bundledSpeech by lazy { SherpaOfflineSpeech(this) }
     @Volatile private var bundledSpeechReady = false
+    // Crash-isolation build: native VITS and acoustic loopback are opt-in only.
+    // Keep bundled assets in APK; never load native engines in lesson until isolated.
+    private val nativeVoiceEnabled = false
     private var bundledSpeechInitStarted = false
     private var bundledSpeechInitFailed = false
     private var englishOfflineVoices: List<Voice> = emptyList()
@@ -2131,7 +2134,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val word = current ?: return
         if (page != Page.LEARN || !running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
-        if (lessonSound && !automaticAudioCheckDone) {
+        if (lessonSound && nativeVoiceEnabled && !automaticAudioCheckDone) {
             if (automaticAudioCheckRunning) return
             scheduleAudioFailOpenTimeout(word.id, 8L)
             automaticAudioCheckRunning = true
@@ -2146,7 +2149,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         // Lazy initialization: never load two large ONNX models during Activity startup.
         // Only one initialization attempt is allowed per Activity; the existing audio
         // watchdog guarantees that the lesson can advance even if native loading stalls.
-        if (lessonSound && !bundledSpeechReady && !bundledSpeechInitStarted &&
+        if (lessonSound && nativeVoiceEnabled && !bundledSpeechReady && !bundledSpeechInitStarted &&
             !bundledSpeechInitFailed) {
             bundledSpeechInitStarted = true
             status.text = "Загрузка встроенных офлайн-голосов EN/RU…"
@@ -2175,7 +2178,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             scheduleAudioFailOpenTimeout(word.id, 20L)
             return
         }
-        if (lessonSound && bundledSpeechReady) {
+        if (lessonSound && nativeVoiceEnabled && bundledSpeechReady) {
             scheduleAudioFailOpenTimeout(word.id)
             val playbackId = learningSequenceId
             val wordId = word.id
@@ -2229,7 +2232,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!lessonSound || !ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
             status.text = if (uiEnglish)
                 "Offline voice unavailable; automatic cards continue. Bundled voice initialization failed or Android offline voices are missing."
-            else "Озвучивание недоступно: встроенный голос не запущен или отсутствуют системные офлайн-голоса. Урок продолжается."
+            else "Диагностика: встроенные голоса временно отключены. Если нет системных офлайн-голосов, урок продолжается без звука."
             if (!manualLearning) handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
             return
         }
