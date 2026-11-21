@@ -109,6 +109,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var resumeAnswerTimerAfterForeground = false
     private lateinit var tts: TextToSpeech
     private var ttsReady = false
+    private val bundledSpeech by lazy { SherpaOfflineSpeech(this) }
+    @Volatile private var bundledSpeechReady = false
     private var englishOfflineVoices: List<Voice> = emptyList()
     private var russianOfflineVoices: List<Voice> = emptyList()
     private val voiceRates = floatArrayOf(0.80f, 0.90f, 1.00f, 1.10f, 1.20f)
@@ -448,6 +450,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         voiceResponseSeconds = prefs.getInt("voice_response_seconds", 4)
             .takeIf { it in voiceResponseOptions } ?: 4
         tts = TextToSpeech(this, this)
+        bundledSpeech.prepare { ready, _ -> bundledSpeechReady = ready }
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
         fontChoice = prefs.getInt("font_family", 1)
         weightChoice = prefs.getInt("font_weight", 1)
@@ -2023,6 +2026,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         learningSequenceId++
         handler.removeCallbacks(learningAdvanceRunnable)
         if (::tts.isInitialized) tts.stop()
+        bundledSpeech.stop()
     }
 
     private fun resumeLearningWord() {
@@ -2035,6 +2039,23 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (page != Page.LEARN || !running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
         pauseLearningAudio()
+        if (lessonSound && bundledSpeechReady) {
+            val playbackId = learningSequenceId
+            val wordId = word.id
+            status.text = if (uiEnglish) "Speaking with bundled offline voices"
+                else "Озвучивание встроенными офлайн-голосами"
+            bundledSpeech.speakPair(word.en, word.ru) { success ->
+                runOnUiThread {
+                    if (running && learningMode && !learningPaused && current?.id == wordId &&
+                        playbackId == learningSequenceId && !manualLearning) {
+                        if (!success) status.text = if (uiEnglish) "Bundled TTS playback failed"
+                            else "Ошибка воспроизведения встроенного синтезатора"
+                        handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
+                    }
+                }
+            }
+            return
+        }
         if (!lessonSound || !ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
             status.text = if (uiEnglish)
                 "Offline EN/RU speech unavailable; automatic cards continue. Install both offline voices."
@@ -2860,6 +2881,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         examplesDialog?.dismiss()
         familyDialog?.dismiss()
         pauseLearningAudio()
+        bundledSpeech.close()
         vosk.release(); tts.stop(); tts.shutdown()
         super.onDestroy()
     }
