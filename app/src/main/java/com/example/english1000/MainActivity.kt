@@ -270,6 +270,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private val neutralInk: Int get() = if (isDarkTheme) Color.rgb(235, 238, 242) else Color.rgb(38, 45, 52)
     private lateinit var menu: LinearLayout
     private lateinit var menuButton: Button
+    private lateinit var appHeader: LinearLayout
     private enum class Page { HOME, LEARN, CHECK, SETTINGS }
     private var page = Page.HOME
     private var returnFromSettings = Page.HOME
@@ -288,7 +289,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var checkPaused = false
     private var skippedInBlock = emptySet<Int>()
     private var lessonSound = true
-    private var manualLearning = true
+    private var manualLearning = false
     private val accent = Color.rgb(255, 199, 67)
     private var examplesDialog: android.app.AlertDialog? = null
     private lateinit var prompt: TextView
@@ -454,7 +455,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         buildUi()
         // Prefer Android's saved state on rotation; use durable snapshot after process death.
         lessonSound = prefs.getBoolean("lesson_sound", true)
-        manualLearning = prefs.getBoolean("lesson_manual", true)
+        manualLearning = prefs.getBoolean("lesson_manual", false)
         val restoredPage = savedInstanceState?.getString("screen")
             ?.let { value -> Page.entries.firstOrNull { it.name == value } } ?: Page.HOME
         returnFromSettings = savedInstanceState?.getString("settings_return")
@@ -610,7 +611,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val wide = resources.configuration.screenWidthDp >= 600
-            setPadding(dp(if (wide) 24 else 14), dp(16), dp(if (wide) 24 else 14), dp(24))
+            setPadding(dp(if (wide) 24 else 14), dp(8), dp(if (wide) 24 else 14), dp(12))
         }
         scroll.addView(root)
         pageScroll = scroll
@@ -629,8 +630,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(18), dp(8), dp(20))
+            setPadding(dp(12), dp(6), dp(8), dp(8))
         }
+        appHeader = header
         val brand = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             isFocusable = true
@@ -644,7 +646,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(brand, text("LANGUAGE LEARNING", 10f, muted).apply {
             letterSpacing = 0.25f
         }, top = 3)
-        header.addView(brand, LinearLayout.LayoutParams(0, dp(80), 1f))
+        header.addView(brand, LinearLayout.LayoutParams(0, dp(58), 1f))
         menuButton = button("⚙", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
             textSize = 22f
             contentDescription = if (uiEnglish) "Settings and more" else "Настройки и другие разделы"
@@ -668,7 +670,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         // Greeting and primary navigation belong on the home screen.
         val homeGreeting = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(12), dp(2), dp(12), dp(2))
         }
         add(homeGreeting, text("Welcome!", 38f, Color.rgb(255, 211, 92), bold = true).apply {
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -679,7 +681,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             gravity = Gravity.CENTER
             maxLines = 3
         }, top = 12)
-        add(homePage, homeGreeting, top = 16)
+        add(homePage, homeGreeting, top = 4)
 
         fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
             val card = LinearLayout(this).apply {
@@ -692,7 +694,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     cornerRadius = dp(22).toFloat()
                     setStroke(dp(3), Color.rgb(255, 195, 62))
                 }
-                setPadding(dp(22), dp(20), dp(18), dp(20))
+                setPadding(dp(16), dp(9), dp(14), dp(9))
                 isClickable = true
                 isFocusable = true
                 // Preserve accessible aliases used by existing S20 device-test scripts,
@@ -708,14 +710,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
             card.addView(text(symbol, 29f, Color.rgb(255, 203, 75)).apply {
                 gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(dp(62), dp(64)))
+            }, LinearLayout.LayoutParams(dp(50), dp(48)))
             card.addView(text(title, 23f, Color.WHITE, bold = true).apply {
                 typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
                 gravity = Gravity.CENTER_VERTICAL
-            }, LinearLayout.LayoutParams(0, dp(70), 1f).apply { leftMargin = dp(12) })
+            }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(8) })
             card.addView(text("›", 30f, Color.rgb(214, 187, 146)).apply {
                 gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(dp(30), dp(54)))
+            }, LinearLayout.LayoutParams(dp(24), dp(48)))
             return card
         }
         val modeActions = LinearLayout(this).apply {
@@ -726,11 +728,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }, top = 10)
         add(modeActions, premiumAction("Учить слова", "▤") {
             openExercise(Page.LEARN)
-        }, top = 14)
+        }, top = 8)
         add(modeActions, premiumAction("Проверка знаний", "✓") {
             openExercise(Page.CHECK)
-        }, top = 14)
-        add(homePage, modeActions, top = 20)
+        }, top = 8)
+        add(homePage, modeActions, top = 10)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -912,7 +914,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         })
         add(learnControls, CheckBox(this).apply {
             text = if (uiEnglish) "Advance manually" else "Листать слова вручную"
-            isChecked = prefs.getBoolean("lesson_manual", true)
+            isChecked = prefs.getBoolean("lesson_manual", false)
             setOnCheckedChangeListener { _, checked ->
                 manualLearning = checked
                 prefs.edit().putBoolean("lesson_manual", checked).apply()
@@ -1217,16 +1219,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
         lessonToolbar.addView(lessonSpeaker, LinearLayout.LayoutParams(dp(40), dp(44)))
-        val lessonMenu = button("☰", neutralSurface, blue) { showLessonMenu() }.apply {
-            contentDescription = if (uiEnglish) "Lesson menu" else "Меню урока"
-            setPadding(0, 0, 0, 0)
-            minimumWidth = 0
-            minWidth = 0
-            textSize = 20f
-        }
-        lessonToolbar.addView(lessonMenu, LinearLayout.LayoutParams(dp(40), dp(44)).apply {
-            marginStart = dp(4)
-        })
         add(card, lessonToolbar)
     }
 
@@ -1347,6 +1339,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             persistActiveSession(commitNow = true)
         }
         page = destination
+        appHeader.visibility = if (page == Page.HOME) View.VISIBLE else View.GONE
         homePage.visibility = if (page == Page.HOME) View.VISIBLE else View.GONE
         menu.visibility = if (page == Page.SETTINGS) View.VISIBLE else View.GONE
         exercisePage.visibility = if (page == Page.LEARN || page == Page.CHECK) View.VISIBLE else View.GONE
