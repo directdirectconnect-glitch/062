@@ -2,7 +2,7 @@
 # Run from a trusted Windows PowerShell terminal with Android platform-tools adb on PATH.
 # Read-only: does not install APKs, change app data, grant permissions, or upload private logs.
 param(
-  [string]$OutputDir = ".\\voice-diagnostics",
+  [string]$OutputDir = ".\voice-diagnostics",
   [string]$Package = "com.example.english1000",
   [int]$Seconds = 90
 )
@@ -10,9 +10,9 @@ $ErrorActionPreference = "Stop"
 if (-not (Get-Command adb -ErrorAction SilentlyContinue)) { throw "ADB_NOT_FOUND: install Android platform-tools or add adb to PATH" }
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 $devices = @(adb devices -l)
-$ready = @($devices | Where-Object { $_ -match "^\\S+\\s+device\\b" })
+$ready = @($devices | Where-Object { $_ -match "^\S+\s+device\b" })
 if ($ready.Count -ne 1) { Write-Host ($devices -join "`n"); throw "ADB_DEVICE_NOT_READY_OR_MULTIPLE: connect and authorize exactly one Samsung" }
-$serial = ($ready[0] -split "\\s+")[0]
+$serial = ($ready[0] -split "\s+")[0]
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $base = Join-Path $OutputDir "s20fe-voice-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
