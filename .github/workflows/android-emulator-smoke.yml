@@ -40,16 +40,33 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am start -W -n com.example.english1000.offlinevoskqa/com.example.english1000.MainActivity
+            sleep 5
+            adb shell uiautomator dump /sdcard/englishwords-ui.xml
+            adb shell cat /sdcard/englishwords-ui.xml > emulator-home-ui.xml
+            python3 - <<'PY'
+            import re, subprocess, xml.etree.ElementTree as ET
+            root = ET.parse("emulator-home-ui.xml").getroot()
+            nodes = [(e.attrib.get("text", ""), e.attrib.get("bounds", "")) for e in root.iter("node")]
+            target = next(((text, bounds) for text, bounds in nodes if
+                           "Учить слова" in text or "Изучение слов" in text or "Learn Words" in text), None)
+            if target is None:
+                print("HOME_NODES:", nodes)
+                raise SystemExit("FAIL: Learn Words button not found")
+            coords = [int(v) for v in re.findall("[0-9]+", target[1])]
+            subprocess.run(["adb", "shell", "input", "tap", str((coords[0]+coords[2])//2),
+                            str((coords[1]+coords[3])//2)], check=True)
+            print("LEARN_BUTTON_TAPPED:", target[0])
+            PY
             sleep 30
             adb logcat -d -v time > emulator-full.log
             grep "EnglishWordsVoice" emulator-full.log || true
-            adb shell pidof com.example.english1000.offlinevoskqa
+            adb shell pidof com.example.english1000.offlinevoskqa || { echo "FAIL: APP_DIED_AFTER_LEARN"; exit 1; }
             adb logcat -d -b crash > emulator-crash.log
             if grep -E 'FATAL EXCEPTION|Fatal signal|SIGSEGV|SIGABRT' emulator-crash.log; then
               cat emulator-crash.log
               exit 1
             fi
-            echo "EMULATOR_COLD_START_20_SECONDS: PASS"
+            echo "EMULATOR_LEARN_SCREEN_30_SECONDS: PASS"
       - name: Upload crash diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,4 +75,5 @@ jobs:
           path: |
             emulator-crash.log
             emulator-full.log
+            emulator-home-ui.xml
           if-no-files-found: ignore
