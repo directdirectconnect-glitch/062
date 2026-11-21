@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.media.AudioManager
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
@@ -20,6 +21,8 @@ internal class SherpaOfflineSpeech(private val context: Context) {
     private var en: OfflineTts? = null
     private var ru: OfflineTts? = null
     @Volatile private var generation = 0
+    @Volatile var lastDiagnostic: String = "NOT_TESTED"
+        private set
 
     fun prepare(done: (Boolean, String) -> Unit) {
         worker.execute {
@@ -69,18 +72,46 @@ internal class SherpaOfflineSpeech(private val context: Context) {
                 return@execute
             }
             try {
-                if (!play(first, english, id)) { finished(false); return@execute }
-                if (!play(second, russian, id)) { finished(false); return@execute }
+                if (!playWithRetry(first, english, id, "en")) { finished(false); return@execute }
+                if (!playWithRetry(second, russian, id, "ru")) { finished(false); return@execute }
+                lastDiagnostic = "EN_RU_PLAYBACK_SUBMITTED"
                 finished(true)
             } catch (e: Exception) {
+                lastDiagnostic = "PLAYBACK_ERROR: ${e.javaClass.simpleName}: ${e.message}"
                 finished(false)
             }
         }
     }
 
+    private fun playWithRetry(tts: OfflineTts, text: String, id: Int, language: String): Boolean {
+        if (id != generation) return false
+        val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (manager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+            lastDiagnostic = "MUTED_MEDIA_VOLUME: $language"
+            return false // Never override user volume or silent preferences.
+        }
+        repeat(2) { attempt ->
+            if (id != generation) return false
+            try {
+                if (play(tts, text, id)) return true
+            } catch (e: Exception) {
+                lastDiagnostic = "PLAYBACK_RETRY_${attempt + 1}: $language: ${e.message}"
+            }
+        }
+        lastDiagnostic = "PLAYBACK_FAILED_AFTER_RETRY: $language"
+        return false
+    }
+
     private fun play(tts: OfflineTts, text: String, id: Int): Boolean {
         val audio = tts.generate(text)
-        if (audio.samples.isEmpty() || id != generation) return false
+        if (audio.samples.isEmpty() || id != generation) {
+            lastDiagnostic = "EMPTY_OR_CANCELLED_AUDIO"
+            return false
+        }
+        if (audio.samples.none { kotlin.math.abs(it) > 0.0005f }) {
+            lastDiagnostic = "SILENT_SYNTHESIS"
+            return false
+        }
         val bytes = ByteArray(audio.samples.size * 2)
         audio.samples.forEachIndexed { index, sample ->
             val pcm = (sample.coerceIn(-1f, 1f) * 32767).toInt().toShort().toInt()
@@ -97,7 +128,11 @@ internal class SherpaOfflineSpeech(private val context: Context) {
             .build()
         return try {
             if (id != generation) false else {
-                track.write(bytes, 0, bytes.size)
+                val written = track.write(bytes, 0, bytes.size)
+                if (written != bytes.size) {
+                    lastDiagnostic = "AUDIOTRACK_SHORT_WRITE: $written/${bytes.size}"
+                    return false
+                }
                 track.play()
                 while (track.playState == AudioTrack.PLAYSTATE_PLAYING &&
                     track.playbackHeadPosition < audio.samples.size && id == generation) {
