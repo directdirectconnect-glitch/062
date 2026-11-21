@@ -119,6 +119,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var ttsReady = false
     private val bundledSpeech by lazy { SherpaOfflineSpeech(this) }
     @Volatile private var bundledSpeechReady = false
+    private var bundledSpeechInitStarted = false
+    private var bundledSpeechInitFailed = false
     private var englishOfflineVoices: List<Voice> = emptyList()
     private var russianOfflineVoices: List<Voice> = emptyList()
     private val voiceRates = floatArrayOf(0.80f, 0.90f, 1.00f, 1.10f, 1.20f)
@@ -2141,6 +2143,38 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             return
         }
         pauseLearningAudio()
+        // Lazy initialization: never load two large ONNX models during Activity startup.
+        // Only one initialization attempt is allowed per Activity; the existing audio
+        // watchdog guarantees that the lesson can advance even if native loading stalls.
+        if (lessonSound && !bundledSpeechReady && !bundledSpeechInitStarted &&
+            !bundledSpeechInitFailed) {
+            bundledSpeechInitStarted = true
+            status.text = "Загрузка встроенных офлайн-голосов EN/RU…"
+            scheduleAudioFailOpenTimeout(word.id, 20L)
+            android.util.Log.i("EnglishWordsVoice", "LAZY_VITS_INIT_BEGIN")
+            bundledSpeech.prepare { ready, detail ->
+                runOnUiThread {
+                    bundledSpeechInitStarted = false
+                    bundledSpeechReady = ready
+                    bundledSpeechInitFailed = !ready
+                    android.util.Log.i("EnglishWordsVoice", "LAZY_VITS_INIT_END ready=$ready detail=$detail")
+                    if (!isFinishing && !isDestroyed && page == Page.LEARN && running &&
+                        learningMode && !learningPaused) {
+                        if (ready) resumeLearningWord()
+                        else {
+                            status.text = "Встроенные голоса недоступны: $detail. Проверка системного голоса…"
+                            resumeLearningWord()
+                        }
+                    }
+                }
+            }
+            return
+        }
+        if (bundledSpeechInitStarted) {
+            status.text = "Загрузка встроенных офлайн-голосов EN/RU…"
+            scheduleAudioFailOpenTimeout(word.id, 20L)
+            return
+        }
         if (lessonSound && bundledSpeechReady) {
             scheduleAudioFailOpenTimeout(word.id)
             val playbackId = learningSequenceId
@@ -2194,8 +2228,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }
         if (!lessonSound || !ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
             status.text = if (uiEnglish)
-                "Offline EN/RU speech unavailable; automatic cards continue. Install both offline voices."
-            else "Офлайн-озвучивание EN/RU недоступно; автоматическое перелистывание продолжается. Установите оба голоса."
+                "Offline voice unavailable; automatic cards continue. Bundled voice initialization failed or Android offline voices are missing."
+            else "Озвучивание недоступно: встроенный голос не запущен или отсутствуют системные офлайн-голоса. Урок продолжается."
             if (!manualLearning) handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
             return
         }
