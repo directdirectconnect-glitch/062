@@ -1,59 +1,102 @@
-
 name: Build Android APK
-
 on:
   push:
-    branches: [main, 'integrate/**', 'develop/**', 'design/**', 'beta/**']
+    branches: [main, 'integrate/**', 'develop/**', 'design/**', 'beta/**', 'release/**']
   workflow_dispatch:
-
 concurrency:
   group: apk-build-${{ github.ref }}
   cancel-in-progress: true
-
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-
       - name: Install SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-
-      - name: Verify local content and integrated activities
+      - name: Restore all 5126 translated Excel entries and lexical phrases
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 scripts/import_excel_5126_examples.py
+      - name: Verify integrated Android source
         run: python3 scripts/validate_integration.py
-
-      - name: Bundle offline speech models when supported by branch
+      - name: Restore immutable 217 WebP base pack
+        if: startsWith(github.ref, 'refs/heads/release/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat release-media/webp-217-parts/part-*.bin > /tmp/english-words-217-webp.zip
+          echo "19030d89a8f0cfee844be04f67bab3ce7b7d76f641358ef71941269249eb3c72  /tmp/english-words-217-webp.zip" | sha256sum -c -
+          unzip -tq /tmp/english-words-217-webp.zip
+          rm -rf app/src/main/assets/images app/src/main/assets/additional_photos
+          unzip -oq /tmp/english-words-217-webp.zip
+          test "$(find app/src/main/assets/images -type f -name '*.webp' | wc -l)" -eq 164
+          test "$(find app/src/main/assets/additional_photos -type f -name '*.webp' | wc -l)" -eq 53
+      - name: Merge 50 November photos with exact dictionary word IDs
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 scripts/import_release_50_webp.py
+      - name: Prepare offline speech models
         run: |
           if [ -f scripts/prepare_vosk_models.py ]; then
             python3 scripts/prepare_vosk_models.py
           fi
-
-      - name: Run unit tests and build APK
+      - name: Install WebP validator
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Verify all 267 WebP and word mappings
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 scripts/check_release_217_assets.py
+      - name: Upload 267 WebP media audit
+        if: always() && startsWith(github.ref, 'refs/heads/release/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-267-Release-Asset-Audit
+          path: |
+            results/release-50-import.json
+            results/release-267-audit.json
+            results/excel-5126-content-audit.json
+          if-no-files-found: warn
+      - name: Run unit tests and assemble Android APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
-
-      - name: Verify offline models and native libraries are in APK
+      - name: Verify offline voice models and native libraries
         if: hashFiles('scripts/verify_vosk_apk.py') != ''
         run: python3 scripts/verify_vosk_apk.py
-
+      - name: Verify compiled APK really contains 267 WebP
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: python3 scripts/verify_267_apk.py
+      - name: Record APK SHA-256 and provenance
+        run: |
+          mkdir -p results
+          sha256sum app/build/outputs/apk/debug/*.apk | tee results/apk-sha256.txt
+          echo "Commit: ${GITHUB_SHA}" > results/apk-provenance.txt
+          echo "267 WebP source and compiled APK checks required on release branches." >> results/apk-provenance.txt
+          echo "Device QA and production signing are separately required." >> results/apk-provenance.txt
+      - name: Upload release provenance
+        if: always() && startsWith(github.ref, 'refs/heads/release/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishWords-267-Release-Provenance
+          path: |
+            results/apk-sha256.txt
+            results/apk-provenance.txt
+            results/apk-image-inventory.txt
+            results/apk-image-proof.json
+          if-no-files-found: warn
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: EnglishWords-APK
+          name: EnglishWords-267-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

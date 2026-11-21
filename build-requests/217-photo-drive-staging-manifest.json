@@ -21,7 +21,8 @@
       "sourceBytes": 2409013,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "ambulance",
@@ -30,7 +31,8 @@
       "sourceBytes": 2883254,
       "existingWordId": 1304,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "backpack",
@@ -39,7 +41,8 @@
       "sourceBytes": 2951471,
       "existingWordId": 1320,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "baggage_carousel",
@@ -48,7 +51,8 @@
       "sourceBytes": 2420823,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "bicycle",
@@ -57,7 +61,8 @@
       "sourceBytes": 2745248,
       "existingWordId": 1231,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "boarding_pass",
@@ -66,7 +71,8 @@
       "sourceBytes": 2212622,
       "existingWordId": 1444,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "bridge",
@@ -75,7 +81,8 @@
       "sourceBytes": 3679202,
       "existingWordId": 3438,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "bus",
@@ -84,7 +91,8 @@
       "sourceBytes": 2920511,
       "existingWordId": 1210,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "check_in_counter",
@@ -93,7 +101,8 @@
       "sourceBytes": 2185691,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "coffee",
@@ -102,7 +111,8 @@
       "sourceBytes": 2129097,
       "existingWordId": 1205,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "crosswalk",
@@ -111,7 +121,8 @@
       "sourceBytes": 2949498,
       "existingWordId": 1278,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "deer",
@@ -120,7 +131,8 @@
       "sourceBytes": 2564838,
       "existingWordId": 1615,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "departure_board",
@@ -129,7 +141,8 @@
       "sourceBytes": 2476931,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "dessert",
@@ -138,7 +151,8 @@
       "sourceBytes": 2328413,
       "existingWordId": 1263,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "eagle",
@@ -147,7 +161,8 @@
       "sourceBytes": 2493104,
       "existingWordId": 1618,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "elevator",
@@ -156,7 +171,8 @@
       "sourceBytes": 2369642,
       "existingWordId": 1277,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "escalator",
@@ -165,7 +181,8 @@
       "sourceBytes": 2516506,
       "existingWordId": 1235,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "fire_extinguisher",
@@ -174,7 +191,8 @@
       "sourceBytes": 2286618,
       "existingWordId": 2805,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "fox",
@@ -183,7 +201,8 @@
       "sourceBytes": 2776732,
       "existingWordId": 1613,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "hotel_key_card",
@@ -192,7 +211,8 @@
       "sourceBytes": 2381269,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "hotel_reception",
@@ -201,7 +221,8 @@
       "sourceBytes": 2383055,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "hotel_room",
@@ -210,7 +231,8 @@
       "sourceBytes": 2561445,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "information_desk",
@@ -219,7 +241,8 @@
       "sourceBytes": 2231463,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "keyboard",
@@ -228,7 +251,8 @@
       "sourceBytes": 2272184,
       "existingWordId": 1352,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "lake",
@@ -237,7 +261,8 @@
       "sourceBytes": 2948075,
       "existingWordId": 640,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "luggage_trolley",
@@ -246,7 +271,8 @@
       "sourceBytes": 2544085,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "menu",
@@ -255,7 +281,8 @@
       "sourceBytes": 2456845,
       "existingWordId": 1262,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "microwave",
@@ -264,7 +291,8 @@
       "sourceBytes": 2588098,
       "existingWordId": 2390,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "monkey",
@@ -273,7 +301,8 @@
       "sourceBytes": 2740272,
       "existingWordId": 3350,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "napkin",
@@ -282,7 +311,8 @@
       "sourceBytes": 2790356,
       "existingWordId": 1265,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "owl",
@@ -291,7 +321,8 @@
       "sourceBytes": 2724262,
       "existingWordId": 1617,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "parking_meter",
@@ -300,7 +331,8 @@
       "sourceBytes": 2295049,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "passport",
@@ -309,7 +341,8 @@
       "sourceBytes": 2907662,
       "existingWordId": 1209,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "passport_control",
@@ -318,7 +351,8 @@
       "sourceBytes": 2252801,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "pharmacy",
@@ -327,7 +361,8 @@
       "sourceBytes": 2744769,
       "existingWordId": 1294,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "receipt",
@@ -336,7 +371,8 @@
       "sourceBytes": 2834535,
       "existingWordId": 1243,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "security_checkpoint",
@@ -345,7 +381,8 @@
       "sourceBytes": 2353351,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "shark",
@@ -354,7 +391,8 @@
       "sourceBytes": 2119456,
       "existingWordId": 3568,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "snake",
@@ -363,7 +401,8 @@
       "sourceBytes": 2745811,
       "existingWordId": 3353,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "suitcase",
@@ -372,7 +411,8 @@
       "sourceBytes": 2602071,
       "existingWordId": 1248,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "taxi_airport",
@@ -381,7 +421,8 @@
       "sourceBytes": 2334652,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "ticket_machine",
@@ -390,7 +431,8 @@
       "sourceBytes": 2207707,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "tiger",
@@ -399,7 +441,8 @@
       "sourceBytes": 2870657,
       "existingWordId": 3349,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "toothbrush",
@@ -408,7 +451,8 @@
       "sourceBytes": 1705666,
       "existingWordId": 1333,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "traffic_light",
@@ -417,7 +461,8 @@
       "sourceBytes": 2329914,
       "existingWordId": 1227,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "train_platform",
@@ -426,7 +471,8 @@
       "sourceBytes": 2478456,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "turnstile",
@@ -435,7 +481,8 @@
       "sourceBytes": 2339824,
       "existingWordId": 1236,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "umbrella",
@@ -444,7 +491,8 @@
       "sourceBytes": 2739420,
       "existingWordId": 1322,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "vending_machine",
@@ -453,7 +501,8 @@
       "sourceBytes": 2431791,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "village",
@@ -462,7 +511,8 @@
       "sourceBytes": 3285159,
       "existingWordId": 603,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "wallet",
@@ -471,7 +521,8 @@
       "sourceBytes": 2662073,
       "existingWordId": 1260,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": true
     },
     {
       "word": "washing_machine",
@@ -480,7 +531,8 @@
       "sourceBytes": 2642081,
       "existingWordId": null,
       "replacesExistingImage": false,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     },
     {
       "word": "whale",
@@ -489,7 +541,34 @@
       "sourceBytes": 3075130,
       "existingWordId": 3545,
       "replacesExistingImage": true,
-      "assetStaged": false
+      "assetStaged": false,
+      "repositoryFileObserved": false
     }
-  ]
+  ],
+  "releaseInventory20261116": {
+    "source": "Per-filename GitHub fetch_file existence check on release branch; not a PNG decode or SHA-256 audit",
+    "foundFiles": 38,
+    "missingFiles": 15,
+    "missingNames": [
+      "bridge",
+      "deer",
+      "eagle",
+      "fox",
+      "lake",
+      "microwave",
+      "monkey",
+      "owl",
+      "pharmacy",
+      "receipt",
+      "snake",
+      "tiger",
+      "village",
+      "washing_machine",
+      "whale"
+    ],
+    "validation": "FILE_EXISTS_ONLY",
+    "newAssetBinaryIntegrity": "NOT_RUN",
+    "dictionaryImageMapping": "NOT_RUN",
+    "apkStatus": "BLOCKED"
+  }
 }

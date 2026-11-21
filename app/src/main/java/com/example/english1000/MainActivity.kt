@@ -136,6 +136,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var weightChoice = 1
     private var writingChoice = 0
     private var appearanceRoot: View? = null
+    private lateinit var homeScreen: ScrollView
+    private lateinit var lessonScreen: ScrollView
+    private var onLessonScreen = false
+    private var checkPaused = false
+    private lateinit var lessonHeaderTitle: TextView
+
     private lateinit var languageSpinner: Spinner
     private lateinit var fontSpinner: Spinner
     private lateinit var weightSpinner: Spinner
@@ -496,14 +502,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(dp(if (wide) 24 else 14), dp(16), dp(if (wide) 24 else 14), dp(24))
         }
         scroll.addView(root)
-        setContentView(scroll)
-        appearanceRoot = root
+        lessonScreen = scroll
+        homeScreen = ScrollView(this).apply {
+            isFillViewport = true
+            setBackgroundColor(bg)
+        }
+        val homeRoot = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(16))
+        }
+        homeScreen.addView(homeRoot)
+        val screenHost = android.widget.FrameLayout(this)
+        screenHost.addView(homeScreen)
+        screenHost.addView(lessonScreen)
+        setContentView(screenHost)
+        onLessonScreen = false
+        lessonScreen.visibility = View.GONE
+        homeScreen.visibility = View.VISIBLE
+        appearanceRoot = screenHost
 
         // Premium home navigation: exactly three primary actions, no separate offline mode.
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(18), dp(8), dp(20))
+            setPadding(dp(12), dp(8), dp(8), dp(10))
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         add(brand, text("English Words", 29f, navy).apply {
@@ -514,13 +536,30 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(brand, text("LANGUAGE LEARNING", 10f, muted).apply {
             letterSpacing = 0.25f
         }, top = 3)
-        header.addView(brand, LinearLayout.LayoutParams(0, dp(80), 1f))
+        header.addView(brand, LinearLayout.LayoutParams(0, dp(54), 1f))
         menuButton = button("⚙", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
             textSize = 22f
             contentDescription = if (uiEnglish) "Settings" else "Настройки"
         }
-        header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
-        add(root, header)
+        header.addView(menuButton, LinearLayout.LayoutParams(dp(40), dp(40)))
+        add(homeRoot, header)
+
+        // Approved P01 visual baseline, 2026-11-16 v1.0 CURRENT:
+        // Greeting and primary navigation belong on the home screen.
+        val homeGreeting = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        add(homeGreeting, text("Welcome!", 38f, Color.rgb(255, 211, 92), bold = true).apply {
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            gravity = Gravity.CENTER
+        })
+        add(homeGreeting, text("Что вы хотите делать сегодня?", 22f,
+            if (isDarkTheme) Color.WHITE else navy, bold = true).apply {
+            gravity = Gravity.CENTER
+            maxLines = 3
+        }, top = 12)
+        add(homeRoot, homeGreeting, top = 16)
 
         fun premiumAction(title: String, symbol: String, action: () -> Unit): LinearLayout {
             val card = LinearLayout(this).apply {
@@ -531,7 +570,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     intArrayOf(Color.rgb(34, 53, 72), Color.rgb(15, 28, 43))
                 ).apply {
                     cornerRadius = dp(22).toFloat()
-                    setStroke(dp(1), Color.rgb(156, 135, 103))
+                    setStroke(dp(3), Color.rgb(255, 195, 62))
                 }
                 setPadding(dp(22), dp(20), dp(18), dp(20))
                 isClickable = true
@@ -547,10 +586,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 setOnClickListener { action() }
                 elevation = dp(3).toFloat()
             }
-            card.addView(text(symbol, 29f, Color.rgb(214, 187, 146)).apply {
+            card.addView(text(symbol, 29f, Color.rgb(255, 203, 75)).apply {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(dp(62), dp(64)))
-            card.addView(text(title, 20f, Color.WHITE).apply {
+            card.addView(text(title, 23f, Color.WHITE, bold = true).apply {
                 typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
                 gravity = Gravity.CENTER_VERTICAL
             }, LinearLayout.LayoutParams(0, dp(70), 1f).apply { leftMargin = dp(12) })
@@ -562,16 +601,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val modeActions = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        add(modeActions, premiumAction("Перевести слово", "А ⇄ Я") {
-            showAskWordOptions()
+        add(modeActions, premiumAction("Перевести слово", "A ⇄ a") {
+            startActivity(Intent(this, AskWordActivity::class.java).apply {
+                putExtra(AskWordActivity.EXTRA_INCLUDE_EXAMPLES, ExampleModeSetup.selected(this@MainActivity))
+            })
         }, top = 10)
         add(modeActions, premiumAction("Учить слова", "▤") {
-            showLearningOptions()
+            openLessonScreen("learn")
         }, top = 14)
         add(modeActions, premiumAction("Проверка знаний", "✓") {
-            startSession(modeOverride = "check")
+            openLessonScreen("check")
         }, top = 14)
-        add(root, modeActions, top = 12)
+        add(homeRoot, modeActions, top = 20)
 
         menu = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -743,6 +784,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(menu, historyCheck, top = 12)
         add(menu, button(if (uiEnglish) "Learning history" else "История ответов",
             white, blue) { showLearningHistory() }, 50, 8)
+        add(menu, button(if (uiEnglish) "My dictionary and history" else "Мой словарь и история",
+            neutralSurface, neutralInk) {
+            startActivity(Intent(this, VocabularyHistoryActivity::class.java))
+        }, 50, 8)
         add(menu, button(if (uiEnglish) "Review due words" else "Что повторить",
             neutralSurface, neutralInk) { showReviewRecommendations() }, 50, 8)
         formsCheck = CheckBox(this).apply { text = "Показывать формы глагола после ответа"; isChecked = true }
@@ -790,7 +835,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             addView(menu)
         }
         settingsDialog = android.app.AlertDialog.Builder(this)
-            .setTitle(if (uiEnglish) "Settings" else "Настройки")
+            .setTitle(if (uiEnglish) "Lesson settings" else "Настройки урока")
             .setView(settingsScroll)
             .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
             .create().apply {
@@ -801,8 +846,25 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 }
             }
 
+        val lessonTop = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        lessonTop.addView(button("⌂", neutralSurface, neutralInk) {
+            returnHomeScreen()
+        }.apply {
+            contentDescription = if (uiEnglish) "Home" else "На главный экран"
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        lessonHeaderTitle = text("", 20f, navy, true)
+        lessonTop.addView(lessonHeaderTitle, LinearLayout.LayoutParams(0, dp(54), 1f))
+        lessonTop.addView(button("☰", neutralSurface, neutralInk) {
+            openSettingsDialog()
+        }.apply {
+            contentDescription = if (uiEnglish) "Open lesson settings" else "Открыть настройки урока"
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        add(root, lessonTop, top = 8)
         counter = text("Выбери блок в меню", 16f, navy, true)
-        add(root, counter, top = 24)
+        add(root, counter, top = 8)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100; progress = 0; progressTintList = android.content.res.ColorStateList.valueOf(blue)
         }
@@ -820,7 +882,29 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             "Открой ⋮ и начни урок", 37f, navy, true).apply {
             setPadding(dp(2), dp(26), dp(2), dp(14))
         }
-        add(card, prompt)
+        val wordRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        wordRow.addView(prompt, LinearLayout.LayoutParams(0, -2, 1f))
+        repeat = button("🔊", white, blue) {
+            current?.let { word ->
+                if (learningMode) {
+                    pauseLearningAudio()
+                    narrateLearningWord()
+                } else {
+                    handler.removeCallbacks(advanceRunnable)
+                    say(question(word), questionLocale()) {
+                        if (running && current?.id == word.id && answering) scheduleAdvance()
+                    }
+                }
+            }
+        }.apply {
+            textSize = 22f
+            contentDescription = if (uiEnglish) "Speak current word" else "Озвучить слово"
+        }
+        wordRow.addView(repeat, LinearLayout.LayoutParams(dp(54), dp(54)))
+        add(card, wordRow)
         wordImage = ImageView(this).apply {
             visibility = View.GONE
             scaleType = ImageView.ScaleType.FIT_CENTER
@@ -867,24 +951,18 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
         listen = button("Говори перевод", navy) { listenNow() }
         add(root, listen, 64, 8)
-        repeat = button("Слушать слово", white, blue) {
-            current?.let { word ->
-                if (learningMode) {
-                    learningPaused = false
-                    narrateLearningWord()
-                    updateButtons()
-                } else {
-                    handler.removeCallbacks(advanceRunnable)
-                    say(question(word), questionLocale()) {
-                        if (running && current?.id == word.id && answering) scheduleAdvance()
-                    }
-                }
-            }
-        }
-        add(root, repeat, 56, 12)
         learningPauseButton = button(if (uiEnglish) "Pause listening" else "Пауза",
             neutralSurface, neutralInk) {
-            if (running && learningMode) {
+            if (running && !learningMode) {
+                checkPaused = !checkPaused
+                if (checkPaused) {
+                    handler.removeCallbacks(advanceRunnable)
+                    if (::tts.isInitialized) tts.stop()
+                } else if (answering) {
+                    scheduleAdvance()
+                }
+                updateButtons()
+            } else if (running && learningMode) {
                 learningPaused = !learningPaused
                 if (learningPaused) {
                     pauseLearningAudio()
@@ -895,7 +973,26 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 updateButtons()
             }
         }.apply { visibility = View.GONE }
-        add(root, learningPauseButton, 52, 8)
+        val navigationIcons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        val previousWord = button("‹", neutralSurface, neutralInk) {
+            if (running && index > 0) {
+                handler.removeCallbacks(advanceRunnable)
+                pauseLearningAudio()
+                index--
+                next()
+            }
+        }.apply {
+            textSize = 28f
+            contentDescription = if (uiEnglish) "Previous word" else "Предыдущее слово"
+        }
+        navigationIcons.addView(previousWord, LinearLayout.LayoutParams(0, dp(54), 1f))
+        learningPauseButton.text = "⏸"
+        learningPauseButton.textSize = 24f
+        learningPauseButton.contentDescription = if (uiEnglish) "Pause or resume" else "Пауза или продолжить"
+        navigationIcons.addView(learningPauseButton, LinearLayout.LayoutParams(0, dp(54), 1f))
         val rating = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         ratingRow = rating
         correct = button("Знаю", blue) { grade(true, "Отмечено: знаю") }
@@ -914,7 +1011,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 next()
             } else if (running && answering) advanceToNext()
         }.apply { visibility = View.GONE }
-        add(root, nextWordButton, 54, 12)
+        nextWordButton.text = "›"
+        nextWordButton.textSize = 28f
+        nextWordButton.contentDescription = if (uiEnglish) "Next word" else "Следующее слово"
+        navigationIcons.addView(nextWordButton, LinearLayout.LayoutParams(0, dp(54), 1f))
+        add(root, navigationIcons, top = 12)
         stats = text("", 14f, muted)
         add(root, stats, top = 20)
         updateButtons()
@@ -930,6 +1031,43 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             }
         }
         applyTypography(root)
+    }
+
+    private fun showLessonScreen() {
+        onLessonScreen = true
+        homeScreen.visibility = View.GONE
+        lessonScreen.visibility = View.VISIBLE
+        lessonHeaderTitle.text = if (learningMode) {
+            if (uiEnglish) "Learn words" else "Учить слова"
+        } else if (uiEnglish) "Knowledge test" else "Проверка знаний"
+        lessonScreen.scrollTo(0, 0)
+    }
+
+    private fun returnHomeScreen() {
+        resumeLearningAfterForeground = false
+        resumeAnswerTimerAfterForeground = false
+        handler.removeCallbacks(advanceRunnable)
+        pauseLearningAudio()
+        if (::tts.isInitialized) tts.stop()
+        persistActiveSession(commitNow = true)
+        onLessonScreen = false
+        lessonScreen.visibility = View.GONE
+        homeScreen.visibility = View.VISIBLE
+    }
+
+    private fun openLessonScreen(mode: String) {
+        if (running && ((mode == "learn") == learningMode)) {
+            showLessonScreen()
+            if (learningMode && !learningPaused) resumeLearningWord()
+            else if (!learningMode && answering && !checkPaused) scheduleAdvance()
+            return
+        }
+        startSession(modeOverride = mode)
+    }
+
+    override fun onBackPressed() {
+        if (onLessonScreen) returnHomeScreen()
+        else super.onBackPressed()
     }
 
     private fun updateDeviceCapabilities() {
@@ -950,8 +1088,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         popup.menu.add(0, 1, 0, if (uiEnglish) "Appearance and settings" else "Оформление и настройки")
         popup.menu.add(0, 2, 1, if (uiEnglish) "Start new block" else "Начать новый блок")
         popup.menu.add(0, 3, 2, if (uiEnglish) "About the app" else "О приложении")
-        popup.menu.add(0, 4, 3, if (uiEnglish) "Learning history" else "История ответов")
+        popup.menu.add(0, 4, 3, if (uiEnglish) "My dictionary and history" else "Мой словарь и история")
         popup.menu.add(0, 5, 4, if (uiEnglish) "Review due words" else "Что повторить")
+        popup.menu.add(0, 6, 5, if (uiEnglish) "Extra photo phrases" else "Дополнительные фотографии")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> { openSettingsDialog(); true }
@@ -965,8 +1104,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                         .setPositiveButton("OK", null).show()
                     true
                 }
-                4 -> { showLearningHistory(); true }
+                4 -> { startActivity(Intent(this, VocabularyHistoryActivity::class.java)); true }
                 5 -> { showReviewRecommendations(); true }
+                6 -> { startActivity(Intent(this, SupplementalPhotosActivity::class.java)); true }
                 else -> false
             }
         }
@@ -978,10 +1118,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (learningMode) pauseLearningAudio()
         menu.visibility = View.VISIBLE
         settingsDialog?.show()
-        settingsDialog?.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.92f).toInt().coerceAtMost(dp(560)),
-            -2
-        )
+        settingsDialog?.window?.apply {
+            setGravity(Gravity.BOTTOM)
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.96f).toInt().coerceAtMost(dp(620)),
+                (resources.displayMetrics.heightPixels * 0.75f).toInt()
+            )
+        }
         applyTypography(menu)
     }
 
@@ -1012,20 +1155,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         incorrect.isEnabled = running && testing && !answering
         listen.isEnabled = running && testing && !answering
         repeat.isEnabled = running && (learningMode || !answering)
-        repeat.text = if (learningMode) {
-            if (uiEnglish) "Repeat English + translation" else "Повторить слово и перевод"
-        } else if (uiEnglish) "Listen to word" else "Слушать слово"
-        learningPauseButton.visibility = if (running && learningMode)
-            View.VISIBLE else View.GONE
-        learningPauseButton.text = if (learningPaused) {
-            if (uiEnglish) "Resume listening" else "Продолжить"
-        } else {
-            if (uiEnglish) "Pause listening" else "Пауза"
-        }
+        repeat.text = "🔊"
+        learningPauseButton.visibility = if (running) View.VISIBLE else View.INVISIBLE
+        learningPauseButton.text = if ((learningMode && learningPaused) ||
+            (!learningMode && checkPaused)) "▶" else "⏸"
         skip.visibility = if (testing) View.VISIBLE else View.GONE
         skip.isEnabled = running && testing && !answering
-        nextWordButton.visibility = if (running && (learningMode || answering))
-            View.VISIBLE else View.GONE
+        nextWordButton.visibility = if (running) View.VISIBLE else View.INVISIBLE
     }
 
     private fun startSession(
@@ -1066,6 +1202,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         lessonModeSpinner.setSelection(if (learningMode) 0 else 1)
         includeExamplesDuringLearning = includeExamplesOverride ?: ExampleModeSetup.selected(this)
         learningPaused = false
+        checkPaused = false
         assistedThisWord = false
         sessionId = UUID.randomUUID().toString()
         forcedReviewDirections = emptyMap()
@@ -1117,6 +1254,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         index = 0; running = true; answering = false
         settingsDialog?.dismiss()
         menu.visibility = View.GONE
+        showLessonScreen()
         next()
     }
     private fun key(w: Word) = "${questionDirection}_${w.id}"
@@ -1438,8 +1576,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (!running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
         if (!ttsReady || englishOfflineVoices.isEmpty() || russianOfflineVoices.isEmpty()) {
-            status.text = if (uiEnglish) "Install both offline TTS voices in Android settings."
-                else "Для прослушивания нужны офлайн-голоса английского и русского языка Android."
+            // No offline TTS voice must not freeze learning on the first card.
+            pauseLearningAudio()
+            status.text = if (uiEnglish)
+                "Offline voice unavailable; next word in $learningPauseSeconds seconds"
+            else "Озвучивание недоступно; следующее слово через $learningPauseSeconds с"
+            handler.postDelayed(learningAdvanceRunnable, learningPauseSeconds * 1000L)
             return
         }
         pauseLearningAudio()
@@ -1491,7 +1633,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun scheduleAdvance() {
         handler.removeCallbacks(advanceRunnable)
-        if (!running || !answering || examplesExpanded || familyExpanded ||
+        if (!running || !answering || checkPaused || examplesExpanded || familyExpanded ||
             menu.visibility == View.VISIBLE || nextDelaySeconds == 0) return
         handler.postDelayed(advanceRunnable, nextDelaySeconds * 1000L)
     }
@@ -2102,11 +2244,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onResume() {
         super.onResume()
-        if (resumeLearningAfterForeground) {
+        if (resumeLearningAfterForeground && onLessonScreen) {
             resumeLearningAfterForeground = false
             handler.post { if (running && learningMode && !learningPaused) resumeLearningWord() }
         }
-        if (resumeAnswerTimerAfterForeground) {
+        if (resumeAnswerTimerAfterForeground && onLessonScreen) {
             resumeAnswerTimerAfterForeground = false
             handler.post { if (running && !learningMode && answering) scheduleAdvance() }
         }
