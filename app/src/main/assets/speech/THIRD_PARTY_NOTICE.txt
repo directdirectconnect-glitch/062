@@ -1,0 +1,18 @@
+English Words — third-party offline speech components
+
+Vosk Android library by Alpha Cephei
+https://github.com/alphacep/vosk-api
+Distributed under the Apache License, Version 2.0.
+
+Bundled Vosk English and Russian acoustic models:
+  vosk-model-small-en-us-0.15
+  vosk-model-small-ru-0.22
+Source: https://alphacephei.com/vosk/models
+Listed model license: Apache License, Version 2.0.
+
+Java Native Access (JNA) by its contributors:
+https://github.com/java-native-access/jna
+
+The models are bundled during APK build time. Runtime speech recognition
+does not download data or transmit microphone recordings to a server.
+See OFFLINE_SPEECH_097.md for version, installation and limitations.

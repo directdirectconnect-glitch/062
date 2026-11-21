@@ -1,0 +1,11 @@
+The generated Russian word-form index (russian_word_forms.tsv) adapts
+OpenCorpora dictionary data through pymorphy3-dicts-ru 2.4.417150.4580142.
+
+OpenCorpora contributors: https://opencorpora.org/
+Dictionary distribution: https://github.com/no-plagiarism/pymorphy3-dicts
+Data and adapted word-form index: CC BY-SA 3.0
+https://creativecommons.org/licenses/by-sa/3.0/
+
+The index limits the dictionary forms to the app vocabulary, normalizes
+their spelling, drops exact app matches, and maps forms to app word IDs.
+Regeneration: scripts/build_russian_word_forms.py
