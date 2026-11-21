@@ -136,6 +136,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                     ShortArray((timeoutMs * SAMPLE_RATE / 1_000L).toInt())
                 } else null
                 var recordedSamples = 0
+                Log.i(LOG_TAG, "ASR_MODEL_READY language=$language")
                 val transcript = Recognizer(readyModel, SAMPLE_RATE.toFloat()).use { recognizer ->
                     record(recognizer, request, timeoutMs, onSamples = { samples, count ->
                         if (utterance != null) {
@@ -164,6 +165,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                 Log.w(LOG_TAG, "Native recognition unavailable", error)
                 VoiceRecognitionResult.RecognitionError
             }
+            Log.i(LOG_TAG, "ASR_RESULT language=$language result=${result?.javaClass?.simpleName ?: "CANCELLED"}")
             if (result != null) {
                 ui.post {
                     if (request == generation && !activity.isFinishing && !activity.isDestroyed) {
@@ -175,7 +177,7 @@ class OfflineVoskEngine(private val activity: Activity) {
     }
 
     private fun loadModel(language: String, request: Int): Model? {
-        if (modelLanguage == language) return model
+        if (modelLanguage == language && model != null) return model
         closeModel()
         val directory = ensureExtracted(activity, language)
         if (request != generation) return null
