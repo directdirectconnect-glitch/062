@@ -18,32 +18,29 @@ import java.util.concurrent.Executors
  */
 internal class SherpaOfflineSpeech(private val context: Context) {
     private val worker = Executors.newSingleThreadExecutor()
-    private var en: OfflineTts? = null
-    private var ru: OfflineTts? = null
     @Volatile private var generation = 0
+    @Volatile private var closed = false
     @Volatile var lastDiagnostic: String = "NOT_TESTED"
         private set
 
+    // Preparation is intentionally lightweight. Never instantiate both VITS models
+    // together: Android's native heap may not have room for both ONNX sessions.
+    // Full asset SHA-256 validation is performed by CI before packaging.
     fun prepare(done: (Boolean, String) -> Unit) {
         worker.execute {
-            val audit = BundledVoiceAssets.inspect(context)
-            if (!audit.ready) {
-                done(false, audit.errors.joinToString("; "))
-                return@execute
+            if (closed) { done(false, "ENGINE_CLOSED"); return@execute }
+            val ready = listOf("en", "ru").all { language ->
+                try {
+                    val base = "tts/$language"
+                    context.assets.open("$base/model.onnx").use { it.read() >= 0 } &&
+                        context.assets.open("$base/tokens.txt").use { it.read() >= 0 }
+                } catch (e: Exception) {
+                    lastDiagnostic = "MISSING_VOICE_ASSETS_$language: ${e.message}"
+                    false
+                }
             }
-            try {
-                en?.release()
-                ru?.release()
-                en = null
-                ru = null
-                en = create("en")
-                ru = create("ru")
-                done(true, "Bundled EN/RU voices initialized")
-            } catch (e: Exception) {
-                en?.release(); ru?.release()
-                en = null; ru = null
-                done(false, "Sherpa-ONNX initialization failed: ${e.message}")
-            }
+            lastDiagnostic = if (ready) "ASSETS_READY_LAZY" else "VOICE_ASSETS_MISSING"
+            done(ready, lastDiagnostic)
         }
     }
 
@@ -65,23 +62,32 @@ internal class SherpaOfflineSpeech(private val context: Context) {
         )
     }
 
-    /** Speak English first and then Russian; callback runs on worker thread. */
+    /** Generate EN and RU sequentially; release each native ONNX session before the next. */
     fun speakPair(english: String, russian: String, finished: (Boolean) -> Unit) {
         val id = ++generation
         worker.execute {
-            val first = en
-            val second = ru
-            if (first == null || second == null) {
-                finished(false)
-                return@execute
-            }
+            if (closed || id != generation) { finished(false); return@execute }
             try {
-                if (!playWithRetry(first, english, id, "en")) { finished(false); return@execute }
-                if (!playWithRetry(second, russian, id, "ru")) { finished(false); return@execute }
-                lastDiagnostic = "EN_RU_PLAYBACK_SUBMITTED"
+                for ((language, text) in listOf("en" to english, "ru" to russian)) {
+                    if (id != generation) { finished(false); return@execute }
+                    android.util.Log.i("EnglishWordsVoice", "VITS_CREATE_BEGIN language=$language")
+                    val tts = create(language)
+                    try {
+                        android.util.Log.i("EnglishWordsVoice", "VITS_CREATE_OK language=$language")
+                        if (!playWithRetry(tts, text, id, language)) {
+                            finished(false)
+                            return@execute
+                        }
+                    } finally {
+                        tts.release()
+                        android.util.Log.i("EnglishWordsVoice", "VITS_RELEASE language=$language")
+                    }
+                }
+                lastDiagnostic = "EN_RU_PLAYBACK_COMPLETED"
                 finished(true)
             } catch (e: Exception) {
-                lastDiagnostic = "PLAYBACK_ERROR: ${e.javaClass.simpleName}: ${e.message}"
+                lastDiagnostic = "NATIVE_VOICE_ERROR: ${e.javaClass.simpleName}: ${e.message}"
+                android.util.Log.e("EnglishWordsVoice", lastDiagnostic, e)
                 finished(false)
             }
         }
@@ -152,8 +158,8 @@ internal class SherpaOfflineSpeech(private val context: Context) {
 
     fun stop() { generation++ }
     fun close() {
+        closed = true
         stop()
-        worker.execute { en?.release(); ru?.release(); en = null; ru = null }
         worker.shutdown()
     }
 }
