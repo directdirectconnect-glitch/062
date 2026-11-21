@@ -23,8 +23,9 @@ jobs:
           python-version: '3.11'
       - name: Install Python dependencies
         run: python -m pip install openpyxl
-      - name: Audit bundled offline TTS assets (EN/RU)
-        continue-on-error: true # diagnostic until licensed models are actually bundled
+      - name: Download and embed offline English and Russian voices
+        run: python scripts/install_sherpa_tts_models.py
+      - name: Verify bundled offline TTS assets (EN/RU) — release gate
         run: python scripts/verify_offline_tts_assets.py
       - name: Test and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
