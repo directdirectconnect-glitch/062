@@ -77,6 +77,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var finishedLessonNumber: Button
     private lateinit var finishedLessonForward: Button
     private lateinit var exerciseOptions: LinearLayout
+    private lateinit var embeddedOptionsButton: Button
+    private var embeddedOptionsExpanded = false
     private lateinit var wordImage: ImageView
     private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
@@ -760,7 +762,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             background = bordered(neutralSurface)
             setPadding(dp(10), dp(7), dp(10), dp(7))
         }
-        add(exercisePage, exerciseOptions, top = 4)
         add(menu, text("ВНЕШНИЙ ВИД", 16f, navy, true), top = 10)
         languageSpinner = spinner(listOf("Русский", "Английский")).apply {
             setSelection(if (uiEnglish) 1 else 0)
@@ -1067,6 +1068,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             minimumHeight = dp(205)
         }
         wordCard = card
+        // The three-line menu belongs INSIDE the word card, never above it.
+        embeddedOptionsButton = button("☰", neutralSurface, neutralInk) {
+            embeddedOptionsExpanded = !embeddedOptionsExpanded
+            exerciseOptions.visibility = if (embeddedOptionsExpanded) View.VISIBLE else View.GONE
+            embeddedOptionsButton.contentDescription = if (embeddedOptionsExpanded)
+                "Скрыть параметры урока" else "Показать параметры урока"
+        }.apply {
+            textSize = 22f
+            contentDescription = "Показать параметры урока"
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        }
+        add(card, embeddedOptionsButton)
+        exerciseOptions.visibility = View.GONE
+        add(card, exerciseOptions, top = 2)
         buildLessonToolbar(card)
         cardHeading = text(if (uiEnglish) "TRANSLATE" else "ПЕРЕВОД", 12f, muted, true)
         add(card, cardHeading)
@@ -1362,6 +1377,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             persistActiveSession(commitNow = true)
         }
         page = destination
+        if (destination == Page.LEARN || destination == Page.CHECK) {
+            embeddedOptionsExpanded = false
+        }
         appHeader.visibility = if (page == Page.HOME) View.VISIBLE else View.GONE
         homePage.visibility = if (page == Page.HOME) View.VISIBLE else View.GONE
         menu.visibility = if (page == Page.SETTINGS) View.VISIBLE else View.GONE
@@ -1497,7 +1515,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         pronunciation.visibility = prompt.visibility
         status.visibility = prompt.visibility
         stats.visibility = prompt.visibility
-        exerciseOptions.visibility = prompt.visibility
+        exerciseOptions.visibility = if (finished || !embeddedOptionsExpanded) View.GONE else View.VISIBLE
+        embeddedOptionsButton.visibility = if (finished) View.GONE else View.VISIBLE
         startButton.visibility = prompt.visibility
         exerciseBody.findViewWithTag<View>("exercise_navigation").visibility = prompt.visibility
         if (finished) {
@@ -1509,7 +1528,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         progress.visibility = cardHeading.visibility
         lessonToolbar.visibility = if (testing || finished) View.GONE else View.VISIBLE
         val cardLayout = wordCard.layoutParams as LinearLayout.LayoutParams
-        val cardTop = dp(if (testing) 18 else 0)
+        val cardTop = dp(0)
         if (cardLayout.topMargin != cardTop) {
             cardLayout.topMargin = cardTop
             wordCard.layoutParams = cardLayout
