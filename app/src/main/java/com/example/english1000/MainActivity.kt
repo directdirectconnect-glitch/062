@@ -458,7 +458,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         voiceResponseSeconds = prefs.getInt("voice_response_seconds", 4)
             .takeIf { it in voiceResponseOptions } ?: 4
         tts = TextToSpeech(this, this)
-        bundledSpeech.prepare { ready, _ -> bundledSpeechReady = ready }
+        // Do not initialize two large native VITS models during Activity startup.
+        // Startup must remain usable even if the offline speech engine cannot initialize.
+        // Speech initialization is deferred until a learning session requests playback.
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
         fontChoice = prefs.getInt("font_family", 1)
         weightChoice = prefs.getInt("font_weight", 1)
