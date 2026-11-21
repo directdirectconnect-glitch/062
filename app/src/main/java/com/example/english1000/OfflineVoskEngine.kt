@@ -140,7 +140,7 @@ class OfflineVoskEngine(private val activity: Activity) {
                     record(recognizer, request, timeoutMs, onSamples = { samples, count ->
                         if (utterance != null) {
                             val copied = minOf(count, utterance.size - recordedSamples)
-                            samples.copyInto(utterance, recordedSamples, endIndex = copied)
+                            samples.copyInto(utterance, recordedSamples, startIndex = 0, endIndex = copied)
                             recordedSamples += copied
                         }
                     }) {
