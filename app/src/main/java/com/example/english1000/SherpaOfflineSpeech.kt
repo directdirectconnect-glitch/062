@@ -9,6 +9,7 @@ import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
@@ -44,8 +45,58 @@ internal class SherpaOfflineSpeech(private val context: Context) {
         }
     }
 
+    /**
+     * Sherpa-ONNX expects VITS dataDir to be a real filesystem directory, not an
+     * AssetManager-relative path. Copy eSpeak NG data to app-private storage first.
+     * Never remove a working copy before a replacement has been validated.
+     */
+    private fun prepareEspeakData(language: String): File {
+        val source = "tts/$language/espeak-ng-data"
+        val destination = File(context.filesDir, "voice-data/$language/espeak-ng-data")
+        val marker = File(destination, ".englishwords-assets-ready")
+        if (marker.isFile && destination.listFiles()?.any { it.name != marker.name } == true) {
+            return destination
+        }
+        val staging = File(destination.parentFile, "espeak-ng-data-staging")
+        if (staging.exists()) staging.deleteRecursively()
+        check(staging.mkdirs()) { "Cannot create eSpeak staging directory: $staging" }
+        try {
+            var copiedFiles = 0
+            fun copyAssetTree(assetPath: String, target: File) {
+                val children = context.assets.list(assetPath)
+                    ?: error("Cannot list eSpeak assets: $assetPath")
+                if (children.isEmpty()) {
+                    target.parentFile?.mkdirs()
+                    context.assets.open(assetPath).use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    check(target.length() > 0L) { "Empty eSpeak asset: $assetPath" }
+                    copiedFiles++
+                } else {
+                    check(target.isDirectory || target.mkdirs()) { "Cannot create: $target" }
+                    for (child in children) copyAssetTree("$assetPath/$child", File(target, child))
+                }
+            }
+            copyAssetTree(source, staging)
+            check(copiedFiles > 0) { "Missing eSpeak data assets: $source" }
+            if (destination.exists()) check(destination.deleteRecursively()) {
+                "Cannot replace invalid eSpeak data directory: $destination"
+            }
+            check(staging.renameTo(destination)) { "Cannot activate eSpeak data directory" }
+            marker.writeText("files=$copiedFiles")
+            android.util.Log.i("EnglishWordsVoice", "ESPEAK_DATA_READY language=$language files=$copiedFiles")
+            return destination
+        } catch (e: Exception) {
+            staging.deleteRecursively()
+            android.util.Log.e("EnglishWordsVoice", "ESPEAK_DATA_PREPARE_FAILED language=$language", e)
+            throw e
+        }
+    }
+
     private fun create(language: String): OfflineTts {
         val base = "tts/$language"
+        val dataDir = prepareEspeakData(language)
+        android.util.Log.i("EnglishWordsVoice", "VITS_DATA_DIR_READY language=$language")
         return OfflineTts(
             assetManager = context.assets,
             config = OfflineTtsConfig(
@@ -53,7 +104,7 @@ internal class SherpaOfflineSpeech(private val context: Context) {
                     vits = OfflineTtsVitsModelConfig(
                         model = "$base/model.onnx",
                         tokens = "$base/tokens.txt",
-                        dataDir = "$base/espeak-ng-data"
+                        dataDir = dataDir.absolutePath
                     ),
                     numThreads = 2,
                     debug = false
