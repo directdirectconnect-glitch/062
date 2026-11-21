@@ -461,6 +461,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         // Do not initialize two large native VITS models during Activity startup.
         // Startup must remain usable even if the offline speech engine cannot initialize.
         // Speech initialization is deferred until a learning session requests playback.
+        // Diagnostic build: initialize bundled EN/RU models after the first screen is visible.
+        // Reproduces the reported 3-4 second startup failure while preserving crash logs.
+        handler.postDelayed({
+            android.util.Log.i("EnglishWordsVoiceProbe", "VITS_PREPARE_BEGIN")
+            bundledSpeech.prepare { ready, detail ->
+                bundledSpeechReady = ready
+                android.util.Log.i("EnglishWordsVoiceProbe", "VITS_PREPARE_END ready=$ready detail=$detail")
+            }
+        }, 1500L)
         uiEnglish = prefs.getString("ui_language", "ru") == "en"
         fontChoice = prefs.getInt("font_family", 1)
         weightChoice = prefs.getInt("font_weight", 1)
