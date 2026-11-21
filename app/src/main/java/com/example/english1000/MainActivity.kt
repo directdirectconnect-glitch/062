@@ -83,6 +83,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var automaticAudioCheckDone = false
     private var automaticAudioCheckRunning = false
     private var automaticAudioRepairAttempted = false
+    private var speechPlaybackRepairAttempted = false
     private lateinit var wordImage: ImageView
     private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
@@ -1652,6 +1653,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         automaticAudioCheckDone = false
         automaticAudioCheckRunning = false
         automaticAudioRepairAttempted = false
+        speechPlaybackRepairAttempted = false
         finishedLessonSelection = null
         handler.removeCallbacksAndMessages(null)
         pauseLearningAudio()
@@ -2125,8 +2127,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 runOnUiThread {
                     if (!running || !learningMode || learningPaused || current?.id != wordId ||
                         playbackId != learningSequenceId) return@runOnUiThread
-                    if (!success && !automaticAudioRepairAttempted) {
-                        automaticAudioRepairAttempted = true
+                    if (!success && !speechPlaybackRepairAttempted) {
+                        speechPlaybackRepairAttempted = true
                         status.text = "Сбой озвучивания: восстановление офлайн-голоса…"
                         bundledSpeech.prepare { ready, detail ->
                             bundledSpeechReady = ready
