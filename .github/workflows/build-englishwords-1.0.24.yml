@@ -49,6 +49,6 @@ jobs:
           cp "$APK" EnglishWords-1.0.24-offlinevoskqa-debug.apk
           sha256sum EnglishWords-1.0.24-offlinevoskqa-debug.apk > EnglishWords-1.0.24-SHA256.txt
           TAG="englishwords-1.0.24-qa-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" EnglishWords-1.0.24-offlinevoskqa-debug.apk EnglishWords-1.0.24-SHA256.txt \\
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "English Words 1.0.24 — QA APK (debug)" \\
+          gh release create "$TAG" EnglishWords-1.0.24-offlinevoskqa-debug.apk EnglishWords-1.0.24-SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "English Words 1.0.24 — QA APK (debug)" \
             --prerelease --notes "CI-built debug APK for device testing. NOT a production-signed release. Contains embedded offline EN/RU voices and audio fail-open logic. Physical Samsung S20 FE acoustic testing remains NOT_RUN. Build source: $GITHUB_SHA"
