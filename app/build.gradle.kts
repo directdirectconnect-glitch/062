@@ -6,7 +6,9 @@ android { namespace = "com.example.english1000"; compileSdk = 35
  kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
-    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8")
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8") {
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
+    }
     implementation("com.alphacephei:vosk-android:0.3.75@aar")
     implementation("net.java.dev.jna:jna:5.18.1@aar")
     testImplementation("junit:junit:4.13.2")
