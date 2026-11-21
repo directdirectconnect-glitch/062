@@ -49,10 +49,13 @@ $package=$Matches[1]
 if ($package -cne $ExpectedPackage) { throw "BLOCKED: package mismatch: $package" }
 & $ApkSigner verify --verbose $apk | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'BLOCKED: APK signature verification failed' }
-$installed=(& $Adb -s $serial shell pm list packages $package) -join "`n"
+$installed=(& $Adb -s $serial shell pm list packages) -join "`n"
 if ($installed -match "(?m)^package:$([regex]::Escape($package))\s*$") { throw 'BLOCKED: package already installed; no overwrite permitted' }
 Write-Output "PREFLIGHT PASS | model=$model | package=$package | SHA256=$actual | run=$RunId | mode=$Mode"
 if ($Mode -eq 'Install') {
+  # Re-check immediately before installation to minimize accidental overwrite risk.
+  $current=(& $Adb -s $serial shell pm list packages) -join "`n"
+  if ($current -match "(?m)^package:$([regex]::Escape($package))\s*$") { throw 'BLOCKED: package appeared after preflight' }
   & $Adb -s $serial install --no-streaming $apk
   if ($LASTEXITCODE -ne 0) { throw 'INSTALL FAILED: adb returned nonzero' }
   Write-Output "INSTALL REQUEST COMPLETED | verify package launch and audio separately"
