@@ -1,0 +1,47 @@
+name: Verify English Words APK 44902725944 metadata
+on:
+  push:
+    branches: [feature/safe-s20-apk-preflight-20261121]
+    paths: [.github/workflows/verify-englishwords-apk-44902725944.yml]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+  issues: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download exact APK artifact from successful run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api -H 'Accept: application/vnd.github+json' \
+            repos/directdirectconnect-glitch/062/actions/artifacts/14707075709/zip > /tmp/artifact.zip
+          mkdir -p /tmp/apk
+          unzip -q /tmp/artifact.zip -d /tmp/apk
+          test -s /tmp/apk/app-debug.apk
+      - name: Verify package, SHA-256, and APK signature
+        id: metadata
+        run: |
+          set -euo pipefail
+          APK=/tmp/apk/app-debug.apk
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          SIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -x "$AAPT" && test -x "$SIGNER"
+          SHA="$(sha256sum "$APK" | cut -d' ' -f1)"
+          PACKAGE="$("$AAPT" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+          test -n "$PACKAGE"
+          "$SIGNER" verify --verbose --print-certs "$APK" > /tmp/signature.txt
+          CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/signature.txt | head -1)"
+          test -n "$CERT"
+          printf 'run=44902725944\nartifact=14707075709\napk_sha256=%s\npackage=%s\nsigner_cert_sha256=%s\n' "$SHA" "$PACKAGE" "$CERT" | tee /tmp/metadata.txt
+          cat /tmp/metadata.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish exact verified metadata to issue 19
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          { echo 'APK METADATA VERIFIED V1 run=44902725944'; echo; cat /tmp/metadata.txt; echo 'Windows installation=NOT_RUN. Device acoustic test=NOT_RUN.'; } > /tmp/issue.md
+          gh issue comment 19 -R directdirectconnect-glitch/062 --body-file /tmp/issue.md
