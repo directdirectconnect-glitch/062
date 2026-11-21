@@ -80,6 +80,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var embeddedOptionsButton: Button
     private var embeddedOptionsExpanded = false
     private val acousticPermissionRequestCode = 741
+    private var automaticAudioCheckDone = false
+    private var automaticAudioCheckRunning = false
+    private var automaticAudioRepairAttempted = false
     private lateinit var wordImage: ImageView
     private val visualCatalog by lazy { VisualVocabularyCatalog(applicationContext) }
     private var learningMode = false
@@ -532,8 +535,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == acousticPermissionRequestCode) {
-            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) runAcousticCheck()
-            else Toast.makeText(this, "Проверка недоступна без разрешения на микрофон", Toast.LENGTH_LONG).show()
+            if (automaticAudioCheckRunning) {
+                if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) runAutomaticAcousticCheck()
+                else {
+                    automaticAudioCheckRunning = false
+                    automaticAudioCheckDone = true
+                    resumeLearningWord()
+                }
+            }
         }
         if (requestCode == 12) {
             status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
@@ -1087,10 +1096,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(card, embeddedOptionsButton)
         exerciseOptions.visibility = View.GONE
         add(card, exerciseOptions, top = 2)
-        add(exerciseOptions, button(
-            if (uiEnglish) "Test speaker and microphone (offline)" else "Проверить динамик и микрофон (офлайн)",
-            neutralSurface, neutralInk
-        ) { requestAcousticCheck() }, top = 6)
         buildLessonToolbar(card)
         cardHeading = text(if (uiEnglish) "TRANSLATE" else "ПЕРЕВОД", 12f, muted, true)
         add(card, cardHeading)
@@ -1434,22 +1439,28 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         updateButtons()
     }
 
-    private fun requestAcousticCheck() {
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequestCode)
-        } else runAcousticCheck()
-    }
-
-    private fun runAcousticCheck() {
-        // Only invoked by an explicit tap on the diagnostic control.
+    private fun runAutomaticAcousticCheck() {
         AcousticLoopbackCheck.run(this) { result ->
             runOnUiThread {
-                val message = if (result.passed) "PASS" else "НЕ ПРОЙДЕНО"
-                android.app.AlertDialog.Builder(this)
-                    .setTitle("Акустическая проверка: $message")
-                    .setMessage("${result.code}: ${result.detail}")
-                    .setPositiveButton("OK", null)
-                    .show()
+                automaticAudioCheckRunning = false
+                automaticAudioCheckDone = true
+                if (!result.passed) {
+                    status.text = "Проверка звука: ${result.code}. Восстановление голоса…"
+                    if (!automaticAudioRepairAttempted &&
+                        result.code != "MUTED" && result.code != "EXTERNAL_AUDIO" &&
+                        result.code != "PERMISSION_DENIED") {
+                        automaticAudioRepairAttempted = true
+                        bundledSpeech.prepare { ready, message ->
+                            bundledSpeechReady = ready
+                            runOnUiThread {
+                                if (!ready) status.text = "Офлайн-голос: $message"
+                                resumeLearningWord()
+                            }
+                        }
+                        return@runOnUiThread
+                    }
+                }
+                resumeLearningWord()
             }
         }
     }
@@ -1638,6 +1649,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 .show()
             return
         }
+        automaticAudioCheckDone = false
+        automaticAudioCheckRunning = false
+        automaticAudioRepairAttempted = false
         finishedLessonSelection = null
         handler.removeCallbacksAndMessages(null)
         pauseLearningAudio()
@@ -2091,6 +2105,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val word = current ?: return
         if (page != Page.LEARN || !running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
+        if (lessonSound && !automaticAudioCheckDone) {
+            if (automaticAudioCheckRunning) return
+            automaticAudioCheckRunning = true
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequestCode)
+            } else {
+                runAutomaticAcousticCheck()
+            }
+            return
+        }
         pauseLearningAudio()
         if (lessonSound && bundledSpeechReady) {
             val playbackId = learningSequenceId
