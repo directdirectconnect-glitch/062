@@ -2,7 +2,7 @@ name: Android emulator startup crash regression
 on:
   workflow_dispatch:
   push:
-    branches: ["build/englishwords-1.0.24"]
+    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-startup-lite"]
     paths:
       - "app/**"
       - "scripts/**"
@@ -24,7 +24,6 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install openpyxl
-      - run: python scripts/install_sherpa_tts_models.py
       - name: Build x86_64 emulator APK
         run: gradle --no-daemon -PenglishWordsAbi=x86_64 :app:assembleDebug
       - name: Boot emulator, launch and monitor for 20 seconds
