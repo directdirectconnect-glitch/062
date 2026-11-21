@@ -835,7 +835,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             addView(menu)
         }
         settingsDialog = android.app.AlertDialog.Builder(this)
-            .setTitle(if (uiEnglish) "Settings" else "Настройки")
+            .setTitle(if (uiEnglish) "Lesson settings" else "Настройки урока")
             .setView(settingsScroll)
             .setPositiveButton(if (uiEnglish) "Close" else "Закрыть", null)
             .create().apply {
@@ -857,14 +857,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         lessonHeaderTitle = text("", 20f, navy, true)
         lessonTop.addView(lessonHeaderTitle, LinearLayout.LayoutParams(0, dp(54), 1f))
-        lessonTop.addView(button("⚙", neutralSurface, neutralInk) {
+        lessonTop.addView(button("☰", neutralSurface, neutralInk) {
             openSettingsDialog()
         }.apply {
-            contentDescription = if (uiEnglish) "Settings" else "Настройки"
+            contentDescription = if (uiEnglish) "Open lesson settings" else "Открыть настройки урока"
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         add(root, lessonTop, top = 8)
         counter = text("Выбери блок в меню", 16f, navy, true)
-        add(root, counter, top = 24)
+        add(root, counter, top = 8)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100; progress = 0; progressTintList = android.content.res.ColorStateList.valueOf(blue)
         }
