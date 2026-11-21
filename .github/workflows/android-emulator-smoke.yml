@@ -2,7 +2,7 @@ name: Android emulator startup crash regression
 on:
   workflow_dispatch:
   push:
-    branches: ["build/englishwords-1.0.24"]
+    branches: ["build/englishwords-1.0.24", "test/englishwords-1.0.24-embedded-voice-crash"]
     paths:
       - "app/**"
       - "scripts/**"
@@ -40,7 +40,9 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am start -W -n com.example.english1000.offlinevoskqa/com.example.english1000.MainActivity
-            sleep 20
+            sleep 30
+            adb logcat -d -v time > emulator-full.log
+            grep "EnglishWordsVoiceProbe" emulator-full.log || true
             adb shell pidof com.example.english1000.offlinevoskqa
             adb logcat -d -b crash > emulator-crash.log
             if grep -E 'FATAL EXCEPTION|Fatal signal|SIGSEGV|SIGABRT' emulator-crash.log; then
@@ -53,5 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: emulator-crash-log
-          path: emulator-crash.log
+          path: |
+            emulator-crash.log
+            emulator-full.log
           if-no-files-found: ignore
