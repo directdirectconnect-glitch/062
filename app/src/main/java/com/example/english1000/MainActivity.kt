@@ -2131,17 +2131,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val word = current ?: return
         if (page != Page.LEARN || !running || !learningMode || learningPaused ||
             examplesExpanded || familyExpanded || menu.visibility == View.VISIBLE) return
-        if (lessonSound && !automaticAudioCheckDone) {
-            if (automaticAudioCheckRunning) return
-            scheduleAudioFailOpenTimeout(word.id, 8L)
-            automaticAudioCheckRunning = true
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), acousticPermissionRequestCode)
-            } else {
-                runAutomaticAcousticCheck()
-            }
-            return
-        }
+        // Speaker-to-microphone loopback is a separate, explicit diagnostic.
+        // It must not run automatically when entering a lesson or initialize VITS.
+        automaticAudioCheckDone = true
         pauseLearningAudio()
         // Lazy initialization: never load two large ONNX models during Activity startup.
         // Only one initialization attempt is allowed per Activity; the existing audio
@@ -2181,43 +2173,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             val wordId = word.id
             status.text = if (uiEnglish) "Speaking with bundled offline voices"
                 else "Озвучивание встроенными офлайн-голосами"
+            if (::tts.isInitialized) tts.stop() // Never mix Android TTS with native PCM output.
             bundledSpeech.speakPair(word.en, word.ru) { success ->
                 runOnUiThread {
                     if (!running || !learningMode || learningPaused || current?.id != wordId ||
                         playbackId != learningSequenceId) return@runOnUiThread
-                    if (!success && !speechPlaybackRepairAttempted) {
-                        speechPlaybackRepairAttempted = true
-                        status.text = "Сбой озвучивания: восстановление офлайн-голоса…"
-                        bundledSpeech.prepare { ready, detail ->
-                            bundledSpeechReady = ready
-                            runOnUiThread {
-                                if (!running || !learningMode || learningPaused ||
-                                    current?.id != wordId || playbackId != learningSequenceId) {
-                                    return@runOnUiThread
-                                }
-                                if (ready) {
-                                    bundledSpeech.speakPair(word.en, word.ru) { retried ->
-                                        runOnUiThread {
-                                            if (running && learningMode && !learningPaused &&
-                                                current?.id == wordId && playbackId == learningSequenceId) {
-                                                audioWatchdogToken++
-                                                status.text = if (retried) "Голос восстановлен"
-                                                    else "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
-                                                if (!manualLearning) handler.postDelayed(
-                                                    learningAdvanceRunnable, learningPauseSeconds * 1000L)
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    audioWatchdogToken++
-                                    status.text = "Восстановление не удалось: $detail"
-                                    if (!manualLearning) handler.postDelayed(
-                                        learningAdvanceRunnable, learningPauseSeconds * 1000L)
-                                }
-                            }
-                        }
-                        return@runOnUiThread
-                    }
+                    // Do not reinitialize native ONNX on playback failure.
+                    // Retrying a failed native session can amplify memory pressure.
                     audioWatchdogToken++
                     if (!success) status.text = "Ошибка голоса: ${bundledSpeech.lastDiagnostic}"
                     if (!manualLearning) handler.postDelayed(
