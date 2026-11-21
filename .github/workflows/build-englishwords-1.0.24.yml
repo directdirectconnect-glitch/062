@@ -2,7 +2,7 @@ name: Build English Words 1.0.24
 on:
   workflow_dispatch:
   push:
-    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-lazy-voice"]
+    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-lazy-voice", "fix/englishwords-1.0.24-voice-lifecycle"]
 permissions:
   contents: write
 jobs:
@@ -46,9 +46,9 @@ jobs:
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" EnglishWords-1.0.24-lazyvoice-debug.apk
-          sha256sum EnglishWords-1.0.24-lazyvoice-debug.apk > EnglishWords-1.0.24-SHA256.txt
-          TAG="englishwords-1.0.24-lazyvoice-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" EnglishWords-1.0.24-lazyvoice-debug.apk EnglishWords-1.0.24-SHA256.txt \
+          cp "$APK" EnglishWords-1.0.24-voicefix-debug.apk
+          sha256sum EnglishWords-1.0.24-voicefix-debug.apk > EnglishWords-1.0.24-SHA256.txt
+          TAG="englishwords-1.0.24-voicefix-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" EnglishWords-1.0.24-voicefix-debug.apk EnglishWords-1.0.24-SHA256.txt \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "English Words 1.0.24 — QA APK (debug)" \
-            --prerelease --notes "CI-built debug APK for device testing. NOT a production-signed release. Contains embedded offline EN/RU voices and lazy voice initialization. Emulator and Samsung acoustic test must be verified separately. Physical Samsung S20 FE acoustic testing remains NOT_RUN. Build source: $GITHUB_SHA"
+            --prerelease --notes "CI-built debug APK for device testing. NOT a production-signed release. Contains embedded offline EN/RU voices with sequential native model lifecycle and Android TTS separation. Emulator and Samsung acoustic test must be verified separately. Physical Samsung S20 FE acoustic testing remains NOT_RUN. Build source: $GITHUB_SHA"
