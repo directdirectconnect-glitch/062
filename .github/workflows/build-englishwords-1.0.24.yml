@@ -41,6 +41,7 @@ jobs:
 
       - name: Publish verified CI APK as GitHub prerelease
         if: success()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
