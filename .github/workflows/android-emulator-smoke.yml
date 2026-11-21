@@ -2,7 +2,7 @@ name: Android emulator startup crash regression
 on:
   workflow_dispatch:
   push:
-    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-lazy-voice"]
+    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-lazy-voice", "fix/englishwords-1.0.24-lesson-crash-isolation"]
     paths:
       - "app/**"
       - "scripts/**"
