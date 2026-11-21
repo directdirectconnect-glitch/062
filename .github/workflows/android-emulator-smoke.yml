@@ -30,11 +30,13 @@ jobs:
       - name: Boot emulator, launch and monitor for 20 seconds
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 30
           arch: x86_64
           target: google_apis
-          profile: pixel_5
-          emulator-boot-timeout: 600
+          profile: pixel_2
+          emulator-boot-timeout: 900
+          disable-animations: true
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect -memory 2048
           script: |
             set -e
             adb install -r app/build/outputs/apk/debug/app-debug.apk
