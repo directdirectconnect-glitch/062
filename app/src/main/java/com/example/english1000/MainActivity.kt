@@ -525,7 +525,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(18), dp(8), dp(20))
+            setPadding(dp(12), dp(8), dp(8), dp(10))
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         add(brand, text("English Words", 29f, navy).apply {
@@ -536,12 +536,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         add(brand, text("LANGUAGE LEARNING", 10f, muted).apply {
             letterSpacing = 0.25f
         }, top = 3)
-        header.addView(brand, LinearLayout.LayoutParams(0, dp(80), 1f))
+        header.addView(brand, LinearLayout.LayoutParams(0, dp(54), 1f))
         menuButton = button("⚙", neutralSurface, neutralInk) { showOverflowMenu() }.apply {
             textSize = 22f
             contentDescription = if (uiEnglish) "Settings" else "Настройки"
         }
-        header.addView(menuButton, LinearLayout.LayoutParams(dp(48), dp(48)))
+        header.addView(menuButton, LinearLayout.LayoutParams(dp(40), dp(40)))
         add(homeRoot, header)
 
         // Approved P01 visual baseline, 2026-11-16 v1.0 CURRENT:
