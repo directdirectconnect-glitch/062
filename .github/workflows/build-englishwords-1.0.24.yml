@@ -2,7 +2,7 @@ name: Build English Words 1.0.24
 on:
   workflow_dispatch:
   push:
-    branches: ["build/englishwords-1.0.24"]
+    branches: ["build/englishwords-1.0.24", "fix/englishwords-1.0.24-startup-lite"]
 permissions:
   contents: write
 jobs:
@@ -25,10 +25,8 @@ jobs:
           python-version: '3.11'
       - name: Install Python dependencies
         run: python -m pip install openpyxl
-      - name: Download and embed offline English and Russian voices
-        run: python scripts/install_sherpa_tts_models.py
-      - name: Verify bundled offline TTS assets (EN/RU) — release gate
-        run: python scripts/verify_offline_tts_assets.py
+      - name: Confirm emergency build excludes bundled neural voice models
+        run: test ! -d app/src/main/assets/tts || ! find app/src/main/assets/tts -name "*.onnx" | grep -q .
       - name: Test and build APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
       - name: Verify APK exists
@@ -46,9 +44,9 @@ jobs:
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" EnglishWords-1.0.24-offlinevoskqa-debug.apk
-          sha256sum EnglishWords-1.0.24-offlinevoskqa-debug.apk > EnglishWords-1.0.24-SHA256.txt
-          TAG="englishwords-1.0.24-qa-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" EnglishWords-1.0.24-offlinevoskqa-debug.apk EnglishWords-1.0.24-SHA256.txt \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "English Words 1.0.24 — QA APK (debug)" \
-            --prerelease --notes "CI-built debug APK for device testing. NOT a production-signed release. Contains embedded offline EN/RU voices and audio fail-open logic. Physical Samsung S20 FE acoustic testing remains NOT_RUN. Build source: $GITHUB_SHA"
+          cp "$APK" EnglishWords-1.0.24-startup-lite-debug.apk
+          sha256sum EnglishWords-1.0.24-startup-lite-debug.apk > EnglishWords-1.0.24-SHA256.txt
+          TAG="englishwords-1.0.24-lite-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" EnglishWords-1.0.24-startup-lite-debug.apk EnglishWords-1.0.24-SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "English Words 1.0.24 — emergency startup-lite QA APK" \
+            --prerelease --notes "CI-built debug APK for device testing. NOT a production-signed release. Emergency diagnostic APK without bundled neural TTS models. Offline neural voice temporarily disabled. Startup on Samsung S20 FE remains NOT_RUN. Build source: $GITHUB_SHA"
